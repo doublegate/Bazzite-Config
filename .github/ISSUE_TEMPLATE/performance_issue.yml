@@ -1,0 +1,91 @@
+name: Performance Issue
+description: Report performance problems or optimization requests
+title: "[PERFORMANCE] "
+labels: ["performance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report performance issues or suggest optimizations for the gaming suite.
+
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Which component has performance issues?
+      placeholder: "Gaming Manager / Gaming Monitor / Gaming Maintenance"
+    validations:
+      required: true
+
+  - type: textarea
+    id: performance-issue
+    attributes:
+      label: Performance Issue Description
+      description: Describe the performance problem
+      placeholder: "The monitoring dashboard has high CPU usage..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-performance
+    attributes:
+      label: Expected Performance
+      description: What performance did you expect?
+      placeholder: "Should use less than 5% CPU..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: benchmarks
+    attributes:
+      label: Benchmark Results
+      description: Include any benchmark or profiling data
+      placeholder: "htop output, benchmark results, etc."
+
+  - type: input
+    id: hardware-config
+    attributes:
+      label: Hardware Configuration
+      description: Brief hardware summary
+      placeholder: "RTX 5080, i9-10850K, 64GB RAM"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Performance Impact
+      description: How severe is the performance impact?
+      options:
+        - Low - Minor slowdown
+        - Medium - Noticeable impact
+        - High - Significant performance loss
+        - Critical - Unusable performance
+    validations:
+      required: true
+
+  - type: textarea
+    id: system-load
+    attributes:
+      label: System Load During Issue
+      description: Output of `top` or `htop` during the performance issue
+      placeholder: "Paste system load information here"
+
+  - type: textarea
+    id: optimization-ideas
+    attributes:
+      label: Optimization Suggestions
+      description: Any ideas for improving performance?
+      placeholder: "Could be optimized by reducing polling frequency..."
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have tested this on a clean Bazzite installation
+          required: true
+        - label: I have included system load information
+          required: true
+        - label: I have verified this isn't caused by my specific hardware configuration
+          required: true

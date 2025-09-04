@@ -1,0 +1,109 @@
+name: Bug Report
+description: Report a bug or issue with the gaming optimization suite
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us diagnose the issue.
+
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Which component is affected?
+      placeholder: "Gaming Manager / Gaming Monitor / Gaming Maintenance"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of what the bug is
+      placeholder: "Describe what happened and what you expected to happen"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run command '...'
+        2. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Information
+      description: Please run `./gaming-manager-suite.py --health` and paste the output
+      placeholder: "Paste system health output here"
+    validations:
+      required: true
+
+  - type: input
+    id: bazzite-version
+    attributes:
+      label: Bazzite Version
+      description: Output of `rpm-ostree status | head -5`
+      placeholder: "bazzite:stable/40/x86_64/bazzite"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hardware-gpu
+    attributes:
+      label: GPU
+      description: What GPU are you using?
+      options:
+        - NVIDIA RTX 5080
+        - NVIDIA RTX 4090
+        - NVIDIA RTX 4080
+        - NVIDIA RTX 4070
+        - AMD RX 7900 XTX
+        - AMD RX 7900 XT  
+        - AMD RX 7800 XT
+        - Intel Arc A770
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hardware-cpu
+    attributes:
+      label: CPU
+      description: What CPU are you using?
+      options:
+        - Intel i9-10850K
+        - Intel i9-13900K
+        - Intel i7-13700K
+        - AMD Ryzen 9 7950X
+        - AMD Ryzen 9 7900X
+        - AMD Ryzen 7 7700X
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Include any relevant logs from `/var/log/gaming-benchmark/` or error output
+      placeholder: "Paste logs here"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues for similar problems
+          required: true
+        - label: I have tested this on Bazzite Linux
+          required: true
+        - label: I have included system information
+          required: true

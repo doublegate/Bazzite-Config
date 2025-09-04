@@ -1,0 +1,101 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide details about what you'd like to see added.
+
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Which component should this feature be added to?
+      placeholder: "Gaming Manager / Gaming Monitor / Gaming Maintenance / New Component"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: What problem does this feature solve?
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution
+      placeholder: "I would like to see..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Alternative solutions or workarounds you've considered
+      placeholder: "I also considered..."
+
+  - type: dropdown
+    id: target-hardware
+    attributes:
+      label: Target Hardware
+      description: Which hardware configurations would benefit from this feature?
+      multiple: true
+      options:
+        - All configurations
+        - High-end systems (RTX 5080, 64GB RAM)
+        - Mid-range systems
+        - NVIDIA GPUs
+        - AMD GPUs
+        - Intel CPUs
+        - AMD CPUs
+        - Laptops/Steam Deck
+        - Multi-GPU setups
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve workflow
+        - High - Essential for my use case
+        - Critical - Blocking my usage
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe your specific use case and how this feature would help
+      placeholder: "I use this tool for... and this feature would help by..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Ideas
+      description: Any ideas about how this could be implemented?
+      placeholder: "This could be implemented by..."
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues for similar feature requests
+          required: true
+        - label: This feature would benefit multiple users, not just my specific setup
+          required: true
+        - label: I am willing to test this feature if implemented
+          required: true

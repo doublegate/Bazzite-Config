@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 General Discussion
+    url: https://github.com/doublegate/Bazzite-Config/discussions
+    about: Ask questions, share ideas, or discuss the project
+  - name: 📚 Bazzite Documentation
+    url: https://universal-blue.org/images/bazzite/
+    about: Official Bazzite Linux documentation
+  - name: 🎮 r/bazzite Community
+    url: https://reddit.com/r/bazzite
+    about: Bazzite community on Reddit
