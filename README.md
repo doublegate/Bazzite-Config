@@ -203,6 +203,23 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 📚 Documentation
+
+### User Guides
+- **[Installation & Setup](docs/INSTALLATION_SETUP.md)** - Complete installation guide with hardware-specific configurations
+- **[Performance Benchmarking](docs/PERFORMANCE_BENCHMARKING.md)** - Comprehensive benchmarking procedures and result interpretation
+- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues, diagnostics, and solutions
+
+### Technical Documentation
+- **[Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)** - System architecture and integration details
+- **[Development Guide](CLAUDE.md)** - Development patterns and contribution guidance
+
+### Project Management
+- **[Development Roadmap](to-dos/ROADMAP.md)** - Future releases and feature planning
+- **[Enhancement Backlog](to-dos/ENHANCEMENTS.md)** - User-requested features and improvements
+- **[Technical Debt](to-dos/TECHNICAL_DEBT.md)** - Code quality improvements and maintenance tasks
+- **[Community Tasks](to-dos/COMMUNITY.md)** - Community engagement and sustainability planning
+
 ## 🔗 Resources
 
 - **Bazzite Linux**: [Official Documentation](https://universal-blue.org/images/bazzite/)
@@ -211,11 +228,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📈 Roadmap
 
-- [ ] GUI interface using GTK4
-- [ ] Steam Deck optimization profiles
-- [ ] Multi-GPU configuration support
-- [ ] Cloud benchmarking comparison
-- [ ] Automated driver update management
+- [ ] GUI interface using GTK4 (v1.1.0)
+- [ ] Steam Deck optimization profiles (v1.1.0)
+- [ ] AMD GPU support and optimization (v1.2.0)
+- [ ] Multi-GPU configuration support (v1.2.0)
+- [ ] Community profile sharing system (v1.3.0)
+- [ ] Cloud benchmarking comparison (v1.3.0)
+
+*See [Development Roadmap](to-dos/ROADMAP.md) for detailed release planning.*
 
 ---
 

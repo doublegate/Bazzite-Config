@@ -1,0 +1,611 @@
+##############################################################################
+### file 1 of 3: 63
+##############################################################################
+State: idle
+Deployments:
+● ostree-image-signed:docker://ghcr.io/ublue-os/bazzite-dx-nvidia:stable
+                   Digest: sha256:54f7a5da0f45e808d44c5222f4502ba7cfcb6bf95ffc6906f758ea4f15d7d2ab
+                  Version: 42.20250903 (2025-09-03T21:36:54Z)
+          LayeredPackages: 1password 1password-cli akmod-vhba atk-devel blueprint-compiler
+                           borgbackup btrfsmaintenance cdemu-client cdemu-daemon
+                           cockpit-ostree coolercontrol dkms egl-wayland firefox gcdemu
+                           gettext gtk3-devel gtk4-devel gtk4-layer-shell-devel
+                           java-24-openjdk libadwaita-devel libsoup3-devel libusb1-devel
+                           liquidctl openrazer-daemon pcsc-tools snapd syncthing
+                           virt-install virt-manager virt-viewer warp-terminal
+                           webkit2gtk4.1-devel zig
+                   Pinned: yes
+##############################################################################
+### file 2 of 3: 62
+##############################################################################
+=== fpaste 0.5.0.0 System Information ===
+* OS Release (lsb_release -ds):
+     "Bazzite"
+
+* CPU Model (grep 'model name' /proc/cpuinfo | awk -F: '{print $2}' | uniq -c |
+     sed -re 's/^ +//' ):
+     20  Intel(R) Core(TM) i9-10850K CPU @ 3.60GHz
+
+* 64-bit Support (grep -q ' lm ' /proc/cpuinfo && echo Yes || echo No):
+     Yes
+
+* Hardware Virtualization Support (grep -Eq '(vmx|svm)' /proc/cpuinfo && echo Yes || echo No):
+     Yes
+
+* Kernel (uname -r):
+     6.16.4-104.bazzite.fc42.x86_64
+
+* Kernel cmdline (cat /proc/cmdline):
+     BOOT_IMAGE=(hd2,gpt2)/ostree/default-c4dfef47f395d025b83a5807b95c2b9e35090d798b1101f1e779adb5998f6e07/vmlinuz-6.16.4-104.bazzite.fc42.x86_64 rhgb quiet root=UUID=9fba10ec-1a7d-44bf-a83a-a265af04142f rootflags=subvol=root rw ostree=/ostree/boot.1/default/c4dfef47f395d025b83a5807b95c2b9e35090d798b1101f1e779adb5998f6e07/0 bluetooth.disable_ertm=1
+
+* Desktop(s) Running (without results: "ps -eo comm= | grep -E '(gnome-session|startkde|startactive|xfce.?-session|fluxbox|blackbox|hackedbox|ratpoison|enlightenment|icewm-session|od-session|wmaker|wmx|openbox-lxde|openbox-gnome-session|openbox-kde-session|mwm|e16|fvwm|xmonad|sugar-session|mate-session|lxqt-session|cinnamon|lxdm-session|awesome|phosh|sway|Hyperland)' "):
+     N/A
+
+* Desktop(s) Installed (ls -m /usr/share/{xsessions,wayland-sessions}/ | sed 's/\.desktop//g' ):
+     /usr/share/wayland-sessions/:
+     gamescope-session, gamescope-session-steam, plasma,
+     plasma-steamos-wayland-oneshot
+
+     /usr/share/xsessions/:
+     plasma-steamos-oneshot
+
+* Session Type (env | grep 'XDG_SESSION_TYPE' | sed 's/.*=//' ):
+     wayland
+
+* SELinux Status (sestatus):
+     SELinux status:                 enabled
+     SELinuxfs mount:                /sys/fs/selinux
+     SELinux root directory:         /etc/selinux
+     Loaded policy name:             targeted
+     Current mode:                   enforcing
+     Mode from config file:          enforcing
+     Policy MLS status:              enabled
+     Policy deny_unknown status:     allowed
+     Memory protection checking:     actual (secure)
+     Max kernel policy version:      34
+
+* SELinux Errors (selinuxenabled && journalctl --no-hostname --since yesterday |grep avc: | grep -Eo comm="[^ ]+" | sort |uniq -c |sort -rn):
+          18 comm="chcon"
+          13 comm="rpc-virtqemud"
+           3 comm="rpc-virtstorage"
+           2 comm="qemu-system-alp"
+           1 comm="qemu-system-arm"
+
+* Memory usage (free -hm):
+                    total        used        free      shared  buff/cache   available
+     Mem:            62Gi        11Gi        40Gi       350Mi        14Gi        51Gi
+     Swap:           15Gi          0B        15Gi
+
+* ZRAM usage (zramctl --output-all):
+     NAME       DISKSIZE DATA COMPR ALGORITHM STREAMS ZERO-PAGES TOTAL MEM-LIMIT MEM-USED MIGRATED COMP-RATIO MOUNTPOINT
+     /dev/zram0    15.6G   4K   69B lz4                        0   20K        0B      20K       0B     0.2000 [SWAP]
+
+* Load average (uptime):
+      23:03:08 up 50 min,  2 users,  load average: 0.66, 1.21, 1.32
+
+* Pressure Stall Information (grep -R . /proc/pressure/):
+     /proc/pressure/io:some avg10=81.92 avg60=80.98 avg300=78.29 total=893585096
+     /proc/pressure/io:full avg10=81.05 avg60=78.75 avg300=75.10 total=849071270
+     /proc/pressure/cpu:some avg10=0.00 avg60=0.00 avg300=0.00 total=6589719
+     /proc/pressure/cpu:full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+     /proc/pressure/irq:full avg10=0.00 avg60=0.00 avg300=0.00 total=18678996
+     /proc/pressure/memory:some avg10=0.00 avg60=0.00 avg300=0.00 total=11
+     /proc/pressure/memory:full avg10=0.00 avg60=0.00 avg300=0.00 total=11
+
+* Top 5 CPU hogs (ps axuScnh | awk '$2!=38069' | sort -rnk3 | head -5):
+         1000    2348 74.8  0.0  23920 15884 ?        Ss   22:14  36:03 systemd
+         1000    3526 34.6  0.4 3381484 297496 ?      Sl   22:15  16:38 StreamControlle
+         1000   32775 27.8  0.9 1502657200 621140 ?   Sl   22:55   2:14 vivaldi
+         1000   20387 15.0  0.0 34227224 64596 ?      S    22:43   2:59 vivaldi
+         1000   38067 14.2  0.0 231932  3656 pts/1    S+   23:03   0:00 device-info
+
+* Top 5 Memory hogs (ps axuScnh | sort -rnk4 | head -5):
+         1000   32775 27.8  0.9 1502657200 621140 ?   Sl   22:55   2:14 vivaldi
+         1000    3033  6.9  0.9 4625640 592972 ?      Ssl  22:15   3:19 plasmashell
+         1000   20353  9.7  0.8 34403464 537824 ?     Sl   22:43   1:55 vivaldi
+         1000   21351  1.7  0.6 1487231612 410740 ?   Sl   22:43   0:20 vivaldi
+         1000    2426  3.7  0.5 3777204 375008 ?      SNl  22:14   1:47 syncthing
+
+* block devices (lsblk -o NAME,FSTYPE,SIZE,FSUSE%,MOUNTPOINT,UUID,MIN-IO,SCHED,DISC-GRAN,MODEL):
+     NAME        FSTYPE  SIZE FSUSE% MOUNTPOINT             UUID MIN-IO SCHED DISC-GRAN MODEL
+     sda                   0B                                       512 kyber        0B 1081CS0
+     sdb                   0B                                       512 kyber        0B 1081CS1
+     zram0              15.6G        [SWAP]                        4096              4K
+     nvme1n1             1.8T                                       512 kyber      512B Samsung SSD 990 EVO Plus 2TB
+     └─nvme1n1p1         1.8T    66% /var/mnt/Data_SSD              512 kyber      512B
+     nvme0n1             1.8T                                       512 kyber      512B Samsung SSD 990 EVO Plus 2TB
+     ├─nvme0n1p1         600M     2% /boot/efi                      512 kyber      512B
+     ├─nvme0n1p2           1G    34% /boot                          512 kyber      512B
+     └─nvme0n1p3         1.8T    21% /usr/share/wireplumber         512 kyber      512B
+
+* PCI devices (lspci -nn):
+     00:00.0 Host bridge [0600]: Intel Corporation Comet Lake-S 6c Host Bridge/DRAM Controller [8086:9b33] (rev 05)
+     00:01.0 PCI bridge [0604]: Intel Corporation 6th-10th Gen Core Processor PCIe Controller (x16) [8086:1901] (rev 05)
+     00:12.0 Signal processing controller [1180]: Intel Corporation Comet Lake PCH Thermal Controller [8086:06f9]
+     00:14.0 USB controller [0c03]: Intel Corporation Comet Lake USB 3.1 xHCI Host Controller [8086:06ed]
+     00:14.2 RAM memory [0500]: Intel Corporation Comet Lake PCH Shared SRAM [8086:06ef]
+     00:16.0 Communication controller [0780]: Intel Corporation Comet Lake HECI Controller [8086:06e0]
+     00:17.0 SATA controller [0106]: Intel Corporation Comet Lake SATA AHCI Controller [8086:06d2]
+     00:1b.0 PCI bridge [0604]: Intel Corporation Comet Lake PCI Express Root Port #17 [8086:06c0] (rev f0)
+     00:1b.3 PCI bridge [0604]: Intel Corporation Device [8086:06c3] (rev f0)
+     00:1b.4 PCI bridge [0604]: Intel Corporation Comet Lake PCI Express Root Port #21 [8086:06ac] (rev f0)
+     00:1c.0 PCI bridge [0604]: Intel Corporation Comet Lake PCIe Root Port #1 [8086:06b8] (rev f0)
+     00:1c.1 PCI bridge [0604]: Intel Corporation Device [8086:06b9] (rev f0)
+     00:1c.4 PCI bridge [0604]: Intel Corporation Device [8086:06bc] (rev f0)
+     00:1d.0 PCI bridge [0604]: Intel Corporation Comet Lake PCI Express Root Port #9 [8086:06b0] (rev f0)
+     00:1d.4 PCI bridge [0604]: Intel Corporation Device [8086:06b4] (rev f0)
+     00:1f.0 ISA bridge [0601]: Intel Corporation Z490 Chipset LPC/eSPI Controller [8086:0685]
+     00:1f.4 SMBus [0c05]: Intel Corporation Comet Lake PCH SMBus Controller [8086:06a3]
+     00:1f.5 Serial bus controller [0c80]: Intel Corporation Comet Lake PCH SPI Controller [8086:06a4]
+     01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GB203 [GeForce RTX 5080] [10de:2c02] (rev a1)
+     01:00.1 Audio device [0403]: NVIDIA Corporation Device [10de:22e9] (rev a1)
+     03:00.0 Audio device [0403]: Creative Labs CA0132 Sound Core3D [Sound Blaster Recon3D / Z-Series / Sound BlasterX AE-5 Plus] [1102:0012] (rev 01)
+     04:00.0 Non-Volatile memory controller [0108]: Samsung Electronics Co Ltd NVMe SSD Controller PM9C1a (DRAM-less) [144d:a80d]
+     06:00.0 Ethernet controller [0200]: Intel Corporation Ethernet Controller I225-V [8086:15f3] (rev 02)
+     08:00.0 Non-Volatile memory controller [0108]: Samsung Electronics Co Ltd NVMe SSD Controller PM9C1a (DRAM-less) [144d:a80d]
+
+* USB devices (lsusb):
+     Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+     Bus 001 Device 002: ID 05e3:0608 Genesys Logic, Inc. Hub
+     Bus 001 Device 003: ID 045e:02fe Microsoft Corp. Xbox Wireless Adapter for Windows
+     Bus 001 Device 004: ID 1b1c:0c1c Corsair CORSAIR iCUE Commander CORE
+     Bus 001 Device 005: ID 1b1c:0a38 Corsair Corsair HS70 Wireless Gaming Headset
+     Bus 001 Device 006: ID 0fd9:009a Elgato Systems GmbH Stream Deck Neo
+     Bus 001 Device 007: ID 0bda:5411 Realtek Semiconductor Corp. RTS5411 Hub
+     Bus 001 Device 008: ID 0483:572b STMicroelectronics SPEKTRUM RECEIVER
+     Bus 001 Device 009: ID 0424:2734 Microchip Technology, Inc. (formerly SMSC) USB2734
+     Bus 001 Device 010: ID 048d:5702 Integrated Technology Express, Inc. RGB LED Controller
+     Bus 001 Device 011: ID 0bda:5411 Realtek Semiconductor Corp. RTS5411 Hub
+     Bus 001 Device 012: ID 1532:0e03 Razer USA, Ltd Gaming Webcam [Kiyo]
+     Bus 001 Device 013: ID 187c:100b Alienware Corporation Hub Controller
+     Bus 001 Device 014: ID 1532:0060 Razer USA, Ltd RZ01-0213 Gaming Mouse [Lancehead Tournament Edition]
+     Bus 001 Device 015: ID 1532:0216 Razer USA, Ltd BlackWidow X Chroma
+     Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+     Bus 002 Device 002: ID 0bda:0411 Realtek Semiconductor Corp. Hub
+     Bus 002 Device 003: ID 2537:1081 Norelsys NS1081
+     Bus 002 Device 004: ID 0424:5734 Microchip Technology, Inc. (formerly SMSC) USB5734
+     Bus 002 Device 005: ID 0bda:0411 Realtek Semiconductor Corp. Hub
+
+* PCI Video Card (lspci |  grep -i -E 'vga' | cut -b1-7 | xargs -i lspci -vnnks {} | grep -v "<access denied>"):
+     01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GB203 [GeForce RTX 5080] [10de:2c02] (rev a1) (prog-if 00 [VGA controller])
+     	Subsystem: Gigabyte Technology Co., Ltd Device [1458:4179]
+     	Flags: bus master, fast devsel, latency 0, IRQ 16
+     	Memory at 3c000000 (32-bit, non-prefetchable) [size=64M]
+     	Memory at 4000000000 (64-bit, prefetchable) [size=16G]
+     	Memory at 4400000000 (64-bit, prefetchable) [size=32M]
+     	I/O ports at 3000 [size=128]
+     	Expansion ROM at 40000000 [virtual] [disabled] [size=512K]
+     	Kernel driver in use: nvidia
+     	Kernel modules: nouveau, nvidia_drm, nvidia
+
+
+* GL Support (glxinfo -B | grep -E "OpenGL version|OpenGL renderer"):
+     OpenGL renderer string: NVIDIA GeForce RTX 5080/PCIe/SSE2
+     OpenGL version string: 4.6.0 NVIDIA 580.82.07
+
+* DRM Information (journalctl -k -b --no-hostname | grep -o 'kernel:.*drm.*$' | cut -d ' ' -f 2- ):
+     ACPI: bus type drm_connector registered
+     simple-framebuffer simple-framebuffer.0: [drm] Registered 1 planes with drm panic
+     [drm] Initialized simpledrm 1.0.0 for simple-framebuffer.0 on minor 0
+     simple-framebuffer simple-framebuffer.0: [drm] fb0: simpledrmdrmfb frame buffer device
+     [drm] amdgpu kernel modesetting enabled.
+     [drm] [nvidia-drm] [GPU ID 0x00000100] Loading driver
+     [drm] Initialized nvidia-drm 0.0.0 for 0000:01:00.0 on minor 1
+     fbcon: nvidia-drmdrmfb (fb0) is primary device
+     nvidia 0000:01:00.0: [drm] fb0: nvidia-drmdrmfb frame buffer device
+
+* Xorg modules (grep LoadModule /var/log/Xorg.0.log ~/.local/share/xorg/Xorg.0.log | cut -d \" -f 2 | xargs):
+
+
+* Xorg errors (without results: "grep '^\[.*(EE)' /var/log/Xorg.0.log ~/.local/share/xorg/Xorg.0.log | cut -d ':' -f 2- "):
+     N/A
+
+* PCI Audio devices (lspci |  grep -i -E 'audio' | cut -b1-7 | xargs -i lspci -vnnks {} | grep -v "<access denied>"):
+     01:00.1 Audio device [0403]: NVIDIA Corporation Device [10de:22e9] (rev a1)
+     	Subsystem: NVIDIA Corporation Device [10de:0000]
+     	Flags: bus master, fast devsel, latency 0, IRQ 17
+     	Memory at 40080000 (32-bit, non-prefetchable) [size=16K]
+     	Kernel driver in use: snd_hda_intel
+     	Kernel modules: snd_hda_intel
+
+     03:00.0 Audio device [0403]: Creative Labs CA0132 Sound Core3D [Sound Blaster Recon3D / Z-Series / Sound BlasterX AE-5 Plus] [1102:0012] (rev 01)
+     	Subsystem: Creative Labs CA0132 Sound Core3D - CA0113 [ Sound BlasterX AE-5 Plus] [1102:0191]
+     	Flags: bus master, fast devsel, latency 0, IRQ 19
+     	Memory at 40604000 (64-bit, non-prefetchable) [size=16K]
+     	Memory at 40600000 (64-bit, non-prefetchable) [size=16K]
+     	Kernel driver in use: snd_hda_intel
+     	Kernel modules: snd_hda_intel
+
+
+* Audio devices (cat /proc/asound/cards):
+      0 [NVidia         ]: HDA-Intel - HDA NVidia
+                           HDA NVidia at 0x40080000 irq 17
+      1 [Creative       ]: HDA-Intel - HDA Creative
+                           HDA Creative at 0x40604000 irq 19
+      2 [He             ]: USB-Audio - Corsair HS70 Wireless Gaming He
+                           Corsair Corsair HS70 Wireless Gaming He at usb-0000:00:14.0-4, full speed
+      3 [Kiyo           ]: USB-Audio - Razer Kiyo
+                           Alpha Imaging Tech. Corp. Razer Kiyo at usb-0000:00:14.0-7.1.2, high speed
+
+* User audio services (systemctl --user --no-pager status wireplumber pipewire* | sed "s/$(hostname)/ahost/"):
+     ● wireplumber.service - Multimedia Service Session Manager
+          Loaded: loaded (/usr/lib/systemd/user/wireplumber.service; enabled; preset: enabled)
+         Drop-In: /usr/lib/systemd/user/service.d
+                  └─10-timeout-abort.conf
+          Active: active (running) since Wed 2025-09-03 22:15:00 EDT; 48min ago
+      Invocation: 8ecdb8164ce04b14a6b81f6d8445d238
+        Main PID: 2799 (wireplumber)
+           Tasks: 6 (limit: 76391)
+          Memory: 6M (peak: 7.4M)
+             CPU: 325ms
+          CGroup: /user.slice/user-1000.slice/user@1000.service/session.slice/wireplumber.service
+                  └─2799 /usr/bin/wireplumber
+
+     Sep 03 22:15:00 ahost systemd[2348]: Started wireplumber.service - Multimedia Service Session Manager.
+     Sep 03 22:15:00 ahost wireplumber[2799]: wp-internal-comp-loader: Loading profile 'main'
+     Sep 03 22:15:00 ahost wireplumber[2799]: spa.bluez5: BlueZ system service is not available
+
+     ● pipewire-pulse.socket - PipeWire PulseAudio
+          Loaded: loaded (/usr/lib/systemd/user/pipewire-pulse.socket; enabled; preset: enabled)
+          Active: active (running) since Wed 2025-09-03 22:14:59 EDT; 48min ago
+      Invocation: 24660b17adb84c8ab4b7861d01524768
+        Triggers: ● pipewire-pulse.service
+          Listen: /run/user/1000/pulse/native (Stream)
+          CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/pipewire-pulse.socket
+
+     Sep 03 22:14:59 ahost systemd[2348]: Listening on pipewire-pulse.socket - PipeWire PulseAudio.
+
+     ● pipewire.service - PipeWire Multimedia Service
+          Loaded: loaded (/usr/lib/systemd/user/pipewire.service; disabled; preset: disabled)
+         Drop-In: /usr/lib/systemd/user/pipewire.service.d
+                  └─00-uresourced.conf
+                  /usr/lib/systemd/user/service.d
+                  └─10-timeout-abort.conf
+          Active: active (running) since Wed 2025-09-03 22:15:00 EDT; 48min ago
+      Invocation: fc41c1a084944c2ca4907b09729a8f43
+     TriggeredBy: ● pipewire.socket
+        Main PID: 2796 (pipewire)
+           Tasks: 3 (limit: 76391)
+          Memory: 9.3M (peak: 10.6M)
+             CPU: 1min 10.696s
+          CGroup: /user.slice/user-1000.slice/user@1000.service/session.slice/pipewire.service
+                  └─2796 /usr/bin/pipewire
+
+     Sep 03 22:15:00 ahost systemd[2348]: Started pipewire.service - PipeWire Multimedia Service.
+
+     ● pipewire.socket - PipeWire Multimedia System Sockets
+          Loaded: loaded (/usr/lib/systemd/user/pipewire.socket; enabled; preset: enabled)
+          Active: active (running) since Wed 2025-09-03 22:14:59 EDT; 48min ago
+      Invocation: f407f11354ea49848f091baccea5fe2f
+        Triggers: ● pipewire.service
+          Listen: /run/user/1000/pipewire-0 (Stream)
+                  /run/user/1000/pipewire-0-manager (Stream)
+          CGroup: /user.slice/user-1000.slice/user@1000.service/app.slice/pipewire.socket
+
+     Sep 03 22:14:59 ahost systemd[2348]: Listening on pipewire.socket - PipeWire Multimedia System Sockets.
+
+     ● pipewire-pulse.service - PipeWire PulseAudio
+          Loaded: loaded (/usr/lib/systemd/user/pipewire-pulse.service; disabled; preset: disabled)
+         Drop-In: /usr/lib/systemd/user/service.d
+                  └─10-timeout-abort.conf
+          Active: active (running) since Wed 2025-09-03 22:15:00 EDT; 48min ago
+      Invocation: 55364244b9364de1a44c0fc354b0f79d
+     TriggeredBy: ● pipewire-pulse.socket
+        Main PID: 2802 (pipewire-pulse)
+           Tasks: 3 (limit: 76391)
+          Memory: 11.4M (peak: 16.3M)
+             CPU: 124ms
+          CGroup: /user.slice/user-1000.slice/user@1000.service/session.slice/pipewire-pulse.service
+                  └─2802 /usr/bin/pipewire-pulse
+
+     Sep 03 22:15:00 ahost systemd[2348]: Started pipewire-pulse.service - PipeWire PulseAudio.
+
+* PCI Network devices (lspci |  grep -i -E 'net' | cut -b1-7 | xargs -i lspci -vnnks {} | grep -v "<access denied>"):
+     06:00.0 Ethernet controller [0200]: Intel Corporation Ethernet Controller I225-V [8086:15f3] (rev 02)
+     	Subsystem: Gigabyte Technology Co., Ltd Device [1458:e000]
+     	Flags: bus master, fast devsel, latency 0, IRQ 17
+     	Memory at 40200000 (32-bit, non-prefetchable) [size=1M]
+     	Memory at 40300000 (32-bit, non-prefetchable) [size=16K]
+     	Expansion ROM at 40100000 [disabled] [size=1M]
+     	Kernel driver in use: igc
+     	Kernel modules: igc
+
+
+* Network status (ip -br addr | awk '{print $1" " $2}' | column -t):
+     lo      UNKNOWN
+     enp6s0  UP
+
+* Kernel buffer tail (journalctl --no-hostname -k --lines 50):
+     Sep 03 22:13:16 kernel: ee1004 5-0053: 512 byte EE1004-compliant SPD EEPROM, read-only
+     Sep 03 22:13:16 kernel: igc 0000:06:00.0 enp6s0: renamed from eth0
+     Sep 03 22:13:16 kernel: input: HDA NVidia HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card0/input21
+     Sep 03 22:13:16 kernel: input: HDA NVidia HDMI/DP,pcm=8 as /devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card0/input22
+     Sep 03 22:13:16 kernel: input: Razer Razer BlackWidow X Chroma as /devices/pci0000:00/0000:00:14.0/usb1/1-7/1-7.1/1-7.1.1/1-7.1.1.2/1-7.1.1.2:1.1/0003:1532:0216.000C/input/input25
+     Sep 03 22:13:16 kernel: EXT4-fs (nvme0n1p2): mounted filesystem ce8527d1-3094-4580-bb80-eb5f93a80f4d r/w with ordered data mode. Quota mode: none.
+     Sep 03 22:13:16 kernel: input: HDA NVidia HDMI/DP,pcm=9 as /devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card0/input23
+     Sep 03 22:13:16 kernel: usbcore: registered new interface driver snd-usb-audio
+     Sep 03 22:13:16 kernel: intel_tcc_cooling: Programmable TCC Offset detected
+     Sep 03 22:13:16 kernel: input: Razer Razer BlackWidow X Chroma as /devices/pci0000:00/0000:00:14.0/usb1/1-7/1-7.1/1-7.1.1/1-7.1.1.2/1-7.1.1.2:1.2/0003:1532:0216.000D/input/input26
+     Sep 03 22:13:16 kernel: usbcore: registered new interface driver xone-dongle
+     Sep 03 22:13:16 kernel: razerkbd 0003:1532:0216.000C: input,hidraw11: USB HID v1.11 Keyboard [Razer Razer BlackWidow X Chroma] on usb-0000:00:14.0-7.1.1.2/input1
+     Sep 03 22:13:16 kernel: razerkbd 0003:1532:0216.000D: input,hidraw12: USB HID v1.11 Mouse [Razer Razer BlackWidow X Chroma] on usb-0000:00:14.0-7.1.1.2/input2
+     Sep 03 22:13:16 kernel: intel_rapl_common: Found RAPL domain package
+     Sep 03 22:13:16 kernel: intel_rapl_common: Found RAPL domain core
+     Sep 03 22:13:16 kernel: BTRFS: device label Data SSD devid 1 transid 6440 /dev/nvme1n1p1 (259:2) scanned by mount (1196)
+     Sep 03 22:13:16 kernel: BTRFS info (device nvme1n1p1): first mount of filesystem b359d1a2-0747-46e1-a64c-c7a3908e3ba9
+     Sep 03 22:13:16 kernel: BTRFS info (device nvme1n1p1): using crc32c (crc32c-x86_64) checksum algorithm
+     Sep 03 22:13:16 kernel: snd_hda_codec_ca0132 hdaudioC1D1: ca0132 DSP downloaded and running
+     Sep 03 22:13:16 systemd-journald[917]: Received client request to flush runtime journal.
+     Sep 03 22:13:16 kernel: BTRFS info (device nvme1n1p1): enabling ssd optimizations
+     Sep 03 22:13:16 kernel: BTRFS info (device nvme1n1p1): turning on async discard
+     Sep 03 22:13:16 kernel: BTRFS info (device nvme1n1p1): enabling free space tree
+     Sep 03 22:13:16 kernel: BTRFS info (device nvme1n1p1): use zstd compression, level 1
+     Sep 03 22:13:17 kernel: RPC: Registered named UNIX socket transport module.
+     Sep 03 22:13:17 kernel: RPC: Registered udp transport module.
+     Sep 03 22:13:17 kernel: RPC: Registered tcp transport module.
+     Sep 03 22:13:17 kernel: RPC: Registered tcp-with-tls transport module.
+     Sep 03 22:13:17 kernel: RPC: Registered tcp NFSv4.1 backchannel transport module.
+     Sep 03 22:13:17 kernel: input: HDA Creative Mic as /devices/pci0000:00/0000:00:1b.3/0000:03:00.0/sound/card1/input27
+     Sep 03 22:13:17 kernel: input: HDA Creative Line Out Front as /devices/pci0000:00/0000:00:1b.3/0000:03:00.0/sound/card1/input28
+     Sep 03 22:13:17 kernel: input: HDA Creative Line Out CLFE as /devices/pci0000:00/0000:00:1b.3/0000:03:00.0/sound/card1/input29
+     Sep 03 22:13:17 kernel: input: HDA Creative Headphone as /devices/pci0000:00/0000:00:1b.3/0000:03:00.0/sound/card1/input30
+     Sep 03 22:13:17 kernel: nvme nvme0: using unchecked data buffer
+     Sep 03 22:13:18 kernel: NET: Registered PF_QIPCRTR protocol family
+     Sep 03 22:13:21 kernel: igc 0000:06:00.0 enp6s0: NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX/TX
+     Sep 03 22:14:59 kernel: evm: overlay not supported
+     Sep 03 22:15:05 kernel: input: Mouse passthrough as /devices/virtual/input/input31
+     Sep 03 22:15:05 kernel: input: Mouse passthrough (absolute) as /devices/virtual/input/input32
+     Sep 03 22:15:05 kernel: input: Keyboard passthrough as /devices/virtual/input/input33
+     Sep 03 22:15:05 kernel: playstation 0005:054C:0CE6.000E: hidraw13: BLUETOOTH HID v81.11 Gamepad [Sunshine PS5 (virtual) pad] on 20:18:94:ff:3f:06
+     Sep 03 22:15:05 kernel: input: Sunshine PS5 (virtual) pad as /devices/virtual/misc/uhid/0005:054C:0CE6.000E/input/input35
+     Sep 03 22:15:05 kernel: input: Sunshine Nintendo (virtual) pad as /devices/virtual/input/input34
+     Sep 03 22:15:05 kernel: input: Sunshine PS5 (virtual) pad Motion Sensors as /devices/virtual/misc/uhid/0005:054C:0CE6.000E/input/input36
+     Sep 03 22:15:05 kernel: input: Sunshine PS5 (virtual) pad Touchpad as /devices/virtual/misc/uhid/0005:054C:0CE6.000E/input/input37
+     Sep 03 22:15:05 kernel: input: Sunshine X-Box One (virtual) pad as /devices/virtual/input/input38
+     Sep 03 22:15:05 kernel: playstation 0005:054C:0CE6.000E: Registered DualSense controller hw_version=0x01000208 fw_version=0x01000036
+     Sep 03 22:15:08 kernel: uinput: UI_SET_PHYS is deprecated. Use UI_SET_PHYS_STR
+     Sep 03 22:15:08 kernel: input: stream-controller-os-plugin as /devices/virtual/input/input39
+     Sep 03 22:33:26 kernel: SELinux:  Context system_u:object_r:invalid_bootcinstall_testlabel_t:s0 is not valid (left unmapped).
+
+* Last few reboots (last -x -n10 reboot runlevel):
+     runlevel (to lvl 5)   6.16.4-104.bazz* Wed Sep  3 22:13   still running
+     reboot   system boot  6.16.4-104.bazz* Wed Sep  3 22:13   still running
+     runlevel (to lvl 5)   6.16.4-104.bazz* Wed Sep  3 19:11 - 22:13  (03:02)
+     reboot   system boot  6.16.4-104.bazz* Wed Sep  3 19:11   still running
+     runlevel (to lvl 5)   6.16.4-103.bazz* Wed Sep  3 19:02 - 19:10  (00:08)
+     reboot   system boot  6.16.4-103.bazz* Wed Sep  3 19:01 - 19:10  (00:08)
+     runlevel (to lvl 5)   6.16.4-103.bazz* Wed Sep  3 08:01 - 08:32  (00:31)
+     reboot   system boot  6.16.4-103.bazz* Wed Sep  3 08:01 - 08:32  (00:31)
+     runlevel (to lvl 5)   6.16.4-103.bazz* Wed Sep  3 04:33 - 05:56  (01:22)
+     reboot   system boot  6.16.4-103.bazz* Wed Sep  3 04:33 - 05:56  (01:22)
+
+     wtmp begins Tue Sep  2 22:39:56 2025
+
+* DNF Repositories (dnf repolist):
+     repo id                                                repo name
+     1password                                              1Password Stable Channel
+     copr:copr.fedorainfracloud.org:codifryed:CoolerControl Copr repo for CoolerControl owned by codifryed
+     copr:copr.fedorainfracloud.org:lsevcik:akmod-openrazer Copr repo for akmod-openrazer owned by lsevcik
+     copr:copr.fedorainfracloud.org:ublue-os:akmods         Copr repo for akmods owned by ublue-os
+     fedora                                                 Fedora 42 - x86_64
+     hardware_razer                                         hardware:razer (Fedora_42)
+     updates                                                Fedora 42 - x86_64 - Updates
+     updates-archive                                        Fedora 42 - x86_64 - Updates Archive
+     warpdotdev                                             warpdotdev
+
+* DNF Extras (without results: "dnf -C list extras"):
+     N/A
+
+* Last 20 packages installed (rpm -qa --nodigest --nosignature --last | head -20):
+     glibc-gconv-extra-2.41-11.fc42.i686           Wed 03 Sep 2025 07:06:46 PM EDT
+     cockpit-ostree-214-1.fc42.noarch              Wed 03 Sep 2025 07:06:46 PM EDT
+     zig-srpm-macros-1-4.fc42.noarch               Wed 03 Sep 2025 07:06:45 PM EDT
+     zig-libs-0.14.1-1.fc42.noarch                 Wed 03 Sep 2025 07:06:45 PM EDT
+     zig-0.14.1-1.fc42.x86_64                      Wed 03 Sep 2025 07:06:45 PM EDT
+     xorriso-1.5.6-7.fc42.x86_64                   Wed 03 Sep 2025 07:06:45 PM EDT
+     xorg-x11-fonts-Type1-7.5-40.fc42.noarch       Wed 03 Sep 2025 07:06:45 PM EDT
+     xdelta-3.1.0-22.fc42.x86_64                   Wed 03 Sep 2025 07:06:45 PM EDT
+     xautomation-1.09-13.fc42.x86_64               Wed 03 Sep 2025 07:06:45 PM EDT
+     webkit2gtk4.1-devel-2.48.5-1.fc42.x86_64      Wed 03 Sep 2025 07:06:45 PM EDT
+     wayland-devel-1.24.0-1.fc42.x86_64            Wed 03 Sep 2025 07:06:45 PM EDT
+     warp-terminal-v0.2025.09.01.20.54.stable_04-1.x86_64 Wed 03 Sep 2025 07:06:45 PM EDT
+     virt-viewer-11.0-15.fc42.x86_64               Wed 03 Sep 2025 07:06:45 PM EDT
+     virt-manager-common-5.0.0-2.fc42.noarch       Wed 03 Sep 2025 07:06:45 PM EDT
+     virt-manager-5.0.0-2.fc42.noarch              Wed 03 Sep 2025 07:06:45 PM EDT
+     virt-install-5.0.0-2.fc42.noarch              Wed 03 Sep 2025 07:06:45 PM EDT
+     vala-0.56.18-1.fc42.x86_64                    Wed 03 Sep 2025 07:06:45 PM EDT
+     tzdata-java-2025b-1.fc42.noarch               Wed 03 Sep 2025 07:06:45 PM EDT
+     ttmkfdir-3.0.9-72.fc42.x86_64                 Wed 03 Sep 2025 07:06:45 PM EDT
+     tree-sitter-srpm-macros-0.1.0-8.fc42.noarch   Wed 03 Sep 2025 07:06:45 PM EDT
+
+* EFI boot manager output (efibootmgr -v):
+     BootCurrent: 0005
+     Timeout: 1 seconds
+     BootOrder: 0005,0008
+     Boot0005* Fedora	HD(1,GPT,93dc78be-5f26-40c4-96ab-bce5f41aeac3,0x800,0x12c000)/\EFI\FEDORA\SHIMX64.EFI
+           dp: 04 01 2a 00 01 00 00 00 00 08 00 00 00 00 00 00 00 c0 12 00 00 00 00 00 be 78 dc 93 26 5f c4 40 96 ab bc e5 f4 1a ea c3 02 02 / 04 04 34 00 5c 00 45 00 46 00 49 00 5c 00 46 00 45 00 44 00 4f 00 52 00 41 00 5c 00 53 00 48 00 49 00 4d 00 58 00 36 00 34 00 2e 00 45 00 46 00 49 00 00 00 / 7f ff 04 00
+     Boot0008* Fedora	HD(1,GPT,93dc78be-5f26-40c4-96ab-bce5f41aeac3,0x800,0x12c000)/\EFI\FEDORA\SHIM.EFI0000424f
+           dp: 04 01 2a 00 01 00 00 00 00 08 00 00 00 00 00 00 00 c0 12 00 00 00 00 00 be 78 dc 93 26 5f c4 40 96 ab bc e5 f4 1a ea c3 02 02 / 04 04 2e 00 5c 00 45 00 46 00 49 00 5c 00 46 00 45 00 44 00 4f 00 52 00 41 00 5c 00 53 00 48 00 49 00 4d 00 2e 00 45 00 46 00 49 00 00 00 / 7f ff 04 00
+         data: 00 00 42 4f
+
+
+##############################################################################
+### file 3 of 3: 61
+##############################################################################
+app.polychromatic.controller	0.9.5	system,current
+app.xemu.xemu	0.8.96	system,current
+app.zen_browser.zen	1.15.3b	system,current
+ca._0ldsk00l.Nestopia	1.53.2	system,current
+cc.arduino.IDE2	2.3.6	system,current
+com.abisource.AbiWord	3.0.7	system,current
+com.core447.StreamController	1.5.0-beta.11	system,current
+com.dec05eba.gpu_screen_recorder	5.7.7	system,current
+com.dosbox_x.DOSBox-X	2025.05.03	system,current
+com.dropbox.Client	231.4.5770	system,current
+com.github.Matoking.protontricks	1.13.0	system,current
+com.github.Xenoveritas.abuse	0.9.1	system,current
+com.github.k4zmu2a.spacecadetpinball	2.1.0	system,current
+com.github.marhkb.Pods	2.2.0	system,current
+com.github.tchx84.Flatseal	2.3.1	system,current
+com.google.AndroidStudio	2025.1.3.7	system,current
+com.heroicgameslauncher.hgl	v2.18.1	system,current
+com.leinardi.gst	0.7.7	system,current
+com.ml4w.dotfilesinstaller	0.9.7	system,current
+com.obsproject.Studio	31.1.2	system,current
+com.obsproject.Studio.Plugin.GStreamerVaapi	0.4.2	system,runtime
+com.obsproject.Studio.Plugin.Gstreamer	0.4.1	system,runtime
+com.obsproject.Studio.Plugin.OBSVkCapture	1.5.3	system,runtime
+com.playonlinux.PlayOnLinux4	4.4	system,current
+com.prusa3d.PrusaSlicer	2.9.2	system,current
+com.ranfdev.DistroShelf	1.0.13	system,current
+com.spotify.Client	1.2.63.394.g126b0d89	system,current
+com.synology.SynologyAssistant	7.0.5	user,current
+com.synology.SynologyDrive	3.5.2-16110	system,current
+com.usebottles.bottles	51.24	system,current
+com.vivaldi.Vivaldi	7.5.3735.66	system,current
+com.vysp3r.ProtonPlus	0.5.12	system,current
+de.haeckerfelix.Shortwave	5.0.0	system,current
+de.leopoldluley.Clapgrep	25.07	system,current
+dev.vencord.Vesktop	1.5.8	system,current
+eu.betterbird.Betterbird	140.2.1esr-bb10	system,current
+info.cemu.Cemu	2.6	system,current
+io.github.Hexchat	2.16.2	system,current
+io.github.arunsivaramanneo.GPUViewer	3.15	system,current
+io.github.dosbox-staging	0.82.1	system,current
+io.github.dvlv.boxbuddyrs	2.5.4	system,current
+io.github.fastrizwaan.WineZGUI	0.99.15	system,current
+io.github.flattool.Ignition	2.1.2	system,current
+io.github.flattool.Warehouse	2.1.0	system,current
+io.github.hmlendea.geforcenow-electron	2.2.0	system,current
+io.github.ilya_zlobintsev.LACT	0.8.1	system,current
+io.github.input_leap.input-leap	3.0.2	system,current
+io.github.nokse22.asciidraw	1.1.0	system,current
+io.github.prateekmedia.appimagepool	5.1.0	system,current
+io.github.punesemu.puNES	v0.111	system,current
+io.github.pwr_solaar.solaar	1.1.14	system,current
+io.github.ryubing.Ryujinx	1.3.2	system,current
+io.github.stella_emu.Stella	6.7.1	system,current
+io.github.thetumultuousunicornofdarkness.cpu-x	5.4.0	system,current
+io.github.ungoogled_software.ungoogled_chromium	139.0.7258.154-1	system,current
+io.github.unknownskl.greenlight	2.3.2	system,current
+io.github.vikdevelop.SaveDesktop	3.6	system,current
+io.gitlab.adhami3310.Converter	2.4.0	system,current
+io.missioncenter.MissionCenter	1.0.2	system,current
+io.otsaloma.nfoview	2.1	system,current
+io.podman_desktop.PodmanDesktop	1.21.0	system,current
+it.mijorus.gearlever	3.4.2	system,current
+net.davidotek.pupgui2	2.13.0	system,current
+net.fsuae.FS-UAE	3.1.66	system,current
+net.kuribo64.melonDS	1.0	system,current
+net.nokyan.Resources	1.8.0	system,current
+net.pcsx2.PCSX2	v2.4.0	system,current
+net.rpcs3.RPCS3	0.0.37-1-92a30b4e	system,current
+net.werwolv.ImHex	1.37.4	system,current
+one.flipperzero.qFlipper	1.3.3	system,current
+org.DolphinEmu.dolphin-emu	2506a	system,current
+org.bleachbit.BleachBit	v5.0.0	system,current
+org.blender.Blender	4.5.2	system,current
+org.blender.Blender.Codecs		system,runtime
+org.dbgate.DbGate	6.4.1	system,current
+org.duckstation.DuckStation	0.1-9482-g0a53bc47c	system,current
+org.famistudio.FamiStudio	4.4.2	system,current
+org.fedoraproject.MediaWriter	5.2.8	system,current
+org.filezillaproject.Filezilla	3.69.3	system,current
+org.fkoehler.KTailctl	0.21.0	system,current
+org.flycast.Flycast	v2.5	system,current
+org.freedesktop.LinuxAudio.Plugins.TAP	1.0.1	system,runtime
+org.freedesktop.LinuxAudio.Plugins.swh	0.4.17	system,runtime
+org.freedesktop.Platform	freedesktop-sdk-23.08.33	system,runtime
+org.freedesktop.Platform	freedesktop-sdk-24.08.24	system,runtime
+org.freedesktop.Platform	freedesktop-sdk-25.08.0	system,runtime
+org.freedesktop.Platform.Compat.i386		system,runtime
+org.freedesktop.Platform.Compat.i386		system,runtime
+org.freedesktop.Platform.GL.default	25.0.7	system,runtime
+org.freedesktop.Platform.GL.default	25.0.7	system,runtime
+org.freedesktop.Platform.GL.default	25.2.1	system,runtime
+org.freedesktop.Platform.GL.default	25.2.1	system,runtime
+org.freedesktop.Platform.GL.default	25.2.1	system,runtime
+org.freedesktop.Platform.GL.default	25.2.1	system,runtime
+org.freedesktop.Platform.GL.nvidia-580-82-07		system,runtime
+org.freedesktop.Platform.GL32.default	25.0.7	system,runtime
+org.freedesktop.Platform.GL32.default	25.2.1	system,runtime
+org.freedesktop.Platform.GL32.default	25.2.1	system,runtime
+org.freedesktop.Platform.GL32.nvidia-580-76-05		system,runtime
+org.freedesktop.Platform.GL32.nvidia-580-82-07		system,runtime
+org.freedesktop.Platform.VAAPI.Intel		system,runtime
+org.freedesktop.Platform.VAAPI.Intel		system,runtime
+org.freedesktop.Platform.VAAPI.Intel		system,runtime
+org.freedesktop.Platform.VAAPI.Intel.i386		system,runtime
+org.freedesktop.Platform.VAAPI.Intel.i386		system,runtime
+org.freedesktop.Platform.VAAPI.nvidia		system,runtime
+org.freedesktop.Platform.VulkanLayer.MangoHud	0.8.1	system,runtime
+org.freedesktop.Platform.VulkanLayer.OBSVkCapture	1.5.1	system,runtime
+org.freedesktop.Platform.VulkanLayer.vkBasalt	0.3.2.10	system,runtime
+org.freedesktop.Platform.codecs-extra		system,runtime
+org.freedesktop.Platform.ffmpeg-full		system,runtime
+org.freedesktop.Platform.ffmpeg-full		system,runtime
+org.freedesktop.Platform.ffmpeg_full.i386		system,runtime
+org.freedesktop.Platform.openh264	2.4.1	system,runtime
+org.freedesktop.Platform.openh264	2.5.1	system,runtime
+org.freedesktop.Sdk	freedesktop-sdk-23.08.33	system,runtime
+org.freedesktop.Sdk	freedesktop-sdk-24.08.24	system,runtime
+org.freedesktop.Sdk	freedesktop-sdk-25.08.0	system,runtime
+org.gimp.GIMP	3.0.4	system,current
+org.gimp.GIMP.HEIC		system,runtime
+org.gnome.DejaDup	48.4	system,current
+org.gnome.Firmware	47.0	system,current
+org.gnome.GHex	48.0	system,current
+org.gnome.Platform		system,runtime,eol=The GNOME 46 runtime is no longer supported as of April 17, 2025. Please ask your application developer to migrate to a supported platform.
+org.gnome.Platform		system,runtime
+org.gnome.Platform		system,runtime
+org.gnome.Platform.Compat.i386		system,runtime
+org.gnome.World.PikaBackup	0.7.4	system,current
+org.gnome.design.AppIconPreview	3.5.1	system,current
+org.gtk.Gtk3theme.Breeze	6.4.4	system,runtime
+org.gtk.Gtk3theme.adw-gtk3	6.2	system,runtime
+org.gtk.Gtk3theme.adw-gtk3-dark	6.2	system,runtime
+org.gustavoperedo.FontDownloader	8.0.0	system,current
+org.kde.KStyle.Adwaita		system,runtime
+org.kde.KStyle.Adwaita		system,runtime
+org.kde.KStyle.Adwaita		system,runtime
+org.kde.Platform		system,runtime
+org.kde.Platform		system,runtime
+org.kde.Platform		system,runtime
+org.kde.filelight	25.08.0	system,current
+org.kde.gwenview	25.08.0	system,current
+org.kde.haruna	1.4.0	system,current
+org.kde.kcalc	25.08.0	system,current
+org.kde.kclock	25.08.0	system,current
+org.kde.kdenlive	25.08.0	system,current
+org.kde.kontact	6.4.3	system,current
+org.kde.krita	5.2.11	system,current
+org.kde.krita.Codecs		system,runtime
+org.kde.kweather	25.08.0	system,current
+org.kde.okular	25.08.0	system,current
+org.kde.skanpage	25.08.0	system,current
+org.kde.yakuake	25.08.0	system,current
+org.kicad.KiCad	9.0.4	system,current
+org.kicad.KiCad.Library.Footprints		system,runtime
+org.kicad.KiCad.Library.Packages3D		system,runtime
+org.kicad.KiCad.Library.Symbols		system,runtime
+org.kicad.KiCad.Library.Templates		system,runtime
+org.libretro.RetroArch	1.21.0	system,current
+org.mamedev.MAME	0.280	system,current
+org.mozilla.Thunderbird	140.2.1esr	system,current
+org.ppsspp.PPSSPP	1.19.3	system,current
+org.remmina.Remmina	1.4.41	system,current
+org.signal.Signal	7.68.0	system,current
+org.speedcrunch.SpeedCrunch	0.12	system,current
+org.squidowl.halloy	2025.8	system,current
+org.stellarium.Stellarium	25.2	system,current
+org.tuxfamily.hatari	2.5-0	system,current
+org.videolan.VLC	3.0.21	system,current
+org.winehq.Wine	10.0	system,current
+org.winehq.Wine.gecko		system,runtime
+org.winehq.Wine.gecko		system,runtime
+org.winehq.Wine.mono		system,runtime
+org.winehq.Wine.mono		system,runtime
+page.codeberg.libre_menu_editor.LibreMenuEditor	1.9.4	system,current
+space.gaiasky.GaiaSky	3.6.11	system,current
+tv.plex.PlexDesktop	1.110.0	system,current
+uk.org.greenend.chiark.sgtatham.putty	0.83	system,current

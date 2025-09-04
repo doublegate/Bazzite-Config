@@ -1,2 +1,205 @@
-ref_docs/
-various/
+# ============================================================================
+# Bazzite Gaming Optimization Suite - Git Ignore Configuration
+# ============================================================================
+
+# Project-specific files and directories
+ref_docs/                    # Reference documentation (kept locally)
+various/                     # Miscellaneous files and archives
+
+# ============================================================================
+# RUNTIME AND TEMPORARY FILES
+# ============================================================================
+
+# Application runtime files
+*.pid                        # Process ID files
+*.lock                       # Lock files
+*.tmp                        # Temporary files
+*.temp                       # Temporary files (alternative extension)
+
+# Gaming suite runtime data
+gaming-mode.state            # Gaming mode state file
+*.bench                      # Benchmark result files
+*.profile                    # Temporary profile files
+
+# ============================================================================
+# LOGS AND MONITORING DATA
+# ============================================================================
+
+# Log files
+*.log                        # General log files
+logs/                        # Log directories
+/var/log/gaming-benchmark/   # Benchmark logs (system location)
+/var/log/gaming-metrics/     # Metrics logs (system location)
+
+# Monitoring and metrics data
+*.metrics                    # Metrics data files
+*.json.backup                # Backup configuration files
+performance-*.csv            # Performance data exports
+benchmark-results-*.txt      # Benchmark result exports
+
+# ============================================================================
+# DATABASE AND CACHE FILES
+# ============================================================================
+
+# Database files
+*.db                         # SQLite database files
+*.sqlite                     # SQLite database files
+*.sqlite3                    # SQLite3 database files
+*.db-journal                 # SQLite journal files
+*.db-wal                     # SQLite WAL files
+*.db-shm                     # SQLite shared memory files
+
+# MCP server databases
+sqlite_mcp_server.db         # MCP server database
+mcp_*.db                     # Additional MCP databases
+
+# Cache directories and files
+__pycache__/                 # Python cache directories
+*.pyc                        # Python compiled files
+*.pyo                        # Python optimized files
+*.pyd                        # Python dynamic libraries
+.cache/                      # General cache directory
+
+# ============================================================================
+# USER CONFIGURATION AND DATA
+# ============================================================================
+
+# User-specific configurations (keep templates, ignore user data)
+config.json                  # User configuration file
+user-profiles.json           # User profile configurations
+settings.json                # Application settings
+
+# User data directories
+user-data/                   # User data storage
+profiles/                    # User-created profiles
+backups/                     # Configuration backups
+
+# ============================================================================
+# SYSTEM AND HARDWARE SPECIFIC FILES
+# ============================================================================
+
+# Hardware detection cache
+hardware-info.cache          # Hardware detection cache
+gpu-info.cache               # GPU information cache
+cpu-info.cache               # CPU information cache
+
+# System optimization backups
+*.backup                     # General backup files
+system-config.backup         # System configuration backups
+kernel-params.backup         # Kernel parameter backups
+
+# ============================================================================
+# DEVELOPMENT AND BUILD ARTIFACTS
+# ============================================================================
+
+# Python development
+.pytest_cache/               # Pytest cache directory
+.coverage                    # Coverage data file
+htmlcov/                     # Coverage HTML reports
+.tox/                        # Tox testing environments
+venv/                        # Virtual environments
+env/                         # Environment directories
+.env                         # Environment variable files
+
+# Development tools
+.vscode/                     # VS Code settings
+.idea/                       # IntelliJ/PyCharm settings
+*.swp                        # Vim swap files
+*.swo                        # Vim swap files
+*~                           # Editor backup files
+.DS_Store                    # macOS directory service store
+
+# Build and distribution
+build/                       # Build directories
+dist/                        # Distribution directories
+*.egg-info/                  # Python egg info
+*.spec                       # PyInstaller spec files
+
+# ============================================================================
+# TESTING AND QUALITY ASSURANCE
+# ============================================================================
+
+# Test results and artifacts
+test-results/                # Test result directories
+.pytest_cache/               # Pytest cache
+coverage.xml                 # Coverage reports
+junit.xml                    # JUnit test reports
+*.cover                      # Coverage files
+
+# Quality assurance tools
+.mypy_cache/                 # MyPy type checker cache
+.bandit                      # Bandit security linter cache
+.flake8                      # Flake8 linter cache
+
+# ============================================================================
+# SECURITY AND SENSITIVE DATA
+# ============================================================================
+
+# Sensitive information (should never be committed)
+*.key                        # Private keys
+*.pem                        # Certificate files
+*.p12                        # PKCS#12 files
+secrets.json                 # Secrets configuration
+.env.local                   # Local environment variables
+.env.production              # Production environment variables
+
+# Security audit results
+security-audit.json          # Security audit results
+vulnerability-report.json    # Vulnerability reports
+
+# ============================================================================
+# DOCUMENTATION BUILD ARTIFACTS
+# ============================================================================
+
+# Documentation generation
+_build/                      # Sphinx build directory
+.doctrees/                   # Sphinx doctrees
+site/                        # MkDocs build directory
+
+# ============================================================================
+# OPERATING SYSTEM SPECIFIC
+# ============================================================================
+
+# Linux
+.directory                   # KDE directory files
+*.desktop.backup             # Desktop file backups
+
+# Windows
+Thumbs.db                    # Windows thumbnail cache
+ehthumbs.db                  # Windows thumbnail cache
+Desktop.ini                  # Windows desktop configuration
+
+# macOS
+.DS_Store                    # macOS directory service store
+.AppleDouble                 # AppleDouble files
+.LSOverride                  # LaunchServices override
+
+# ============================================================================
+# GAMING AND HARDWARE SPECIFIC
+# ============================================================================
+
+# GPU driver artifacts
+nvidia-settings-rc           # NVIDIA settings
+.nvidia-settings-rc          # NVIDIA settings (hidden)
+amdgpu-settings.conf         # AMD GPU settings
+
+# Gaming platform artifacts
+steam_autostart.desktop      # Steam autostart file
+lutris-*.log                 # Lutris log files
+
+# Benchmark and performance data
+fio-*.log                    # FIO benchmark logs
+stress-ng-*.log              # Stress-ng benchmark logs
+sysbench-*.log               # Sysbench logs
+
+# ============================================================================
+# NETWORK AND CONNECTIVITY
+# ============================================================================
+
+# Network configuration backups
+network-*.backup             # Network configuration backups
+wifi-passwords.txt           # WiFi passwords (if accidentally created)
+
+# ============================================================================
+# END OF GITIGNORE
+# ============================================================================
