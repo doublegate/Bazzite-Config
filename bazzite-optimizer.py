@@ -1314,21 +1314,21 @@ echo "Activating Ultimate Gaming Mode (Profile: {PROFILE})..."
 
 # v4: Show security warning if using competitive profile
 if [ "{PROFILE}" = "competitive" ] && [ "${SECURITY_WARNING_ACKNOWLEDGED:-false}" != "true" ]; then
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    SECURITY WARNING                          ║"
-    echo "╠══════════════════════════════════════════════════════════════╣"
-    echo "║ Competitive profile DISABLES CPU security mitigations!       ║"
-    echo "║                                                              ║"
-    echo "║ This makes your system vulnerable to:                        ║"
-    echo "║   • Spectre/Meltdown attacks                                 ║"
-    echo "║   • Side-channel attacks                                     ║"
-    echo "║   • Other CPU vulnerabilities                                ║"
-    echo "║                                                              ║"
-    echo "║ Only use on:                                                 ║"
-    echo "║   ✓ Trusted, isolated networks                               ║"
-    echo "║   ✓ Dedicated gaming systems                                 ║"
-    echo "║   ✗ NEVER on systems with sensitive data                     ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "╔════════════════════════════════════════════════════════╗"
+    echo "║                    SECURITY WARNING                    ║"
+    echo "╠════════════════════════════════════════════════════════╣"
+    echo "║ Competitive profile DISABLES CPU security mitigations! ║"
+    echo "║                                                        ║"
+    echo "║ This makes your system vulnerable to:                  ║"
+    echo "║   • Spectre/Meltdown attacks                           ║"
+    echo "║   • Side-channel attacks                               ║"
+    echo "║   • Other CPU vulnerabilities                          ║"
+    echo "║                                                        ║"
+    echo "║ Only use on:                                           ║"
+    echo "║   ✓ Trusted, isolated networks                         ║"
+    echo "║   ✓ Dedicated gaming systems                           ║"
+    echo "║   ✗ NEVER on systems with sensitive data               ║"
+    echo "╚════════════════════════════════════════════════════════╝"
     echo ""
     echo "Press ENTER to acknowledge and continue, or Ctrl+C to cancel..."
     read
@@ -1837,11 +1837,28 @@ def write_config_file(filepath: Path, content: str, executable: bool = False) ->
         return False
 
 
+def get_smart_disk_space() -> int:
+    """Smart disk space detection for composefs and traditional Linux systems"""
+    # Priority order: user data locations first, then system locations, finally fallback
+    priority_paths = ['/var/home', '/sysroot', '/var', '/']
+    
+    for path in priority_paths:
+        try:
+            if os.path.exists(path):
+                usage = psutil.disk_usage(path)
+                # Skip small overlay filesystems (composefs, tmpfs, etc.)
+                if usage.total >= 100 * 1024**3:  # 100 GB minimum for storage
+                    return round(usage.free / (1024**3))
+        except Exception:
+            continue
+    return 0
+
+
 def get_system_info() -> Dict[str, Any]:
     """Gather comprehensive system information - v4 enhanced"""
     info = {
         "kernel": platform.release(),
-        "kernel_version": tuple(map(int, platform.release().split('.')[:3])) if platform.release().count('.') >= 2 else (0, 0, 0),
+        "kernel_version": tuple(map(int, re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()).groups())) if re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()) else (0, 0, 0),
         "distribution": "",
         "cpu_model": "",
         "cpu_cores": psutil.cpu_count(logical=False),
@@ -1850,7 +1867,7 @@ def get_system_info() -> Dict[str, Any]:
         "gpus": [],
         "network_interfaces": [],
         "nvme_devices": [],
-        "free_disk_gb": round(psutil.disk_usage('/').free / (1024**3)),
+        "free_disk_gb": get_smart_disk_space(),
         "form_factor": detect_form_factor(),  # v4
         "display_server": detect_display_server()  # v4
     }
@@ -4002,12 +4019,12 @@ class BazziteGamingOptimizer:
 
     def print_banner(self):
         """Display welcome banner"""
-        print_colored("=" * 80, Colors.HEADER)
+        print_colored("=" * 62, Colors.HEADER)
         print_colored("    BAZZITE DX ULTIMATE GAMING OPTIMIZER v" +
                       SCRIPT_VERSION, Colors.HEADER + Colors.BOLD)
         print_colored("  Enhanced for RTX 5080 Blackwell | i9-10850K | 64GB RAM", Colors.OKCYAN)
         print_colored("  Now with: Thermal Management | HDR | Profiles | Validation", Colors.OKBLUE)
-        print_colored("=" * 80, Colors.HEADER)
+        print_colored("=" * 62, Colors.HEADER)
         print()
 
     def print_system_info(self):
@@ -4221,7 +4238,7 @@ class BazziteGamingOptimizer:
                 self.logger.info(f"Post-optimization benchmarks: {len(post_results)} tests completed")
 
         # Summary
-        print_colored("\n" + "=" * 80, Colors.HEADER)
+        print_colored("\n" + "=" * 62, Colors.HEADER)
         if failed_modules:
             print_colored("Optimization completed with some failures:", Colors.WARNING)
             for module in failed_modules:
@@ -4270,9 +4287,9 @@ class BazziteGamingOptimizer:
         if not self.validation_results:
             return
 
-        print_colored("\n" + "=" * 80, Colors.HEADER)
+        print_colored("\n" + "=" * 62, Colors.HEADER)
         print_colored("VALIDATION SUMMARY", Colors.HEADER + Colors.BOLD)
-        print_colored("=" * 80, Colors.HEADER)
+        print_colored("=" * 62, Colors.HEADER)
 
         total_checks = 0
         passed_checks = 0
@@ -4301,7 +4318,7 @@ class BazziteGamingOptimizer:
                     print(f"    ✗ {check}")
 
         # Overall summary
-        print_colored("-" * 80, Colors.HEADER)
+        print_colored("-" * 62, Colors.HEADER)
         percentage = (passed_checks / total_checks * 100) if total_checks > 0 else 0
         if percentage >= 90:
             color = Colors.OKGREEN
@@ -4599,7 +4616,7 @@ Examples:
 
             # Check if reboot is needed
             if self.needs_reboot:
-                print_colored("\n" + "!" * 80, Colors.WARNING)
+                print_colored("\n" + "!" * 62, Colors.WARNING)
                 print_colored("REBOOT REQUIRED", Colors.WARNING + Colors.BOLD)
                 print_colored(
                     "Some optimizations require a system reboot to take effect:",
@@ -4608,7 +4625,7 @@ Examples:
                 print_colored("  - Kernel parameter updates", Colors.WARNING)
                 print_colored("  - Initramfs regeneration", Colors.WARNING)
                 print_colored("\nPlease reboot your system when convenient.", Colors.WARNING)
-                print_colored("!" * 80, Colors.WARNING)
+                print_colored("!" * 62, Colors.WARNING)
 
             print_colored(
                 f"\n✓ Optimization complete with {

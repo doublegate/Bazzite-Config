@@ -2,13 +2,13 @@
 
 <div align="center">
 
-<img src="images/BazziteOptimize_Logo.png" alt="Bazzite Gaming Optimization Suite Logo" width="400">
+<img src="images/BazziteOptimize_Logo.png" alt="Bazzite Gaming Optimization Suite Logo" width="500">
 
 ![Platform](https://img.shields.io/badge/Platform-Bazzite%20Linux-blue?style=for-the-badge&logo=linux)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776ab?style=for-the-badge&logo=python)
 ![Shell](https://img.shields.io/badge/Shell-Bash-4eaa25?style=for-the-badge&logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.3-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.4-brightgreen?style=for-the-badge)
 
 **Professional gaming system optimization powered by the comprehensive bazzite-optimizer.py master script**
 
@@ -18,14 +18,14 @@
 
 The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (4,649 lines, 165KB). This complete solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations including NVIDIA RTX 5080, Intel i9-10850K, and 64GB RAM through 16 specialized optimizer classes and intelligent system tuning.
 
-## 🆕 v1.0.3 - Documentation Excellence & Code Quality
+## 🆕 v1.0.4 - Bazzite Compatibility & Bug Fixes
 
-**Latest enhancements in the master script:**
+**Critical compatibility improvements for Bazzite systems:**
 
-- ✨ **89% Code Quality Improvement** - 460→48 linting issues resolved
-- 🔒 **Enhanced Safety Systems** - SHA256 integrity, signal handling, atomic operations  
-- 📊 **Statistical Analysis** - Benchmark results with confidence intervals
-- 🛡️ **Professional Standards** - Enterprise-grade code quality and documentation
+- 🔧 **Kernel Version Parsing Fix** - Regex-based parsing for modern Linux kernels with hyphens (6.16.4-104.bazzite.fc42.x86_64)
+- 💾 **Smart Disk Space Detection** - Priority-based mount point analysis for composefs/immutable filesystems
+- 🏗️ **Bazzite Architecture Support** - Full compatibility with /var/home, /sysroot mount structures
+- ✅ **Script Initialization Success** - Resolves "invalid literal for int()" and "0 GB free space" errors
 
 ### ✨ Master Script Features
 
@@ -35,7 +35,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
   - NvidiaOptimizer, CPUOptimizer, MemoryOptimizer, NetworkOptimizer
   - AudioOptimizer, GamingToolsOptimizer, KernelOptimizer, SystemdServiceOptimizer
   - PlasmaOptimizer, BazziteOptimizer, and advanced management classes
-- 🏆 **4 Gaming Profiles** - Competitive, Balanced, Streaming, Creative configurations  
+- 🏆 **4 Gaming Profiles** - Competitive, Balanced, Streaming, Creative configurations
 - 🔥 **Advanced Safety Systems** - StabilityTester, ThermalManager, BackupManager
 - 📊 **Built-in Benchmarking** - Integrated BenchmarkRunner with comprehensive testing
 - ⚡ **V3+V4 Integration** - Complete feature set with enhanced stability and monitoring
@@ -43,7 +43,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 
 **Supporting Tools:**
 
-- 🖥️ **Gaming Monitor Suite** - Real-time performance dashboard  
+- 🖥️ **Gaming Monitor Suite** - Real-time performance dashboard
 - 🔧 **Gaming Manager Suite** - Quick fixes and profile management
 - 🧪 **Gaming Maintenance Suite** - Automated testing and maintenance
 
@@ -81,7 +81,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 
 ### Prerequisites
 
-- **Bazzite Linux** (latest version recommended)  
+- **Bazzite Linux** (latest version recommended)
 - **Python 3.8+** with psutil and threading support
 - **Hardware**: RTX 5080, Intel i9-10850K, 64GB RAM (optimized configuration)
 
@@ -109,7 +109,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 ### Master Script Usage
 
 ```bash
-# List available gaming profiles  
+# List available gaming profiles
 ./bazzite-optimizer.py --list-profiles
 
 # Apply Competitive profile for maximum gaming performance
@@ -180,7 +180,7 @@ Quick access utility for common gaming fixes and status checks:
 **Key Features:**
 
 - **GamingModeController**: Quick gaming mode toggle
-- **GameProfileManager**: Profile switching interface  
+- **GameProfileManager**: Profile switching interface
 - **QuickFixUtilities**: Instant Steam, audio, and GPU fixes
 
 ### Gaming Monitor Suite (`gaming-monitor-suite.py`)
@@ -266,7 +266,7 @@ Master script optimization delivers proven performance improvements:
 /var/log/gaming-benchmark/            # Benchmark logs
 /var/log/gaming-metrics/              # Monitoring data
 /etc/gaming-mode.conf                 # System configuration
-/var/run/gaming-mode.state           # Current state
+/var/run/gaming-mode.state            # Current state
 ```
 
 ### Game Profile Example
@@ -278,7 +278,8 @@ Master script optimization delivers proven performance improvements:
   "gpu_mode": "max_performance",
   "compositor": "disabled",
   "nice_value": -10,
-  "environment": {
+  "environment": 
+  {
     "DXVK_HUD": "fps,memory",
     "VKD3D_CONFIG": "dxr"
   }

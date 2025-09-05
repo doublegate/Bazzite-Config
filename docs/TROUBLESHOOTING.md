@@ -48,9 +48,40 @@ sudo ./bazzite-optimizer.py --profile creative     # Content creation
 ./gaming-maintenance-suite.sh --health-check
 ```
 
-## Master Script Issue Resolution
+## Master Script Issue Resolution (v1.0.4)
 
-### 1. Master Script Optimization Failures
+### 1. Critical Compatibility Issues - RESOLVED in v1.0.4
+
+#### Problem: Script fails with "invalid literal for int() with base 10" error
+**Status: ✅ RESOLVED in v1.0.4**
+
+```bash
+# Previously failed on modern Linux kernels
+ValueError: invalid literal for int() with base 10: '4-104'
+```
+
+**Root Cause**: Modern Linux kernels like "6.16.4-104.bazzite.fc42.x86_64" contain hyphens that broke simple dot-splitting logic.
+
+**Solution**: v1.0.4 implements regex-based kernel version parsing:
+```python
+# Old method (failed): tuple(map(int, platform.release().split('.')[:3]))
+# New method (works): re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()).groups()
+```
+
+#### Problem: Script reports "Free Disk: 0 GB" and fails prerequisite checks
+**Status: ✅ RESOLVED in v1.0.4**
+
+**Root Cause**: Bazzite's composefs architecture creates read-only overlays at root (/) with 0 bytes free by design.
+
+**Solution**: v1.0.4 implements smart disk space detection with priority mount points:
+1. `/var/home` (user data) - Primary check
+2. `/sysroot` (system root) - Secondary check 
+3. `/var` (system data) - Tertiary check
+4. `/` (fallback) - Final check
+
+Filters out small overlays (< 100GB) to focus on actual storage devices.
+
+### 2. Master Script Optimization Failures
 
 #### Problem: Profile application fails
 ```bash

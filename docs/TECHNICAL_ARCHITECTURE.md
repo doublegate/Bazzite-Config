@@ -43,9 +43,11 @@ The Bazzite Gaming Optimization Suite is built around the comprehensive **bazzit
 
 **Purpose**: Comprehensive gaming optimization framework with 16 specialized optimizer classes
 
-**Current Version**: v1.0.3 "Documentation Excellence & Code Quality"
+**Current Version**: v1.0.4 "Bazzite Compatibility & Bug Fixes"
 - **Script Size**: 4,649 lines, 165KB
-- **Code Quality**: 89% linting improvement (460→48 issues resolved)
+- **Compatibility**: Critical fixes for Bazzite composefs/immutable filesystem architecture
+- **Kernel Support**: Regex-based parsing for modern Linux kernels with hyphens
+- **Disk Detection**: Smart mount point analysis with priority-based selection
 - **Implementation**: Complete with no placeholders, full feature set
 - **Version**: 4.0.0 (V3+V4 integration complete)
 

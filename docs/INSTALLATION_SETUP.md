@@ -4,11 +4,13 @@
 
 The Bazzite Gaming Optimization Suite centers around the **bazzite-optimizer.py master script** (4,649 lines, 165KB) - your complete gaming optimization solution with 16 specialized optimizer classes, 4 gaming profiles, and advanced safety systems.
 
-## Master Script Overview (v1.0.3)
+## Master Script Overview (v1.0.4)
 
 **bazzite-optimizer.py** is the **primary, comprehensive optimization tool** featuring:
 - **Complete Implementation**: 4,649 lines of production-ready code
-- **Code Quality Excellence**: 89% linting improvement (460→48 issues resolved)
+- **Bazzite Compatibility**: Critical bug fixes for composefs/immutable filesystem support
+- **Kernel Parsing**: Regex-based version detection for modern Linux kernels (6.16.4-104.bazzite.fc42.x86_64)
+- **Smart Disk Detection**: Priority-based mount point analysis (/var/home, /sysroot, /var, /)
 - **16 Specialized Optimizers**: CPU, GPU, Memory, Network, Audio, Kernel, and more
 - **4 Gaming Profiles**: Competitive, Balanced, Streaming, Creative configurations
 - **Advanced Safety Systems**: StabilityTester, ThermalManager, BackupManager with SHA256 integrity

@@ -1,11 +1,11 @@
-1.0.3
+1.0.4
 
 # Bazzite Gaming Optimization Suite Version Information
-# Documentation Excellence & Code Quality Release
+# Bazzite Compatibility & Bug Fixes Release
 
-Version: 1.0.3
-Release Name: "Documentation Excellence & Code Quality"
-Release Date: 2025-09-05
+Version: 1.0.4
+Release Name: "Bazzite Compatibility & Bug Fixes"
+Release Date: 2025-09-04
 Build: 4649-165KB
 
 # Key Components
@@ -35,7 +35,14 @@ V3+V4 Integration: Complete feature set with enhanced safety
 Built-in Systems: Benchmarking, validation, backup/rollback
 Architecture: Three-component suite with master script foundation
 
-# Release Focus (v1.0.3)
+# Release Focus (v1.0.4)
+- Critical bug fixes for Bazzite/composefs compatibility
+- Kernel version parsing fix using regex for modern Linux systems
+- Smart disk space detection for immutable filesystems
+- Full script functionality restored on Bazzite systems
+- Enhanced system compatibility and error handling
+
+# Previous Release (v1.0.3)
 - Comprehensive documentation update establishing bazzite-optimizer.py as master script
 - Complete code quality improvements (89% linting issue reduction)
 - Full technical architecture documentation

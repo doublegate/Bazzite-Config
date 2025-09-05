@@ -15,7 +15,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Community profile sharing system (v1.3.0)
 - Cloud benchmarking comparison (v1.3.1)
 
-## [1.0.3] - 2025-09-05
+## [1.0.4] - 2025-09-04
+
+### 🔧 Bazzite Compatibility & Bug Fixes Release
+
+**CRITICAL MILESTONE**: Complete resolution of Bazzite/composefs compatibility issues, restoring full script functionality on modern immutable Linux systems.
+
+### Fixed
+
+#### **Critical Bug #1: Kernel Version Parsing**
+- **Problem**: Script failed to initialize on modern Linux systems with complex kernel versions
+- **Affected Systems**: All Bazzite, Fedora Atomic, and systems with kernel versions like "6.16.4-104.bazzite.fc42.x86_64"
+- **Root Cause**: Simple dot-splitting logic couldn't handle hyphens and distribution suffixes
+- **Solution**: Implemented regex-based parsing `re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release())`
+- **Location**: Line 1861 in `get_system_info()` function
+- **Impact**: ✅ Script now initializes successfully on all modern Linux distributions
+
+#### **Critical Bug #2: Disk Space Detection**
+- **Problem**: Script reported 0 GB free space on composefs systems, failing prerequisite checks
+- **Affected Systems**: All Bazzite and composefs-enabled Fedora systems
+- **Root Cause**: Composefs overlay at root (`/`) has 0 bytes free by design
+- **Solution**: Implemented smart mount point detection with priority fallback
+- **Algorithm**: `/var/home` → `/sysroot` → `/var` → `/` with 100GB size threshold
+- **Location**: New `get_smart_disk_space()` function (lines 1840-1854), modified line 1870
+- **Impact**: ✅ Proper disk space reporting (833 GB detected vs 0 GB), passes all prerequisite checks
+
+### Added
+
+#### **Enhanced System Compatibility**
+- **Smart Disk Space Detection**: Priority-based mount point detection for immutable filesystems
+- **Composefs Support**: Full compatibility with Fedora's new overlay filesystem architecture
+- **Error Handling**: Graceful fallback mechanisms for filesystem access failures
+- **Size Filtering**: Automatic detection and filtering of overlay/tmpfs filesystems
+
+### Changed
+
+#### **System Detection Logic**
+- **Kernel Parsing**: Migrated from simple string splitting to robust regex matching
+- **Mount Point Detection**: Enhanced disk space calculation for modern Linux architectures
+- **Compatibility Layer**: Added support for immutable filesystem structures
+
+### Technical Details
+
+#### **Implementation Specifications**
+- **Regex Pattern**: `^(\d+)\.(\d+)\.(\d+)` extracts major.minor.patch from complex version strings
+- **Mount Priority**: `/var/home` (user data) → `/sysroot` (system root) → `/var` (persistent data) → `/` (fallback)
+- **Size Threshold**: 100 GB minimum to distinguish storage from system overlays
+- **Error Resilience**: Continue on filesystem access errors, graceful degradation
+
+#### **Testing Validation**
+- **Kernel Versions**: Validated on "6.16.4-104.bazzite.fc42.x86_64", "5.15.0-generic", "6.1.12"
+- **Filesystems**: Tested on composefs, traditional ext4, btrfs, and various mount configurations
+- **Edge Cases**: Handles missing mount points, permission errors, and filesystem access failures
+- **Compatibility**: Maintains full backward compatibility with traditional Linux systems
+
+### Impact
+
+- 🎯 **Full Bazzite Compatibility**: Script now runs completely on all Bazzite systems
+- 🚀 **Restored Functionality**: All optimization features accessible after prerequisite fixes
+- 🛡️ **Enhanced Reliability**: Robust error handling and fallback mechanisms
+- 📊 **Accurate Reporting**: Correct disk space detection (833 GB vs 0 GB on test system)
+- 🔧 **Future-Proof**: Compatible with modern immutable Linux architectures
+
+## [1.0.3] - 2025-09-04
 
 ### 🎯 Documentation Excellence & Code Quality Release
 
