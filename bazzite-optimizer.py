@@ -1877,7 +1877,13 @@ def write_config_file(filepath: Path, content: str, executable: bool = False) ->
     try:
         backup_file(filepath)
 
-        filepath.parent.mkdir(parents=True, exist_ok=True)
+        # Handle parent directory creation with potential permission issues
+        try:
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            logging.debug(f"Could not create parent directory for {filepath}: {e}")
+            return False
+            
         filepath.write_text(content)
 
         if executable:
@@ -2582,8 +2588,20 @@ ExecStart=/usr/local/bin/auto-backup.sh
         if not name:
             name = f"recovery_{TIMESTAMP}"
 
-        recovery_path = CRASH_RECOVERY_DIR / name
-        recovery_path.mkdir(parents=True, exist_ok=True)
+        # Use centralized directory management for recovery path
+        recovery_base_dir = ensure_directory_with_fallback(
+            CRASH_RECOVERY_DIR, "bazzite-optimizer/recovery", self.logger
+        )
+        if recovery_base_dir is None:
+            self.logger.error("Could not create recovery directory")
+            return
+        
+        recovery_path = recovery_base_dir / name
+        try:
+            recovery_path.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            self.logger.error(f"Could not create recovery point directory {recovery_path}: {e}")
+            return
 
         # Save current system state
         configs_to_save = [
@@ -3168,9 +3186,13 @@ class AudioOptimizer(BaseOptimizer):
             MAX_QUANTUM=audio_quantum * 2
         )
 
-        # System-wide PipeWire configuration
+        # System-wide PipeWire configuration with error handling
         pipewire_dir = Path("/etc/pipewire/pipewire.conf.d")
-        pipewire_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            pipewire_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            self.logger.error(f"Could not create PipeWire config directory: {e}")
+            return False
 
         if not write_config_file(pipewire_dir / "99-gaming.conf", pipewire_config):
             return False
@@ -3179,10 +3201,14 @@ class AudioOptimizer(BaseOptimizer):
         # WirePlumber configuration
         wireplumber_config = WIREPLUMBER_CONFIG.format(PERIOD_SIZE=audio_quantum // 2)
 
-        # User-specific WirePlumber configuration
+        # User-specific WirePlumber configuration  
         if self.user and self.user != 'root':
             wireplumber_dir = Path(f"/home/{self.user}/.config/wireplumber/wireplumber.conf.d")
-            wireplumber_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                wireplumber_dir.mkdir(parents=True, exist_ok=True)
+            except (PermissionError, OSError) as e:
+                self.logger.debug(f"Could not create WirePlumber user config directory: {e}")
+                return False
 
             wireplumber_conf = wireplumber_dir / "50-creative-gaming.conf"
             if write_config_file(wireplumber_conf, wireplumber_config):
@@ -3339,7 +3365,11 @@ class GamingToolsOptimizer(BaseOptimizer):
 
         if self.user and self.user != 'root':
             mangohud_dir = Path(f"/home/{self.user}/.config/MangoHud")
-            mangohud_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                mangohud_dir.mkdir(parents=True, exist_ok=True)
+            except (PermissionError, OSError) as e:
+                self.logger.debug(f"Could not create MangoHud user config directory: {e}")
+                return False
 
             if write_config_file(mangohud_dir / "MangoHud.conf", config):
                 run_command(f"chown -R {self.user}:{self.user} {mangohud_dir}", check=False)
@@ -3386,7 +3416,11 @@ class GamingToolsOptimizer(BaseOptimizer):
         )
 
         config_dir = Path("/etc/system76-scheduler")
-        config_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            config_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            self.logger.error(f"Could not create System76-scheduler config directory: {e}")
+            return False
 
         if not write_config_file(config_dir / "config.kdl", config):
             return False
