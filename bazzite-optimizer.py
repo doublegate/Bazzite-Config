@@ -3989,10 +3989,25 @@ class ProfileManager:
     def __init__(self, logger: logging.Logger):
         self.logger = logger
         self.profile_dir = PROFILE_DIR
-        self.profile_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.profile_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            # Fall back to user directory in CI environments
+            fallback_dir = Path.home() / ".local" / "share" / "bazzite-optimizer" / "profiles"
+            try:
+                fallback_dir.mkdir(parents=True, exist_ok=True)
+                self.profile_dir = fallback_dir
+                self.logger.debug(f"Using fallback profile directory: {fallback_dir}")
+            except (PermissionError, OSError):
+                self.profile_dir = None
+                self.logger.debug("Profile management disabled due to permission restrictions")
 
     def save_profile(self, profile_name: str, settings: Dict[str, Any]):
         """Save a gaming profile"""
+        if self.profile_dir is None:
+            self.logger.debug("Profile saving disabled due to permission restrictions")
+            return
+            
         profile_file = self.profile_dir / f"{profile_name}.json"
 
         with open(profile_file, "w") as f:
@@ -4006,11 +4021,12 @@ class ProfileManager:
         if profile_name in GAMING_PROFILES:
             return GAMING_PROFILES[profile_name]["settings"]
 
-        # Check custom profiles
-        profile_file = self.profile_dir / f"{profile_name}.json"
-        if profile_file.exists():
-            with open(profile_file) as f:
-                return json.load(f)
+        # Check custom profiles only if profile_dir is available
+        if self.profile_dir is not None:
+            profile_file = self.profile_dir / f"{profile_name}.json"
+            if profile_file.exists():
+                with open(profile_file) as f:
+                    return json.load(f)
 
         self.logger.warning(f"Profile '{profile_name}' not found, using balanced")
         return GAMING_PROFILES["balanced"]["settings"]
@@ -4019,11 +4035,12 @@ class ProfileManager:
         """List available profiles"""
         profiles = list(GAMING_PROFILES.keys())
 
-        # Add custom profiles
-        for profile_file in self.profile_dir.glob("*.json"):
-            profile_name = profile_file.stem
-            if profile_name not in profiles:
-                profiles.append(profile_name)
+        # Add custom profiles only if profile_dir is available
+        if self.profile_dir is not None:
+            for profile_file in self.profile_dir.glob("*.json"):
+                profile_name = profile_file.stem
+                if profile_name not in profiles:
+                    profiles.append(profile_name)
 
         return profiles
 
