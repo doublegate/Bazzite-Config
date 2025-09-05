@@ -1835,8 +1835,6 @@ def ensure_directory_with_fallback(system_path: Path, fallback_subpath: str,
     # Try system directory first
     try:
         system_path.mkdir(parents=True, exist_ok=True)
-        if logger:
-            logger.debug(f"Using system directory: {system_path}")
         return system_path
     except (PermissionError, OSError) as e:
         # Fall back to user directory
@@ -1844,7 +1842,7 @@ def ensure_directory_with_fallback(system_path: Path, fallback_subpath: str,
         try:
             fallback_dir.mkdir(parents=True, exist_ok=True)
             if logger:
-                logger.debug(f"Using fallback directory: {fallback_dir}")
+                logger.debug(f"System directory unavailable, using fallback: {fallback_dir}")
             return fallback_dir
         except (PermissionError, OSError):
             if logger:
