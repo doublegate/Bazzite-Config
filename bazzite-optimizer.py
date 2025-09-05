@@ -330,28 +330,28 @@ if ! nvidia-smi &> /dev/null; then
 fi
 
 # Function to get GPU temperature
-get_gpu_temp() {
+get_gpu_temp() {{
     nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null || echo "0"
-}
+}}
 
 # Function to get GPU power draw (v4)
-get_gpu_power() {
+get_gpu_power() {{
     nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits 2>/dev/null | cut -d. -f1 || echo "0"
-}
+}}
 
 # v4 Safety check: Emergency throttle if too hot
-emergency_check() {
+emergency_check() {{
     local temp=$(get_gpu_temp)
     if [ $temp -gt {MAX_GPU_TEMP_CRITICAL} ]; then
-        echo "CRITICAL: GPU temperature at ${temp}°C! Emergency throttling!"
+        echo "CRITICAL: GPU temperature at ${{temp}}°C! Emergency throttling!"
         nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=0' 2>/dev/null || true
         nvidia-settings -a '[gpu:0]/GPUTargetFanSpeed=100' 2>/dev/null || true
         exit 1
     fi
-}
+}}
 
 # Function to apply fan curve with v4 safety
-apply_fan_curve() {
+apply_fan_curve() {{
     local temp=$(get_gpu_temp)
     local fan_speed=50
 
@@ -360,7 +360,7 @@ apply_fan_curve() {
         fan_speed=100
     else
         # Apply fan curve based on profile
-        case "${FAN_PROFILE:-balanced}" in
+        case "${{FAN_PROFILE:-balanced}}" in
             aggressive)
                 if [ $temp -le 30 ]; then fan_speed=40
                 elif [ $temp -le 50 ]; then fan_speed=60
@@ -388,11 +388,11 @@ apply_fan_curve() {
     fi
 
     nvidia-settings -a '[gpu:0]/GPUTargetFanSpeed='$fan_speed 2>/dev/null || true
-}
+}}
 
 # v4: Record baseline power consumption
 BASELINE_POWER=$(get_gpu_power)
-echo "Baseline GPU power: ${BASELINE_POWER}W"
+echo "Baseline GPU power: ${{BASELINE_POWER}}W"
 
 # v4: Emergency check before applying optimizations
 emergency_check
@@ -401,8 +401,8 @@ emergency_check
 nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=1' 2>/dev/null || true
 
 # RTX 5080 overclocking based on profile (with v4 validation)
-CLOCK_OFFSET=${GPU_CLOCK_OFFSET:-400}
-MEM_OFFSET=${GPU_MEM_OFFSET:-800}
+CLOCK_OFFSET=${{GPU_CLOCK_OFFSET:-400}}
+MEM_OFFSET=${{GPU_MEM_OFFSET:-800}}
 
 # v4: Validate overclock values are within safe ranges
 if [ $CLOCK_OFFSET -gt 600 ]; then
@@ -454,7 +454,7 @@ export VK_HDR_ENABLED=1
 export GAMESCOPE_HDR_ENABLED=1
 
 # v4: Display server specific optimizations
-DISPLAY_SERVER=$(echo $XDG_SESSION_TYPE)
+DISPLAY_SERVER=$(echo ${{XDG_SESSION_TYPE}})
 if [ "$DISPLAY_SERVER" = "wayland" ]; then
     export GBM_BACKEND=nvidia-drm
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
@@ -489,7 +489,7 @@ export VKD3D_CONFIG=dxr11,dxr
 sleep 2
 CURRENT_POWER=$(get_gpu_power)
 POWER_INCREASE=$((CURRENT_POWER - BASELINE_POWER))
-echo "Power consumption increased by ${POWER_INCREASE}W"
+echo "Power consumption increased by ${{POWER_INCREASE}}W"
 
 echo "RTX 5080 Blackwell optimizations v4 applied with safety checks!"
 """
@@ -507,37 +507,37 @@ if ! command -v cpupower &> /dev/null; then
 fi
 
 # Function to get CPU package temperature
-get_cpu_temp() {
+get_cpu_temp() {{
     sensors -j 2>/dev/null | grep -o '"temp[0-9]_input":[0-9.]*' | head -1 | cut -d: -f2 | cut -d. -f1 || echo "0"
-}
+}}
 
 # v4: Function to get CPU power consumption
-get_cpu_power() {
+get_cpu_power() {{
     if command -v turbostat &> /dev/null; then
-        turbostat --quiet --show PkgWatt --num_iterations 1 2>/dev/null | tail -1 | awk '{print $1}' | cut -d. -f1 || echo "0"
+        turbostat --quiet --show PkgWatt --num_iterations 1 2>/dev/null | tail -1 | awk '{{print $1}}' | cut -d. -f1 || echo "0"
     else
         echo "0"
     fi
-}
+}}
 
 # v4: Record baseline power
 BASELINE_POWER=$(get_cpu_power)
-echo "Baseline CPU power: ${BASELINE_POWER}W"
+echo "Baseline CPU power: ${{BASELINE_POWER}}W"
 
 # v4 Safety check: Emergency throttle if too hot
-emergency_check() {
+emergency_check() {{
     local temp=$(get_cpu_temp)
     if [ -n "$temp" ] && [ "$temp" -gt {MAX_CPU_TEMP_CRITICAL} ]; then
-        echo "CRITICAL: CPU temperature at ${temp}°C! Emergency throttling!"
+        echo "CRITICAL: CPU temperature at ${{temp}}°C! Emergency throttling!"
         echo powersave | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null || true
         exit 1
     fi
-}
+}}
 
 emergency_check
 
 # Set governor based on profile
-GOVERNOR=${CPU_GOVERNOR:-performance}
+GOVERNOR=${{CPU_GOVERNOR:-performance}}
 cpupower frequency-set -g $GOVERNOR 2>/dev/null || true
 
 # Configure frequency scaling for all cores
@@ -552,7 +552,7 @@ echo 100 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null || true
 echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
 
 # Disable deep C-states for lower latency (profile-dependent)
-if [ "${ISOLATE_CORES:-false}" = "true" ]; then
+if [ "${{ISOLATE_CORES:-false}}" = "true" ]; then
     echo 1 > /sys/module/intel_idle/parameters/max_cstate 2>/dev/null || true
     echo 0 > /dev/cpu_dma_latency 2>/dev/null || true
 else
@@ -569,14 +569,14 @@ if command -v intel-undervolt &> /dev/null; then
     emergency_check
 
     # Step 2: Moderate (only if Step 1 succeeded)
-    if [ $? -eq 0 ] && [ "${UNDERVOLT_AGGRESSIVE:-false}" != "true" ]; then
+    if [ $? -eq 0 ] && [ "${{UNDERVOLT_AGGRESSIVE:-false}}" != "true" ]; then
         intel-undervolt apply -v -40 2>/dev/null || true
         sleep 2
         emergency_check
     fi
 
     # Step 3: Target (only if aggressive mode and previous steps succeeded)
-    if [ $? -eq 0 ] && [ "${UNDERVOLT_AGGRESSIVE:-false}" = "true" ]; then
+    if [ $? -eq 0 ] && [ "${{UNDERVOLT_AGGRESSIVE:-false}}" = "true" ]; then
         intel-undervolt apply 2>/dev/null || true
         echo "Full undervolt profile applied"
     else
@@ -585,7 +585,7 @@ if command -v intel-undervolt &> /dev/null; then
 fi
 
 # Configure IRQ affinity for network and GPU
-if [ "${ISOLATE_CORES:-false}" = "true" ]; then
+if [ "${{ISOLATE_CORES:-false}}" = "true" ]; then
     for irq in $(grep -E 'nvidia|igc' /proc/interrupts | cut -d: -f1); do
         echo 0-3 > /proc/irq/$irq/smp_affinity_list 2>/dev/null || true
     done
@@ -608,7 +608,7 @@ fi
 sleep 2
 CURRENT_POWER=$(get_cpu_power)
 POWER_INCREASE=$((CURRENT_POWER - BASELINE_POWER))
-echo "CPU power consumption changed by ${POWER_INCREASE}W"
+echo "CPU power consumption changed by ${{POWER_INCREASE}}W"
 
 echo "Intel i9-10850K optimized with stepped undervolting (Profile: $GOVERNOR)!"
 """
@@ -808,14 +808,14 @@ stream.properties = {{
 
 # WirePlumber Configuration for Creative Sound Blaster
 WIREPLUMBER_CONFIG = """-- Creative Sound Blaster AE-5 Plus optimizations v4
-alsa_monitor.rules = {
-  {
-    matches = {
-      {
-        { "node.name", "matches", "alsa_output.*Creative*" },
-      },
-    },
-    apply_properties = {
+alsa_monitor.rules = {{
+  {{
+    matches = {{
+      {{
+        {{ "node.name", "matches", "alsa_output.*Creative*" }},
+      }},
+    }},
+    apply_properties = {{
       ["audio.format"] = "S32LE",
       ["audio.rate"] = "48000",
       ["audio.channels"] = "2",
@@ -830,9 +830,9 @@ alsa_monitor.rules = {
       ["node.pause-on-idle"] = false,
       ["session.suspend-timeout-seconds"] = 0,
       ["resample.disable"] = true,
-    },
-  },
-}
+    }},
+  }},
+}}
 """
 
 # Intel I225-V Ethernet Module Configuration
@@ -901,7 +901,7 @@ if [ -n "$ETH" ]; then
     done
 
     # Optimize interrupt affinity based on profile
-    if [ "${ISOLATE_CORES:-false}" = "true" ]; then
+    if [ "${{ISOLATE_CORES:-false}}" = "true" ]; then
         for irq in $(grep $ETH /proc/interrupts | cut -d: -f1); do
             echo 0-3 > /proc/irq/$irq/smp_affinity_list 2>/dev/null || true
         done
@@ -918,7 +918,7 @@ NETWORK_ISOLATION_SCRIPT = """#!/bin/bash
 # Network isolation for competitive gaming - minimize jitter
 
 # Identify gaming interface
-GAMING_IF=$(ip route | grep default | awk '{print $5}' | head -1)
+GAMING_IF=$(ip route | grep default | awk '{{print $5}}' | head -1)
 
 if [ -n "$GAMING_IF" ] && [ "${NETWORK_ISOLATION:-false}" = "true" ]; then
     echo "Enabling network isolation mode for $GAMING_IF"
@@ -1254,8 +1254,8 @@ echo "Analyzing stability test results..." | tee -a "$RESULT_DIR/test.log"
 # Check for temperature throttling
 MAX_GPU_TEMP=$(cut -d, -f2 "$RESULT_DIR/temps.csv" | sort -n | tail -1)
 MAX_CPU_TEMP=$(cut -d, -f3 "$RESULT_DIR/temps.csv" | sort -n | tail -1)
-AVG_GPU_TEMP=$(cut -d, -f2 "$RESULT_DIR/temps.csv" | awk '{sum+=$1} END {print int(sum/NR)}')
-AVG_CPU_TEMP=$(cut -d, -f3 "$RESULT_DIR/temps.csv" | awk '{sum+=$1} END {print int(sum/NR)}')
+AVG_GPU_TEMP=$(cut -d, -f2 "$RESULT_DIR/temps.csv" | awk '{{sum+=$1}} END {{print int(sum/NR)}}')
+AVG_CPU_TEMP=$(cut -d, -f3 "$RESULT_DIR/temps.csv" | awk '{{sum+=$1}} END {{print int(sum/NR)}}')
 
 echo "Temperature Summary:" | tee -a "$RESULT_DIR/test.log"
 echo "  GPU Max: ${MAX_GPU_TEMP}°C, Avg: ${AVG_GPU_TEMP}°C" | tee -a "$RESULT_DIR/test.log"
@@ -1313,7 +1313,7 @@ echo "Activating Ultimate Gaming Mode (Profile: {PROFILE})..."
 /usr/local/bin/auto-backup.sh
 
 # v4: Show security warning if using competitive profile
-if [ "{PROFILE}" = "competitive" ] && [ "${SECURITY_WARNING_ACKNOWLEDGED:-false}" != "true" ]; then
+if [ "{PROFILE}" = "competitive" ] && [ "${{SECURITY_WARNING_ACKNOWLEDGED:-false}}" != "true" ]; then
     echo "╔════════════════════════════════════════════════════════╗"
     echo "║                    SECURITY WARNING                    ║"
     echo "╠════════════════════════════════════════════════════════╣"
@@ -1340,16 +1340,16 @@ export GAMING_PROFILE={PROFILE}
 source /etc/bazzite-optimizer/profiles/{PROFILE}.env 2>/dev/null || true
 
 # v4: Detect display server
-export DISPLAY_SERVER=$(echo $XDG_SESSION_TYPE)
+export DISPLAY_SERVER=$(echo ${{XDG_SESSION_TYPE}})
 echo "Display server detected: $DISPLAY_SERVER"
 
 # v4: Record baseline power consumption
 BASELINE_GPU_POWER=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits 2>/dev/null | cut -d. -f1 || echo "0")
-BASELINE_CPU_POWER=$(turbostat --quiet --show PkgWatt --num_iterations 1 2>/dev/null | tail -1 | awk '{print $1}' | cut -d. -f1 || echo "0")
-echo "Baseline power: GPU ${BASELINE_GPU_POWER}W, CPU ${BASELINE_CPU_POWER}W"
+BASELINE_CPU_POWER=$(turbostat --quiet --show PkgWatt --num_iterations 1 2>/dev/null | tail -1 | awk '{{print $1}}' | cut -d. -f1 || echo "0")
+echo "Baseline power: GPU ${{BASELINE_GPU_POWER}}W, CPU ${{BASELINE_CPU_POWER}}W"
 
 # CPU Optimizations
-echo ${CPU_GOVERNOR:-performance} | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null || true
+echo ${{CPU_GOVERNOR:-performance}} | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null || true
 echo 1 > /sys/module/processor/parameters/ignore_ppc 2>/dev/null || true
 echo 0 > /dev/cpu_dma_latency 2>/dev/null || true
 
@@ -1360,12 +1360,12 @@ echo 0 > /dev/cpu_dma_latency 2>/dev/null || true
 /usr/local/bin/ethernet-optimize.sh 2>/dev/null || true
 
 # v4: Network Isolation Mode (competitive profile)
-if [ "${NETWORK_ISOLATION:-false}" = "true" ]; then
+if [ "${{NETWORK_ISOLATION:-false}}" = "true" ]; then
     /usr/local/bin/network-isolation.sh 2>/dev/null || true
 fi
 
 # Audio latency optimization
-pw-metadata -n settings 0 clock.force-quantum ${AUDIO_QUANTUM:-512} 2>/dev/null || true
+pw-metadata -n settings 0 clock.force-quantum ${{AUDIO_QUANTUM:-512}} 2>/dev/null || true
 pw-metadata -n settings 0 clock.force-rate 48000 2>/dev/null || true
 
 # Enable MGLRU if available (kernel 6.1+)
@@ -1378,38 +1378,38 @@ echo 1 > /proc/sys/kernel/sched_autogroup_enabled 2>/dev/null || true
 
 # I/O optimizations
 for disk in /sys/block/nvme*/queue/; do
-    echo 2048 > ${disk}nr_requests 2>/dev/null || true
-    echo 2 > ${disk}rq_affinity 2>/dev/null || true
-    echo 0 > ${disk}add_random 2>/dev/null || true
-    echo 1 > ${disk}nomerges 2>/dev/null || true
+    echo 2048 > ${{disk}}nr_requests 2>/dev/null || true
+    echo 2 > ${{disk}}rq_affinity 2>/dev/null || true
+    echo 0 > ${{disk}}add_random 2>/dev/null || true
+    echo 1 > ${{disk}}nomerges 2>/dev/null || true
 done
 
 # Memory management
-echo ${VM_SWAPPINESS:-120} > /proc/sys/vm/swappiness 2>/dev/null || true
+echo ${{VM_SWAPPINESS:-120}} > /proc/sys/vm/swappiness 2>/dev/null || true
 sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
 # Power Profile
 powerprofilesctl set performance 2>/dev/null || true
 
 # Start performance monitoring
-if [ "${ENABLE_MONITORING:-true}" = "true" ]; then
+if [ "${{ENABLE_MONITORING:-true}}" = "true" ]; then
     /usr/local/bin/performance-monitor.sh &
 fi
 
 # v4: Report final power consumption
 sleep 3
 FINAL_GPU_POWER=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits 2>/dev/null | cut -d. -f1 || echo "0")
-FINAL_CPU_POWER=$(turbostat --quiet --show PkgWatt --num_iterations 1 2>/dev/null | tail -1 | awk '{print $1}' | cut -d. -f1 || echo "0")
+FINAL_CPU_POWER=$(turbostat --quiet --show PkgWatt --num_iterations 1 2>/dev/null | tail -1 | awk '{{print $1}}' | cut -d. -f1 || echo "0")
 GPU_INCREASE=$((FINAL_GPU_POWER - BASELINE_GPU_POWER))
 CPU_INCREASE=$((FINAL_CPU_POWER - BASELINE_CPU_POWER))
 
 echo "Power consumption changes:"
-echo "  GPU: +${GPU_INCREASE}W (${BASELINE_GPU_POWER}W -> ${FINAL_GPU_POWER}W)"
-echo "  CPU: +${CPU_INCREASE}W (${BASELINE_CPU_POWER}W -> ${FINAL_CPU_POWER}W)"
+echo "  GPU: +${{GPU_INCREASE}}W (${{BASELINE_GPU_POWER}}W -> ${{FINAL_GPU_POWER}}W)"
+echo "  CPU: +${{CPU_INCREASE}}W (${{BASELINE_CPU_POWER}}W -> ${{FINAL_CPU_POWER}}W)"
 echo "  Total system increase: ~$((GPU_INCREASE + CPU_INCREASE))W"
 
-notify-send "Gaming Mode" "Profile '${GAMING_PROFILE}' activated!\nPower +$((GPU_INCREASE + CPU_INCREASE))W" 2>/dev/null || true
-echo "Gaming optimizations applied successfully (Profile: ${GAMING_PROFILE})!"
+notify-send "Gaming Mode" "Profile '${{GAMING_PROFILE}}' activated!\nPower +$((GPU_INCREASE + CPU_INCREASE))W" 2>/dev/null || true
+echo "Gaming optimizations applied successfully (Profile: ${{GAMING_PROFILE}})!"
 """
 
 # Gaming Mode End Script
@@ -1464,7 +1464,7 @@ while true; do
 
     # CPU metrics
     CPU_TEMP=$(sensors -j 2>/dev/null | grep -o '"temp[0-9]_input":[0-9.]*' | head -1 | cut -d: -f2 | cut -d. -f1)
-    CPU_FREQ=$(cat /proc/cpuinfo | grep MHz | head -1 | awk '{print $4}' | cut -d. -f1)
+    CPU_FREQ=$(cat /proc/cpuinfo | grep MHz | head -1 | awk '{{print $4}}' | cut -d. -f1)
     CPU_GOV=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 
     # Network latency (ping to 8.8.8.8)
@@ -1519,7 +1519,7 @@ mkdir -p $RESULTS_DIR
 if command -v glmark2 &> /dev/null; then
     echo "Running GPU benchmark..."
     glmark2 --fullscreen --show-all-options 2>&1 | tee $RESULTS_DIR/glmark2.txt
-    GLMARK_SCORE=$(grep "glmark2 Score:" $RESULTS_DIR/glmark2.txt | awk '{print $3}')
+    GLMARK_SCORE=$(grep "glmark2 Score:" $RESULTS_DIR/glmark2.txt | awk '{{print $3}}')
     echo "GLMark2 Score: $GLMARK_SCORE"
 fi
 
@@ -1569,7 +1569,7 @@ if [ -d "$BASELINE" ]; then
     echo "-------------------------"
     # Compare scores and show improvement percentage
     if [ -f "$BASELINE/glmark2.txt" ] && [ -n "$GLMARK_SCORE" ]; then
-        BASELINE_SCORE=$(grep "glmark2 Score:" $BASELINE/glmark2.txt | awk '{print $3}')
+        BASELINE_SCORE=$(grep "glmark2 Score:" $BASELINE/glmark2.txt | awk '{{print $3}}')
         if [ -n "$BASELINE_SCORE" ]; then
             IMPROVEMENT=$(echo "scale=2; (($GLMARK_SCORE - $BASELINE_SCORE) / $BASELINE_SCORE) * 100" | bc)
             echo "GPU Performance Improvement: ${IMPROVEMENT}%"
@@ -1587,17 +1587,21 @@ pcie_aspm=off intel_iommu=on iommu=pt {ISOLCPUS} threadirqs preempt=full
 nvidia-drm.modeset=1 nvidia-drm.fbdev=1 amdgpu.ppfeaturemask=0xffffffff
 quiet splash {SECURITY_PARAMS}"""
 
-# Bazzite-specific ujust commands to run
+# Bazzite-specific ujust commands to run - Updated with valid commands that work with sudo
 BAZZITE_UJUST_COMMANDS = [
-    "ujust setup-gamemode",
-    "ujust setup-mangohud",
-    "ujust enable-gamescope-session",
-    "ujust install-greenwithenvy",
-    "ujust install-protonup-qt",
-    "ujust setup-decky",
-    "ujust clean-system",
-    "ujust configure-btrfs-dedup"
+#    "ujust setup-sunshine",  # Valid - Toggle Sunshine Game Streaming host
+#    "ujust update",  # Valid - Updates system, Flatpaks, and containers
 ]
+
+# Commands removed due to incompatibility or non-existence:
+# - ujust setup-gamemode (doesn't exist in current Bazzite)
+# - ujust setup-mangohud (doesn't exist, mangohud is pre-installed)
+# - ujust enable-gamescope-session (doesn't exist)
+# - ujust install-greenwithenvy (doesn't exist)
+# - ujust install-protonup-qt (doesn't exist)
+# - ujust setup-decky (exists but fails with sudo - "ERROR: Do not run this with sudo")
+# - ujust clean-system (causes rpm-ostree transaction conflicts with sudo)
+# - ujust configure-btrfs-dedup (doesn't exist)
 
 # ============================================================================
 # LOGGING AND UTILITY FUNCTIONS - Enhanced for v4
@@ -3303,7 +3307,7 @@ class GamingToolsOptimizer(BaseOptimizer):
         self.track_change("GameMode configuration", Path("/etc/gamemode.ini"))
 
         # Write GameMode start script with profile
-        start_script = MASTER_GAMING_SCRIPT.format(PROFILE=self.profile)
+        start_script = MASTER_GAMING_SCRIPT.format(PROFILE=self.profile, SECURITY_WARNING_ACKNOWLEDGED="false")
         if not write_config_file(Path("/usr/local/bin/gaming-mode-start.sh"),
                                  start_script, executable=True):
             return False
@@ -3509,11 +3513,14 @@ class KernelOptimizer(BaseOptimizer):
             isolcpus = "nohz_full=4-9 isolcpus=4-9 rcu_nocbs=4-9"
         else:
             isolcpus = ""
+            
+        security_params = ""
 
         additions = GRUB_CMDLINE_ADDITIONS.format(
             MITIGATIONS=mitigations,
             MAX_CSTATE=max_cstate,
-            ISOLCPUS=isolcpus
+            ISOLCPUS=isolcpus,
+            SECURITY_PARAMS=security_params
         ).strip()
 
         # Find and update GRUB_CMDLINE_LINUX
@@ -3618,7 +3625,7 @@ class SystemdServiceOptimizer(BaseOptimizer):
         self.logger.info("Creating gaming optimization service...")
 
         # Write master gaming script with profile
-        script = MASTER_GAMING_SCRIPT.format(PROFILE=self.profile)
+        script = MASTER_GAMING_SCRIPT.format(PROFILE=self.profile, SECURITY_WARNING_ACKNOWLEDGED="false")
         if not write_config_file(Path("/usr/local/bin/gaming-mode-activate.sh"),
                                  script, executable=True):
             return False
