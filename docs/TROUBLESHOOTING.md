@@ -1,35 +1,95 @@
 # Troubleshooting Guide
 
-## Quick Diagnostic Commands
+## Master Script Built-in Diagnostics
 
-### System Health Check
+The **bazzite-optimizer.py master script** includes comprehensive built-in diagnostics, validation systems, and recovery mechanisms for all 16 optimizer classes and gaming profiles.
+
+### Primary Diagnostic Commands
 ```bash
-# Comprehensive system health assessment
+# Complete system validation and health check
+./bazzite-optimizer.py --validate
+
+# Check version and available options
+./bazzite-optimizer.py --version
+./bazzite-optimizer.py --list-profiles
+
+# Dry-run to see what would be done
+./bazzite-optimizer.py --verify
+
+# Emergency rollback if issues occur  
+sudo ./bazzite-optimizer.py --rollback
+
+# Apply safer balanced profile for testing
+sudo ./bazzite-optimizer.py --profile balanced
+```
+
+### Component-Specific Diagnostics
+The master script's 16 optimizer classes include built-in validation:
+
+```bash
+# System hardware detection and validation
+./bazzite-optimizer.py --validate
+
+# Test specific profiles to isolate issues  
+sudo ./bazzite-optimizer.py --profile competitive  # Maximum performance
+sudo ./bazzite-optimizer.py --profile balanced     # Safe default
+sudo ./bazzite-optimizer.py --profile streaming    # Background processes
+sudo ./bazzite-optimizer.py --profile creative     # Content creation
+
+# Verification mode shows exactly what each profile does
+./bazzite-optimizer.py --verify --profile competitive
+```
+
+### Supporting Tools Diagnostics (Optional)
+```bash
+# Quick health check with supporting tools
 ./gaming-manager-suite.py --health
-
-# Component-specific diagnostics
-./gaming-manager-suite.py --diagnose --component gpu
-./gaming-manager-suite.py --diagnose --component cpu
-./gaming-manager-suite.py --diagnose --component memory
+./gaming-monitor-suite.py --test
+./gaming-maintenance-suite.sh --health-check
 ```
 
-### Service Status Check
+## Master Script Issue Resolution
+
+### 1. Master Script Optimization Failures
+
+#### Problem: Profile application fails
 ```bash
-# Check critical gaming services
-systemctl status system76-scheduler
-systemctl status gamemode
-systemctl --user status steam
+# Check system compatibility
+./bazzite-optimizer.py --validate
 
-# Check NVIDIA services (if applicable)
-systemctl status nvidia-persistenced
-lsmod | grep nvidia
+# Try safer balanced profile instead of competitive
+sudo ./bazzite-optimizer.py --profile balanced
+
+# Use verification mode to see what would be applied
+./bazzite-optimizer.py --verify --profile balanced
 ```
 
-## Common Issues and Solutions
+**Solution Steps:**
+1. **Hardware Validation**: Ensure RTX 5080 + i9-10850K + 64GB RAM configuration
+2. **Driver Check**: Verify NVIDIA 570.86.16+ or 580.xx series drivers
+3. **System Compatibility**: Check Bazzite Linux version and fsync kernel
+4. **Safety Fallback**: Use balanced profile for initial testing
 
-### 1. Gaming Mode Activation Issues
+#### Problem: System instability after optimization
+```bash
+# Emergency rollback to previous stable state
+sudo ./bazzite-optimizer.py --rollback
 
-#### Problem: Gaming mode won't enable
+# Validate current system state
+./bazzite-optimizer.py --validate
+
+# Apply less aggressive profile
+sudo ./bazzite-optimizer.py --profile balanced
+```
+
+**Built-in Safety Features (v1.0.3 Enhanced):**
+- **Automatic Rollback**: StabilityTester triggers rollback on <95% stability
+- **Thermal Protection**: Emergency throttling at 90°C GPU / 100°C CPU
+- **Backup Manager**: Automatic configuration backups with SHA256 integrity validation
+- **Validation Systems**: Hardware compatibility and safety checks
+- **Signal Handling**: Graceful shutdown with SIGINT/SIGTERM support for safe interruption
+- **Atomic Operations**: Secure file operations using tempfile to prevent corruption
+- **Statistical Validation**: Confidence intervals for benchmark results and stability testing
 **Symptoms:**
 - `./gaming-manager-suite.py --enable` reports errors
 - System performance doesn't improve during gaming

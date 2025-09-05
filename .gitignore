@@ -98,6 +98,7 @@ kernel-params.backup         # Kernel parameter backups
 htmlcov/                     # Coverage HTML reports
 .tox/                        # Tox testing environments
 venv/                        # Virtual environments
+.venv/                       # Virtual environments (.venv)
 env/                         # Environment directories
 .env                         # Environment variable files
 
@@ -199,6 +200,13 @@ sysbench-*.log               # Sysbench logs
 # Network configuration backups
 network-*.backup             # Network configuration backups
 wifi-passwords.txt           # WiFi passwords (if accidentally created)
+
+# ============================================================================
+# TEMPORARY AND EXCLUDED FILES
+# ============================================================================
+
+# Temporary documentation files
+WARP.md                          # Temporary WARP documentation file
 
 # ============================================================================
 # END OF GITIGNORE

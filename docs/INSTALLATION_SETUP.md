@@ -1,5 +1,23 @@
 # Installation & Setup Guide
 
+## Master Script Installation
+
+The Bazzite Gaming Optimization Suite centers around the **bazzite-optimizer.py master script** (4,649 lines, 165KB) - your complete gaming optimization solution with 16 specialized optimizer classes, 4 gaming profiles, and advanced safety systems.
+
+## Master Script Overview (v1.0.3)
+
+**bazzite-optimizer.py** is the **primary, comprehensive optimization tool** featuring:
+- **Complete Implementation**: 4,649 lines of production-ready code
+- **Code Quality Excellence**: 89% linting improvement (460→48 issues resolved)
+- **16 Specialized Optimizers**: CPU, GPU, Memory, Network, Audio, Kernel, and more
+- **4 Gaming Profiles**: Competitive, Balanced, Streaming, Creative configurations
+- **Advanced Safety Systems**: StabilityTester, ThermalManager, BackupManager with SHA256 integrity
+- **Integrated Benchmarking**: Built-in BenchmarkRunner with statistical analysis
+- **Signal Handling**: Graceful shutdown with SIGINT/SIGTERM support
+- **Atomic Operations**: Secure file operations using Python's tempfile module
+
+The **supporting scripts** (gaming-manager-suite.py, gaming-monitor-suite.py, gaming-maintenance-suite.sh) provide **auxiliary functionality** for quick access utilities, real-time monitoring, and manual benchmarking.
+
 ## Prerequisites
 
 ### System Requirements
@@ -7,17 +25,18 @@
 **Operating System**
 - Bazzite Linux (latest stable release recommended)
 - Fedora-based immutable distribution with rpm-ostree
+- fsync kernel with gaming optimizations
 
-**Hardware Requirements**
-- **CPU**: x86_64 architecture (optimized for Intel i9-10850K)
-- **GPU**: NVIDIA RTX series (optimized for RTX 5080)
-- **RAM**: 16GB minimum, 64GB recommended for optimal performance
-- **Storage**: NVMe SSD recommended (optimized for Samsung 990 EVO Plus)
+**Optimized Hardware Configuration**
+- **CPU**: Intel i9-10850K Comet Lake (optimized configuration)
+- **GPU**: NVIDIA RTX 5080 Blackwell architecture (optimized configuration)
+- **RAM**: 64GB DDR4 (optimized configuration)
+- **Storage**: Samsung 990 EVO Plus NVMe SSD (optimized configuration)
 
 **Software Dependencies**
-- Python 3.8 or higher
-- Bash shell environment
-- Standard Linux utilities (grep, awk, sed)
+- Python 3.8+ with psutil and threading support
+- NVIDIA 570.86.16 beta or newer 580.xx series drivers
+- System76-scheduler and GameMode integration
 
 ### Hardware-Specific Notes
 
@@ -36,7 +55,7 @@ nvidia-drm.modeset=1 nvidia-drm.fbdev=1
 
 ## Quick Installation
 
-### Method 1: Direct Download (Recommended)
+### Master Script Setup (Recommended)
 
 1. **Clone the repository:**
    ```bash
@@ -45,27 +64,39 @@ nvidia-drm.modeset=1 nvidia-drm.fbdev=1
    cd Bazzite-Config
    ```
 
-2. **Make scripts executable:**
+2. **Make master script executable:**
    ```bash
-   chmod +x gaming-manager-suite.py gaming-monitor-suite.py gaming-maintenance-suite.sh
+   chmod +x bazzite-optimizer.py
    ```
 
 3. **Install system dependencies:**
    ```bash
-   # Install Python packages
-   sudo dnf install python3-psutil python3-configparser
+   # Essential Python packages
+   sudo dnf install python3-psutil python3-configparser python3-threading
    
-   # Install benchmarking tools
+   # Benchmarking and testing tools
    sudo dnf install stress-ng sysbench
    
-   # Install NVIDIA tools (if using NVIDIA GPU)
-   sudo dnf install nvidia-settings
+   # NVIDIA tools for RTX 5080
+   sudo dnf install nvidia-settings nvidia-ml
    ```
 
-4. **Verify installation:**
+4. **Verify master script installation:**
    ```bash
-   ./gaming-manager-suite.py --health
+   ./bazzite-optimizer.py --validate
    ```
+
+### Supporting Tools Setup (Optional)
+
+If you want the additional monitoring and quick-fix utilities:
+
+```bash
+# Make supporting scripts executable
+chmod +x gaming-manager-suite.py gaming-monitor-suite.py gaming-maintenance-suite.sh
+
+# Test supporting tools
+./gaming-manager-suite.py --health
+```
 
 ### Method 2: Development Setup
 
@@ -232,7 +263,34 @@ EOF
 
 ## Verification & Testing
 
-### Basic Functionality Test
+### Master Script Testing
+```bash
+# List available gaming profiles
+./bazzite-optimizer.py --list-profiles
+
+# System validation and health check
+./bazzite-optimizer.py --validate
+
+# Apply balanced profile optimization (default)
+sudo ./bazzite-optimizer.py --profile balanced
+
+# Apply competitive gaming profile
+sudo ./bazzite-optimizer.py --profile competitive
+
+# Run with integrated benchmarking
+sudo ./bazzite-optimizer.py --benchmark
+
+# Verification commands only (dry-run)
+./bazzite-optimizer.py --verify
+
+# Emergency rollback if needed
+sudo ./bazzite-optimizer.py --rollback
+
+# Check version information
+./bazzite-optimizer.py --version
+```
+
+### Supporting Tools Testing (Optional)
 ```bash
 # Test Gaming Manager
 ./gaming-manager-suite.py --status
@@ -245,16 +303,16 @@ EOF
 ./gaming-maintenance-suite.sh --health-check
 ```
 
-### Performance Validation
+### Gaming Profile Testing
 ```bash
-# Quick CPU benchmark
-./gaming-maintenance-suite.sh --quick-bench
+# Test all 4 gaming profiles with the master script
+sudo ./bazzite-optimizer.py --profile competitive
+sudo ./bazzite-optimizer.py --profile balanced
+sudo ./bazzite-optimizer.py --profile streaming  
+sudo ./bazzite-optimizer.py --profile creative
 
-# System optimization test
-./gaming-manager-suite.py --enable
-sleep 10
-./gaming-manager-suite.py --status
-./gaming-manager-suite.py --disable
+# Verify profile application
+./bazzite-optimizer.py --validate
 ```
 
 ### Interactive Testing
