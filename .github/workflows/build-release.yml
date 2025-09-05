@@ -71,7 +71,7 @@ jobs:
         include:
           - os: ubuntu-latest
             architecture: x86_64
-            target_name: bazzite-linux-x86_64
+            target_name: x86_64
     
     runs-on: ${{ matrix.os }}
     
@@ -148,16 +148,10 @@ jobs:
             VERSION \
             LICENSE
             
-      - name: Generate executable info
+      - name: Generate minimal build metadata
         run: |
-          echo "# Executable Information" > dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          echo "Version: ${{ needs.detect-version.outputs.version }}" >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          echo "Architecture: ${{ matrix.architecture }}" >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          echo "Target OS: Bazzite Linux" >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          echo "Build Date: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          echo "Build System: ${{ matrix.os }}" >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          echo "Compression: UPX LZMA" >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
-          ls -lh dist/bazzite-optimizer-${{ matrix.target_name }} >> dist/bazzite-optimizer-${{ matrix.target_name }}.info
+          echo "${{ needs.detect-version.outputs.version }}" > dist/bazzite-optimizer-${{ matrix.target_name }}.version
+          echo "$(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" > dist/bazzite-optimizer-${{ matrix.target_name }}.build-date
           
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -165,7 +159,8 @@ jobs:
           name: bazzite-optimizer-${{ matrix.target_name }}-${{ needs.detect-version.outputs.version }}
           path: |
             dist/bazzite-optimizer-${{ matrix.target_name }}
-            dist/bazzite-optimizer-${{ matrix.target_name }}.info
+            dist/bazzite-optimizer-${{ matrix.target_name }}.version
+            dist/bazzite-optimizer-${{ matrix.target_name }}.build-date
             release-artifacts/bazzite-gaming-suite-auxiliary-${{ matrix.target_name }}.tar.gz
 
   create-release:
@@ -184,48 +179,20 @@ jobs:
         with:
           path: artifacts/
           
-      - name: Generate comprehensive release notes
-        id: release-notes
+          
+      - name: Check if GitHub Release exists
+        id: check-release
         run: |
-          VERSION="${{ needs.detect-version.outputs.version }}"
-          VERSION_TAG="${{ needs.detect-version.outputs.version_tag }}"
-          
-          # Read version details from VERSION file
-          VERSION_INFO=$(cat VERSION)
-          
-          # Extract release information from CHANGELOG.md
-          CHANGELOG_ENTRY=""
-          if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
-            CHANGELOG_ENTRY=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+          if gh release view "${{ needs.detect-version.outputs.version_tag }}" >/dev/null 2>&1; then
+            echo "release_exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ needs.detect-version.outputs.version_tag }} already exists (manually created)"
+          else
+            echo "release_exists=false" >> $GITHUB_OUTPUT
+            echo "ERROR: Release ${{ needs.detect-version.outputs.version_tag }} does not exist. Please create tag and release manually first."
+            exit 1
           fi
-          
-          # Create comprehensive release notes
-          printf '# 🎮 Bazzite Gaming Optimization Suite v%s\n\n## 🚀 Release Overview\n\n%s\n\n## 📊 Master Script Specifications' \
-            "${VERSION}" "${CHANGELOG_ENTRY}" > release-notes.md
-          
-          printf '\n\n- **Script Name**: bazzite-optimizer.py\n- **Script Size**: 4,649 lines, 165KB\n- **Optimizer Classes**: 16 specialized optimization modules\n- **Gaming Profiles**: 4 profiles (Competitive, Balanced, Streaming, Creative)\n- **Hardware Support**: RTX 5080, Intel i9-10850K, 64GB RAM, Samsung 990 EVO Plus\n- **Performance Gains**: 15-25%% gaming performance improvement\n- **Safety Systems**: StabilityTester, ThermalManager, BackupManager with SHA256 integrity\n\n## 🏗️ Architecture Components' >> release-notes.md
-          
-          # Continue with the rest of the release notes content using printf
-          printf '\n\n### Master Script (Primary Tool)\n- **bazzite-optimizer.py** - Comprehensive optimization framework\n  - 16 Specialized Optimizer Classes\n  - 4 Gaming Profiles with hardware-specific tuning\n  - Built-in BenchmarkRunner with statistical analysis\n  - Advanced safety systems with rollback capabilities\n  - Signal handling (SIGINT/SIGTERM) and atomic operations\n\n### Supporting Utilities (Auxiliary Tools)\n- **gaming-manager-suite.py** - System control and profile management\n- **gaming-monitor-suite.py** - Real-time performance monitoring with curses dashboard\n- **gaming-maintenance-suite.sh** - Automated benchmarking and system maintenance\n\n## 🔧 Technical Implementation\n\n### Hardware Optimization Features\n- **NVIDIA RTX 5080**: Blackwell architecture with -open driver variant optimization\n- **Intel i9-10850K**: Comet Lake tuning with aggressive C-state management\n- **64GB RAM**: Intelligent ZRAM configuration (8-16GB with LZ4 compression)\n- **Samsung 990 EVO Plus**: NVMe optimization with none/noop I/O scheduler\n- **Bazzite Integration**: fsync kernel, System76-scheduler, GameMode compatibility\n\n### Performance Metrics\n- **Gaming Performance**: 15-25%% improvement through combined optimizations\n- **Cold Start Times**: 13%% improvement with SystemdServiceOptimizer\n- **Frame Time Consistency**: 25%% improvement via NvidiaOptimizer + CPUOptimizer\n- **Memory Efficiency**: 15-25%% effective RAM increase with optimized ZRAM\n- **Network Latency**: 5-15%% reduction with NetworkOptimizer competitive profile\n- **System Stability**: 95%%+ stability with built-in validation systems\n\n## 📦 Release Assets\n\n### Executable Distribution\n- **bazzite-optimizer-x86_64** - Main optimization executable (UPX compressed)\n- **bazzite-gaming-suite-auxiliary-x86_64.tar.gz** - Supporting tools and documentation\n\n### Installation Requirements\n- **Operating System**: Bazzite Linux (latest stable release)\n- **Python**: 3.8+ (for auxiliary tools)\n- **Dependencies**: psutil, threading support\n- **Permissions**: sudo access for system optimizations\n\n## 🎯 Usage Examples\n\n### Master Script Commands\n```bash\n# Download and make executable\nchmod +x bazzite-optimizer-x86_64\n\n# List available gaming profiles\n./bazzite-optimizer-x86_64 --list-profiles\n\n# Apply competitive profile for maximum performance\nsudo ./bazzite-optimizer-x86_64 --profile competitive\n\n# Run system validation and benchmarking\n./bazzite-optimizer-x86_64 --validate\nsudo ./bazzite-optimizer-x86_64 --profile balanced --benchmark\n\n# Emergency rollback if needed\nsudo ./bazzite-optimizer-x86_64 --rollback\n```\n\n### Supporting Tools Usage\n```bash\n# Extract auxiliary tools\ntar -xzf bazzite-gaming-suite-auxiliary-x86_64.tar.gz\n\n# Real-time monitoring\n./gaming-monitor-suite.py --mode dashboard\n\n# System health check\n./gaming-manager-suite.py --health\n\n# Manual benchmarking\n./gaming-maintenance-suite.sh\n```\n\n## 🔗 Resources\n\n- **Repository**: https://github.com/doublegate/Bazzite-Config\n- **Documentation**: Complete installation guides, troubleshooting, and technical architecture\n- **Issue Tracking**: Bug reports and feature requests welcome\n- **Community**: Professional open-source project with MIT license\n\n## ⚠️ Important Notes\n\n- **Backup Recommended**: Master script includes automatic backup systems\n- **Hardware Specific**: Optimized for RTX 5080 + i9-10850K + 64GB RAM configurations\n- **Compatibility**: Full support for Bazzite'\''s composefs/immutable filesystem architecture\n- **Safety**: Built-in stability testing and rollback capabilities included\n\n---\n\n**Built for the Linux gaming community with ❤️**' >> release-notes.md
-          
-      - name: Create Git tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ needs.detect-version.outputs.version_tag }}" -m "Release ${{ needs.detect-version.outputs.version_tag }}"
-          git push origin "${{ needs.detect-version.outputs.version_tag }}"
-          
-      - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ needs.detect-version.outputs.version_tag }}
-          release_name: "Bazzite Gaming Optimization Suite ${{ needs.detect-version.outputs.version_tag }}"
-          body_path: release-notes.md
-          draft: false
-          prerelease: ${{ github.event.inputs.prerelease == 'true' || contains(needs.detect-version.outputs.version, 'beta') || contains(needs.detect-version.outputs.version, 'alpha') }}
           
       - name: Upload release assets
         run: |
@@ -237,9 +204,15 @@ jobs:
                 --clobber
             fi
             
-            if [[ -f "${artifact_dir}bazzite-optimizer-x86_64.info" ]]; then
+            if [[ -f "${artifact_dir}bazzite-optimizer-x86_64.version" ]]; then
               gh release upload "${{ needs.detect-version.outputs.version_tag }}" \
-                "${artifact_dir}bazzite-optimizer-x86_64.info" \
+                "${artifact_dir}bazzite-optimizer-x86_64.version" \
+                --clobber
+            fi
+            
+            if [[ -f "${artifact_dir}bazzite-optimizer-x86_64.build-date" ]]; then
+              gh release upload "${{ needs.detect-version.outputs.version_tag }}" \
+                "${artifact_dir}bazzite-optimizer-x86_64.build-date" \
                 --clobber
             fi
             
@@ -255,33 +228,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Update release with automated build notes
+      - name: Verify build success
         run: |
-          # Get current release body
-          CURRENT_BODY=$(gh release view "${{ needs.detect-version.outputs.version_tag }}" --json body -q .body)
-          
-          # Generate automated build information
-          printf '\n---\n\n## 🤖 Automated Build Information\n\n### Build Environment\n- **Build Date**: %s\n- **Build System**: Ubuntu Latest (GitHub Actions)\n- **Python Version**: %s\n- **PyInstaller**: Latest stable\n- **Compression**: UPX LZMA\n- **Architecture**: x86_64\n\n### Build Artifacts Generated' \
-            "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" "${{ env.PYTHON_VERSION }}" > build-info.md
-          
-          # List all uploaded artifacts
-          echo "" >> build-info.md
-          for artifact_dir in artifacts/*/; do
-            for file in "${artifact_dir}"*; do
-              if [[ -f "$file" ]]; then
-                filename=$(basename "$file")
-                size=$(ls -lh "$file" | awk '{print $5}')
-                echo "- **${filename}** (${size})" >> build-info.md
-              fi
-            done
-          done
-          
-          printf '\n\n### Verification\nAll executables have been tested for:\n- ✅ Version display (`--version`)\n- ✅ Profile listing (`--list-profiles`)\n- ✅ System compatibility validation\n- ✅ Dependency resolution\n- ✅ Compression integrity\n\n### Installation Verification\n```bash\n# Download executable\nwget https://github.com/doublegate/Bazzite-Config/releases/download/%s/bazzite-optimizer-x86_64\n\n# Make executable and test\nchmod +x bazzite-optimizer-x86_64\n./bazzite-optimizer-x86_64 --version\n```\n\n**🤖 This release was automatically built and published by GitHub Actions**' \
-            "${{ needs.detect-version.outputs.version_tag }}" >> build-info.md
-          
-          # Update release with combined notes (original + automated)
-          COMBINED_BODY="${CURRENT_BODY}$(cat build-info.md)"
-          gh release edit "${{ needs.detect-version.outputs.version_tag }}" --notes "$COMBINED_BODY"
+          echo "✅ Build artifacts ready for release ${{ needs.detect-version.outputs.version_tag }}"
+          echo "📦 Artifacts will be uploaded to manually created release"
+          echo "🎯 Your manual release notes will remain unchanged"
           
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

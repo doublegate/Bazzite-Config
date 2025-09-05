@@ -2,6 +2,39 @@
 
 ## Completed Releases
 
+### ✅ v1.0.5 - Directory Management & CI/CD Compatibility (September 5, 2025)
+
+#### 🏗️ Architecture Excellence & CI/CD Compatibility Achievement
+**MAJOR REFACTORING**: Comprehensive code architecture improvements with centralized directory management and enhanced CI/CD compatibility
+
+**Completed Features:**
+- [x] **Centralized Directory Management**: Universal `ensure_directory_with_fallback()` utility function
+- [x] **Code Architecture Refactoring**: BenchmarkRunner, ProfileManager, setup_logging(), backup_file() updated
+- [x] **DRY Principle Implementation**: Eliminated 15+ duplicate directory creation patterns
+- [x] **CI/CD Environment Support**: Complete GitHub Actions compatibility with graceful fallback
+- [x] **Production Output Optimization**: Cleaner logging with preserved diagnostic capabilities
+- [x] **Error Resilience Enhancement**: Comprehensive PermissionError/OSError handling
+- [x] **Code Consolidation**: 70 lines of duplicate code consolidated into reusable function
+- [x] **Documentation Synchronization**: All project documentation updated with v1.0.5 status
+
+**Architecture Achievements:**
+- [x] Single point of control for all directory creation logic
+- [x] Consistent fallback pattern: system path → ~/.local/share/subpath → graceful degradation
+- [x] GitHub Actions build pipeline compatibility without permission errors
+- [x] Enhanced maintainability with reduced code duplication
+- [x] Production-ready clean output while maintaining diagnostic capabilities
+
+### ✅ v1.0.4 - Bazzite Compatibility & Bug Fixes (September 4, 2025)
+
+#### 🔧 Critical Compatibility Achievement
+**CRITICAL MILESTONE**: Complete resolution of Bazzite/composefs compatibility issues
+
+**Completed Features:**
+- [x] **Kernel Version Parsing Fix**: Regex-based parsing for modern Linux kernels with hyphens
+- [x] **Smart Disk Space Detection**: Priority-based mount point analysis for composefs/immutable filesystems
+- [x] **Bazzite Architecture Support**: Full compatibility with /var/home, /sysroot mount structures
+- [x] **Script Initialization Success**: Resolves "invalid literal for int()" and "0 GB free space" errors
+
 ### ✅ v1.0.3 - Documentation Excellence & Code Quality (September 5, 2025)
 
 #### 🎯 Master Script Documentation & Code Quality Achievement  

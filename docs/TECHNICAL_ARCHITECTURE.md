@@ -544,12 +544,40 @@ class OptimizationPlugin:
 
 ## Quality Architecture
 
+### Directory Management System (v1.0.5)
+
+**Centralized Directory Utility**: Universal `ensure_directory_with_fallback()` function provides consistent directory creation across all subsystems.
+
+#### Implementation Architecture
+```python
+def ensure_directory_with_fallback(system_path, user_subpath, description="directory"):
+    """
+    Universal directory creation with fallback pattern:
+    1. Attempt system directory creation (e.g., /var/log/gaming-benchmark)
+    2. Fallback to user directory (e.g., ~/.local/share/gaming-benchmark)
+    3. Graceful degradation with comprehensive error handling
+    """
+```
+
+#### Affected Subsystems
+- **BenchmarkRunner**: Result storage with fallback to user directories
+- **ProfileManager**: Game profile configuration directories
+- **Backup System**: Configuration backup with atomic operations
+- **Logging System**: Log directory creation with CI/CD compatibility
+- **Config Management**: PipeWire, WirePlumber, MangoHud, System76-scheduler
+
+#### CI/CD Compatibility Features
+- **Permission Error Handling**: Comprehensive PermissionError/OSError management
+- **GitHub Actions Support**: Automatic fallback for restricted environments
+- **Production Output**: Clean logging with preserved diagnostic capabilities
+- **Error Resilience**: Graceful degradation in limited filesystem access scenarios
+
 ### Error Handling Strategy
 1. **Validation**: Input/configuration verification
-2. **Graceful Degradation**: Partial functionality on errors
-3. **Recovery**: Automatic rollback mechanisms
-4. **Logging**: Comprehensive error documentation
-5. **User Feedback**: Clear error messages and solutions
+2. **Graceful Degradation**: Partial functionality on errors with directory fallbacks
+3. **Recovery**: Automatic rollback mechanisms with centralized directory management
+4. **Logging**: Comprehensive error documentation with CI/CD compatibility
+5. **User Feedback**: Clear error messages and solutions with fallback information
 
 ### Testing Framework
 - **Unit Tests**: Individual component validation

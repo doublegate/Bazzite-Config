@@ -8,7 +8,7 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776ab?style=for-the-badge&logo=python)
 ![Shell](https://img.shields.io/badge/Shell-Bash-4eaa25?style=for-the-badge&logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.4-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.5-brightgreen?style=for-the-badge)
 
 **Professional gaming system optimization powered by the comprehensive bazzite-optimizer.py master script**
 
@@ -18,14 +18,15 @@
 
 The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (4,649 lines, 165KB). This complete solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations including NVIDIA RTX 5080, Intel i9-10850K, and 64GB RAM through 16 specialized optimizer classes and intelligent system tuning.
 
-## 🆕 v1.0.4 - Bazzite Compatibility & Bug Fixes
+## 🆕 v1.0.5 - Directory Management & CI/CD Compatibility
 
-**Critical compatibility improvements for Bazzite systems:**
+**Major code architecture improvements and enhanced compatibility:**
 
-- 🔧 **Kernel Version Parsing Fix** - Regex-based parsing for modern Linux kernels with hyphens (6.16.4-104.bazzite.fc42.x86_64)
-- 💾 **Smart Disk Space Detection** - Priority-based mount point analysis for composefs/immutable filesystems
-- 🏗️ **Bazzite Architecture Support** - Full compatibility with /var/home, /sysroot mount structures
-- ✅ **Script Initialization Success** - Resolves "invalid literal for int()" and "0 GB free space" errors
+- 🏗️ **Centralized Directory Management** - Universal `ensure_directory_with_fallback()` utility function
+- 🚀 **CI/CD Environment Support** - Complete GitHub Actions compatibility with graceful fallback
+- 🛡️ **Error Resilience** - Comprehensive PermissionError/OSError handling across all operations
+- 📊 **Production Ready** - Cleaner output with preserved diagnostic capabilities
+- 🎯 **Code Quality** - Eliminated 15+ duplicate directory patterns, improved maintainability
 
 ### ✨ Master Script Features
 

@@ -1,11 +1,11 @@
-1.0.4
+1.0.5
 
 # Bazzite Gaming Optimization Suite Version Information
-# Bazzite Compatibility & Bug Fixes Release
+# Directory Management & CI/CD Compatibility Release
 
-Version: 1.0.4
-Release Name: "Bazzite Compatibility & Bug Fixes"
-Release Date: 2025-09-04
+Version: 1.0.5
+Release Name: "Directory Management & CI/CD Compatibility"
+Release Date: 2025-09-05
 Build: 4649-165KB
 
 # Key Components
@@ -35,7 +35,14 @@ V3+V4 Integration: Complete feature set with enhanced safety
 Built-in Systems: Benchmarking, validation, backup/rollback
 Architecture: Three-component suite with master script foundation
 
-# Release Focus (v1.0.4)
+# Release Focus (v1.0.5)
+- Centralized directory management utility function implementation
+- Comprehensive CI/CD environment compatibility improvements
+- Complete elimination of directory permission error inconsistencies
+- Enhanced code maintainability with reduced duplication
+- Production output optimization with cleaner logging
+
+# Previous Release Focus (v1.0.4)
 - Critical bug fixes for Bazzite/composefs compatibility
 - Kernel version parsing fix using regex for modern Linux systems
 - Smart disk space detection for immutable filesystems
