@@ -199,12 +199,12 @@ jobs:
           fi
           
           # Create comprehensive release notes
-          cat > release-notes.md << 'EOL'
-# 🎮 Bazzite Gaming Optimization Suite v$VERSION
+          cat > release-notes.md << EOL
+# 🎮 Bazzite Gaming Optimization Suite v${VERSION}
           
 ## 🚀 Release Overview
           
-$CHANGELOG_ENTRY
+${CHANGELOG_ENTRY}
           
 ## 📊 Master Script Specifications
           
@@ -316,8 +316,6 @@ tar -xzf bazzite-gaming-suite-auxiliary-x86_64.tar.gz
           
 EOL
           
-          # Replace placeholders with actual values
-          sed -i "s/\$VERSION/$VERSION/g" release-notes.md
           
       - name: Create Git tag
         run: |
