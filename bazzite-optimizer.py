@@ -4173,8 +4173,7 @@ class BazziteGamingOptimizer:
     def apply_optimizations(self, skip_packages: bool = False, run_benchmarks: bool = False):
         """Apply all optimizations with validation"""
         print_colored(
-            f"\nStarting optimization process (Profile: {
-                self.profile.upper()})...",
+            f"\nStarting optimization process (Profile: {self.profile.upper()})...",
             Colors.HEADER)
 
         # Run baseline benchmarks if requested
@@ -4227,8 +4226,7 @@ class BazziteGamingOptimizer:
                     failed_validations = [k for k, v in validations.items() if not v]
                     if failed_validations:
                         print_colored(
-                            f"  ⚠ Some validations failed: {
-                                ', '.join(failed_validations)}",
+                            f"  ⚠ Some validations failed: {', '.join(failed_validations)}",
                             Colors.WARNING)
                     else:
                         print_colored("  ✓ All validations passed", Colors.OKGREEN)
@@ -4648,8 +4646,7 @@ Examples:
                 print_colored("!" * 62, Colors.WARNING)
 
             print_colored(
-                f"\n✓ Optimization complete with {
-                    self.profile.upper()} profile! Happy gaming! 🎮",
+                f"\n✓ Optimization complete with {self.profile.upper()} profile! Happy gaming! 🎮",
                 Colors.OKGREEN + Colors.BOLD)
             print_colored(f"\nLog file: {LOG_DIR}/optimization_{TIMESTAMP}.log", Colors.OKBLUE)
             return 0
