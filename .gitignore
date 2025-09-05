@@ -116,6 +116,14 @@ dist/                        # Distribution directories
 *.egg-info/                  # Python egg info
 *.spec                       # PyInstaller spec files
 
+# GitHub Actions artifacts
+artifacts/                   # GitHub Actions artifacts directory
+release-notes.md             # Generated release notes
+build-info.md                # Generated build information
+*.tar.gz                     # Generated tar archives (for releases)
+*.zip                        # Generated zip archives (for releases)
+bazzite-config-*-source.*    # Generated source archives
+
 # ============================================================================
 # TESTING AND QUALITY ASSURANCE
 # ============================================================================

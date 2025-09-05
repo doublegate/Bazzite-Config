@@ -1,0 +1,112 @@
+name: Manual Release Trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: 'Override version (leave empty to use VERSION file)'
+        required: false
+        type: string
+      force_rebuild:
+        description: 'Force rebuild even if tag exists'
+        required: false
+        default: false
+        type: boolean
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+      include_source:
+        description: 'Include source code archives'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  trigger-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version_override }}" ]; then
+            VERSION="${{ github.event.inputs.version_override }}"
+            VERSION_TAG="v${VERSION}"
+          else
+            VERSION=$(head -n1 VERSION)
+            VERSION_TAG="v${VERSION}"
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
+          echo "Manual release triggered for version: ${VERSION_TAG}"
+          
+      - name: Check existing tag
+        id: check-tag
+        run: |
+          if git rev-parse --verify "refs/tags/${{ steps.version.outputs.version_tag }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.version.outputs.version_tag }} already exists"
+            if [ "${{ github.event.inputs.force_rebuild }}" == "true" ]; then
+              echo "Force rebuild enabled - removing existing tag and release"
+              git tag -d "${{ steps.version.outputs.version_tag }}" || true
+              git push --delete origin "${{ steps.version.outputs.version_tag }}" || true
+              gh release delete "${{ steps.version.outputs.version_tag }}" -y || true
+              echo "proceed=true" >> $GITHUB_OUTPUT
+            else
+              echo "proceed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Trigger main build workflow
+        if: steps.check-tag.outputs.proceed == 'true'
+        uses: ./.github/workflows/build-release.yml
+        with:
+          version_tag: ${{ steps.version.outputs.version_tag }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          
+      - name: Add source archives to release
+        if: steps.check-tag.outputs.proceed == 'true' && github.event.inputs.include_source == 'true'
+        run: |
+          # Wait for main workflow to complete
+          sleep 60
+          
+          # Create source archives
+          git archive --format=tar.gz --prefix="bazzite-config-${{ steps.version.outputs.version }}/" \
+            HEAD > "bazzite-config-${{ steps.version.outputs.version }}-source.tar.gz"
+            
+          git archive --format=zip --prefix="bazzite-config-${{ steps.version.outputs.version }}/" \
+            HEAD > "bazzite-config-${{ steps.version.outputs.version }}-source.zip"
+            
+          # Upload source archives to release
+          gh release upload "${{ steps.version.outputs.version_tag }}" \
+            "bazzite-config-${{ steps.version.outputs.version }}-source.tar.gz" \
+            "bazzite-config-${{ steps.version.outputs.version }}-source.zip" \
+            --clobber
+            
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Summary
+        run: |
+          if [ "${{ steps.check-tag.outputs.proceed }}" == "true" ]; then
+            echo "✅ Manual release ${{ steps.version.outputs.version_tag }} triggered successfully!"
+            echo "🔗 Release will be available at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version_tag }}"
+            if [ "${{ github.event.inputs.include_source }}" == "true" ]; then
+              echo "📦 Source archives will be included"
+            fi
+            if [ "${{ github.event.inputs.prerelease }}" == "true" ]; then
+              echo "🚧 Marked as pre-release"
+            fi
+          else
+            echo "❌ Release ${{ steps.version.outputs.version_tag }} already exists and force rebuild not enabled"
+          fi

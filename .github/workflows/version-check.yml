@@ -1,0 +1,158 @@
+name: Version Consistency Check
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'VERSION'
+      - 'CHANGELOG.md'
+      - 'bazzite-optimizer.py'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'VERSION'
+      - 'CHANGELOG.md' 
+      - 'bazzite-optimizer.py'
+
+jobs:
+  version-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Check version consistency
+        run: |
+          echo "🔍 Checking version consistency across project files..."
+          
+          # Get version from VERSION file
+          VERSION_FILE=$(head -n1 VERSION)
+          echo "VERSION file: $VERSION_FILE"
+          
+          # Check if CHANGELOG has matching version
+          if grep -q "## \[$VERSION_FILE\]" CHANGELOG.md; then
+            echo "✅ CHANGELOG.md has matching version entry"
+          else
+            echo "❌ CHANGELOG.md missing version $VERSION_FILE entry"
+            ERRORS=1
+          fi
+          
+          # Check if bazzite-optimizer.py has version info (if it contains __version__)
+          if grep -q "__version__" bazzite-optimizer.py; then
+            SCRIPT_VERSION=$(grep "__version__" bazzite-optimizer.py | sed 's/.*"\(.*\)".*/\1/')
+            if [ "$SCRIPT_VERSION" == "$VERSION_FILE" ]; then
+              echo "✅ bazzite-optimizer.py version matches: $SCRIPT_VERSION"
+            else
+              echo "❌ bazzite-optimizer.py version mismatch: $SCRIPT_VERSION vs $VERSION_FILE"
+              ERRORS=1
+            fi
+          else
+            echo "ℹ️ bazzite-optimizer.py does not contain __version__ variable"
+          fi
+          
+          # Check README.md version badge
+          if grep -q "Version-${VERSION_FILE}" README.md; then
+            echo "✅ README.md version badge matches"
+          else
+            echo "❌ README.md version badge needs updating to $VERSION_FILE"
+            ERRORS=1
+          fi
+          
+          # Check for valid semantic versioning
+          if echo "$VERSION_FILE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([.-]?[a-zA-Z0-9]+)*$'; then
+            echo "✅ Version follows semantic versioning"
+          else
+            echo "❌ Version does not follow semantic versioning: $VERSION_FILE"
+            ERRORS=1
+          fi
+          
+          # Summary
+          if [ "${ERRORS:-0}" == "1" ]; then
+            echo "❌ Version consistency check failed"
+            exit 1
+          else
+            echo "✅ All version consistency checks passed"
+          fi
+          
+  changelog-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Validate CHANGELOG format
+        run: |
+          echo "🔍 Validating CHANGELOG.md format..."
+          
+          VERSION_FILE=$(head -n1 VERSION)
+          
+          # Check for proper changelog structure
+          if ! grep -q "# Changelog" CHANGELOG.md && ! grep -q "# CHANGELOG" CHANGELOG.md; then
+            echo "❌ CHANGELOG.md missing main heading"
+            exit 1
+          fi
+          
+          # Check if version entry exists and has required sections
+          if grep -q "## \[$VERSION_FILE\]" CHANGELOG.md; then
+            echo "✅ Found version entry for $VERSION_FILE"
+            
+            # Extract the version section
+            VERSION_SECTION=$(sed -n "/## \[$VERSION_FILE\]/,/## \[/p" CHANGELOG.md | sed '$d')
+            
+            # Check for release date
+            if echo "$VERSION_SECTION" | grep -q "[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}"; then
+              echo "✅ Version entry has release date"
+            else
+              echo "⚠️ Version entry missing release date"
+            fi
+            
+            # Check for content in version section
+            CONTENT_LINES=$(echo "$VERSION_SECTION" | sed '/^$/d' | wc -l)
+            if [ "$CONTENT_LINES" -gt 2 ]; then
+              echo "✅ Version entry has content ($CONTENT_LINES lines)"
+            else
+              echo "❌ Version entry appears to be empty or minimal"
+              exit 1
+            fi
+            
+          else
+            echo "❌ No version entry found for $VERSION_FILE in CHANGELOG.md"
+            exit 1
+          fi
+          
+  documentation-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Check documentation version references
+        run: |
+          echo "🔍 Checking version references in documentation..."
+          
+          VERSION_FILE=$(head -n1 VERSION)
+          ERRORS=0
+          
+          # Check key documentation files for version references
+          DOC_FILES=("docs/INSTALLATION_SETUP.md" "docs/TECHNICAL_ARCHITECTURE.md" "docs/PERFORMANCE_BENCHMARKING.md" "docs/TROUBLESHOOTING.md")
+          
+          for doc in "${DOC_FILES[@]}"; do
+            if [ -f "$doc" ]; then
+              if grep -q "$VERSION_FILE" "$doc"; then
+                echo "✅ $doc contains version $VERSION_FILE"
+              else
+                echo "⚠️ $doc may need version update to $VERSION_FILE"
+                # Don't fail on this as it might be intentional
+              fi
+            else
+              echo "ℹ️ $doc not found (optional)"
+            fi
+          done
+          
+          echo "✅ Documentation version check completed"
