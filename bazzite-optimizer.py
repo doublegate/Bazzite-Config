@@ -3745,19 +3745,37 @@ class BenchmarkRunner:
     def __init__(self, logger: logging.Logger):
         self.logger = logger
         self.results_dir = Path("/var/log/bazzite-optimizer/benchmarks")
-        self.results_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.results_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            # Fall back to user directory in CI environments
+            fallback_dir = Path.home() / ".local" / "share" / "bazzite-optimizer" / "benchmarks"
+            try:
+                fallback_dir.mkdir(parents=True, exist_ok=True)
+                self.results_dir = fallback_dir
+                self.logger.debug(f"Using fallback benchmark directory: {fallback_dir}")
+            except (PermissionError, OSError):
+                # If even fallback fails, disable benchmarking
+                self.results_dir = None
+                self.logger.debug("Benchmarking disabled due to permission restrictions")
 
     def run_baseline(self) -> Dict[str, Any]:
         """Run baseline benchmarks before optimization"""
+        if self.results_dir is None:
+            self.logger.debug("Benchmarking disabled, returning empty results")
+            return {}
+            
         self.logger.info("Running baseline benchmarks...")
 
         baseline_dir = self.results_dir / "baseline"
-        baseline_dir.mkdir(parents=True, exist_ok=True)
-
-        results = self._run_benchmarks(baseline_dir)
-
-        self.logger.info("Baseline benchmarks completed")
-        return results
+        try:
+            baseline_dir.mkdir(parents=True, exist_ok=True)
+            results = self._run_benchmarks(baseline_dir)
+            self.logger.info("Baseline benchmarks completed")
+            return results
+        except (PermissionError, OSError) as e:
+            self.logger.debug(f"Benchmark directory creation failed: {e}")
+            return {}
 
     def analyze_benchmark_statistics(self, results: List[float]) -> Dict[str, float]:
         """Analyze benchmark results using statistical methods"""
@@ -3795,20 +3813,28 @@ class BenchmarkRunner:
 
     def run_post_optimization(self) -> Dict[str, Any]:
         """Run benchmarks after optimization"""
+        if self.results_dir is None:
+            self.logger.debug("Benchmarking disabled, returning empty results")
+            return {}
+            
         self.logger.info("Running post-optimization benchmarks...")
 
-        post_dir = self.results_dir / f"post_{TIMESTAMP}"
-        post_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            post_dir = self.results_dir / f"post_{TIMESTAMP}"
+            post_dir.mkdir(parents=True, exist_ok=True)
 
-        results = self._run_benchmarks(post_dir)
+            results = self._run_benchmarks(post_dir)
 
-        # Compare with baseline
-        baseline_dir = self.results_dir / "baseline"
-        if baseline_dir.exists():
-            self._compare_results(baseline_dir, post_dir)
+            # Compare with baseline
+            baseline_dir = self.results_dir / "baseline"
+            if baseline_dir.exists():
+                self._compare_results(baseline_dir, post_dir)
 
-        self.logger.info("Post-optimization benchmarks completed")
-        return results
+            self.logger.info("Post-optimization benchmarks completed")
+            return results
+        except (PermissionError, OSError) as e:
+            self.logger.debug(f"Post-optimization benchmark failed: {e}")
+            return {}
 
     def _run_benchmarks(self, output_dir: Path) -> Dict[str, Any]:
         """Run all benchmarks and save results"""
