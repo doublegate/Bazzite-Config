@@ -1606,15 +1606,12 @@ BAZZITE_UJUST_COMMANDS = [
 
 def setup_logging() -> logging.Logger:
     """Configure comprehensive logging system with rotation"""
-    # Try to create log directory, fall back to user directory if permission denied
-    try:
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
-        log_file = LOG_DIR / f"optimization_{TIMESTAMP}.log"
-    except PermissionError:
-        # Fall back to user's home directory for CI/testing environments
-        fallback_dir = Path.home() / ".local" / "share" / "bazzite-optimizer" / "logs"
-        fallback_dir.mkdir(parents=True, exist_ok=True)
-        log_file = fallback_dir / f"optimization_{TIMESTAMP}.log"
+    # Create log directory with fallback for CI/testing environments
+    log_dir = ensure_directory_with_fallback(LOG_DIR, "bazzite-optimizer/logs")
+    if log_dir:
+        log_file = log_dir / f"optimization_{TIMESTAMP}.log"
+    else:
+        log_file = None
 
     # Create detailed formatter
     formatter = logging.Formatter(
@@ -1631,14 +1628,17 @@ def setup_logging() -> logging.Logger:
     logger.setLevel(logging.DEBUG)
     logger.addHandler(console_handler)
     
-    # Try to add file handler, continue without it if permission issues
-    try:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel(logging.DEBUG)
-        logger.addHandler(file_handler)
-    except (PermissionError, OSError):
-        # In CI/testing environments, console-only logging is acceptable
+    # Try to add file handler if log file is available
+    if log_file:
+        try:
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(formatter)
+            file_handler.setLevel(logging.DEBUG)
+            logger.addHandler(file_handler)
+        except (PermissionError, OSError):
+            # In CI/testing environments, console-only logging is acceptable
+            logger.warning("Could not create log file, continuing with console logging only")
+    else:
         logger.warning("Could not create log file, continuing with console logging only")
 
     # v4: Setup log rotation (skip if permission denied)
@@ -1819,18 +1819,55 @@ def run_command(command: str, shell: bool = True, check: bool = True,
         return -1, "", str(e)
 
 
+def ensure_directory_with_fallback(system_path: Path, fallback_subpath: str, 
+                                  logger: Optional[logging.Logger] = None) -> Optional[Path]:
+    """
+    Create system directory with fallback to user directory for CI/restricted environments.
+    
+    Args:
+        system_path: Preferred system directory path (e.g., Path('/var/log/app'))
+        fallback_subpath: Subpath under ~/.local/share/ for fallback (e.g., 'app/logs')
+        logger: Optional logger for debug messages
+        
+    Returns:
+        Path object of created directory, or None if both attempts failed
+    """
+    # Try system directory first
+    try:
+        system_path.mkdir(parents=True, exist_ok=True)
+        if logger:
+            logger.debug(f"Using system directory: {system_path}")
+        return system_path
+    except (PermissionError, OSError) as e:
+        # Fall back to user directory
+        fallback_dir = Path.home() / ".local" / "share" / fallback_subpath
+        try:
+            fallback_dir.mkdir(parents=True, exist_ok=True)
+            if logger:
+                logger.debug(f"Using fallback directory: {fallback_dir}")
+            return fallback_dir
+        except (PermissionError, OSError):
+            if logger:
+                logger.debug(f"Failed to create both system ({system_path}) and fallback ({fallback_dir}) directories")
+            return None
+
+
 def backup_file(filepath: Path) -> Optional[Path]:
     """Create timestamped backup of existing file"""
     if filepath.exists():
-        try:
-            CONFIG_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-            backup_path = CONFIG_BACKUP_DIR / f"{filepath.name}.{TIMESTAMP}"
-            shutil.copy2(filepath, backup_path)
-            logging.info(f"Backed up {filepath} to {backup_path}")
-            return backup_path
-        except (PermissionError, OSError) as e:
-            # Fall back to user directory or skip backup in CI environments
-            logging.debug(f"Could not create backup for {filepath}: {e}")
+        # Use centralized directory management for backup directory
+        backup_dir = ensure_directory_with_fallback(CONFIG_BACKUP_DIR, "bazzite-optimizer/backups")
+        if backup_dir:
+            try:
+                backup_path = backup_dir / f"{filepath.name}.{TIMESTAMP}"
+                shutil.copy2(filepath, backup_path)
+                logging.info(f"Backed up {filepath} to {backup_path}")
+                return backup_path
+            except (PermissionError, OSError) as e:
+                logging.debug(f"Could not create backup for {filepath}: {e}")
+                return None
+        else:
+            logging.debug(f"Could not create backup directory for {filepath}")
             return None
     return None
 
@@ -3744,20 +3781,10 @@ class BenchmarkRunner:
 
     def __init__(self, logger: logging.Logger):
         self.logger = logger
-        self.results_dir = Path("/var/log/bazzite-optimizer/benchmarks")
-        try:
-            self.results_dir.mkdir(parents=True, exist_ok=True)
-        except (PermissionError, OSError) as e:
-            # Fall back to user directory in CI environments
-            fallback_dir = Path.home() / ".local" / "share" / "bazzite-optimizer" / "benchmarks"
-            try:
-                fallback_dir.mkdir(parents=True, exist_ok=True)
-                self.results_dir = fallback_dir
-                self.logger.debug(f"Using fallback benchmark directory: {fallback_dir}")
-            except (PermissionError, OSError):
-                # If even fallback fails, disable benchmarking
-                self.results_dir = None
-                self.logger.debug("Benchmarking disabled due to permission restrictions")
+        system_path = Path("/var/log/bazzite-optimizer/benchmarks")
+        self.results_dir = ensure_directory_with_fallback(
+            system_path, "bazzite-optimizer/benchmarks", logger
+        )
 
     def run_baseline(self) -> Dict[str, Any]:
         """Run baseline benchmarks before optimization"""
@@ -3988,19 +4015,9 @@ class ProfileManager:
 
     def __init__(self, logger: logging.Logger):
         self.logger = logger
-        self.profile_dir = PROFILE_DIR
-        try:
-            self.profile_dir.mkdir(parents=True, exist_ok=True)
-        except (PermissionError, OSError) as e:
-            # Fall back to user directory in CI environments
-            fallback_dir = Path.home() / ".local" / "share" / "bazzite-optimizer" / "profiles"
-            try:
-                fallback_dir.mkdir(parents=True, exist_ok=True)
-                self.profile_dir = fallback_dir
-                self.logger.debug(f"Using fallback profile directory: {fallback_dir}")
-            except (PermissionError, OSError):
-                self.profile_dir = None
-                self.logger.debug("Profile management disabled due to permission restrictions")
+        self.profile_dir = ensure_directory_with_fallback(
+            PROFILE_DIR, "bazzite-optimizer/profiles", logger
+        )
 
     def save_profile(self, profile_name: str, settings: Dict[str, Any]):
         """Save a gaming profile"""
