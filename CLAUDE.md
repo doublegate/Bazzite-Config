@@ -116,12 +116,12 @@ The tools integrate with Bazzite-specific features:
 ## Project Status
 
 ### Current State (September 5, 2025)
-- **Version**: 1.0.5 Directory Management & CI/CD Compatibility release
+- **Version**: 1.0.4 Bazzite Compatibility & Bug Fixes release
 - **GitHub Repository**: https://github.com/doublegate/Bazzite-Config
 - **Status**: Production ready with comprehensive architecture improvements and CI/CD compatibility
 - **Community**: Professional repository with enhanced maintainability and deployment readiness
 
-### Recent Achievements (v1.0.5 - September 5, 2025)
+### Recent Achievements (v1.0.4 - September 5, 2025)
 - **Centralized Directory Management**: Universal `ensure_directory_with_fallback()` utility eliminating 15+ duplicate patterns
 - **CI/CD Environment Compatibility**: Complete GitHub Actions support with graceful fallback mechanisms
 - **Code Architecture Improvements**: Refactored BenchmarkRunner, ProfileManager, setup_logging(), backup_file()
