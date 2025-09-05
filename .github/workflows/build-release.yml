@@ -1,3 +1,4 @@
+---
 name: Build and Release Bazzite Gaming Optimization Suite
 
 on:
@@ -199,123 +200,13 @@ jobs:
           fi
           
           # Create comprehensive release notes
-          cat > release-notes.md << EOL
-# 🎮 Bazzite Gaming Optimization Suite v${VERSION}
+          printf '# 🎮 Bazzite Gaming Optimization Suite v%s\n\n## 🚀 Release Overview\n\n%s\n\n## 📊 Master Script Specifications' \
+            "${VERSION}" "${CHANGELOG_ENTRY}" > release-notes.md
           
-## 🚀 Release Overview
+          printf '\n\n- **Script Name**: bazzite-optimizer.py\n- **Script Size**: 4,649 lines, 165KB\n- **Optimizer Classes**: 16 specialized optimization modules\n- **Gaming Profiles**: 4 profiles (Competitive, Balanced, Streaming, Creative)\n- **Hardware Support**: RTX 5080, Intel i9-10850K, 64GB RAM, Samsung 990 EVO Plus\n- **Performance Gains**: 15-25%% gaming performance improvement\n- **Safety Systems**: StabilityTester, ThermalManager, BackupManager with SHA256 integrity\n\n## 🏗️ Architecture Components' >> release-notes.md
           
-${CHANGELOG_ENTRY}
-          
-## 📊 Master Script Specifications
-          
-- **Script Name**: bazzite-optimizer.py  
-- **Script Size**: 4,649 lines, 165KB
-- **Optimizer Classes**: 16 specialized optimization modules
-- **Gaming Profiles**: 4 profiles (Competitive, Balanced, Streaming, Creative)
-- **Hardware Support**: RTX 5080, Intel i9-10850K, 64GB RAM, Samsung 990 EVO Plus
-- **Performance Gains**: 15-25% gaming performance improvement
-- **Safety Systems**: StabilityTester, ThermalManager, BackupManager with SHA256 integrity
-          
-## 🏗️ Architecture Components
-          
-### Master Script (Primary Tool)
-- **bazzite-optimizer.py** - Comprehensive optimization framework
-  - 16 Specialized Optimizer Classes
-  - 4 Gaming Profiles with hardware-specific tuning
-  - Built-in BenchmarkRunner with statistical analysis
-  - Advanced safety systems with rollback capabilities
-  - Signal handling (SIGINT/SIGTERM) and atomic operations
-          
-### Supporting Utilities (Auxiliary Tools)
-- **gaming-manager-suite.py** - System control and profile management
-- **gaming-monitor-suite.py** - Real-time performance monitoring with curses dashboard  
-- **gaming-maintenance-suite.sh** - Automated benchmarking and system maintenance
-          
-## 🔧 Technical Implementation
-          
-### Hardware Optimization Features
-- **NVIDIA RTX 5080**: Blackwell architecture with -open driver variant optimization
-- **Intel i9-10850K**: Comet Lake tuning with aggressive C-state management
-- **64GB RAM**: Intelligent ZRAM configuration (8-16GB with LZ4 compression)
-- **Samsung 990 EVO Plus**: NVMe optimization with none/noop I/O scheduler
-- **Bazzite Integration**: fsync kernel, System76-scheduler, GameMode compatibility
-          
-### Performance Metrics
-- **Gaming Performance**: 15-25% improvement through combined optimizations
-- **Cold Start Times**: 13% improvement with SystemdServiceOptimizer
-- **Frame Time Consistency**: 25% improvement via NvidiaOptimizer + CPUOptimizer
-- **Memory Efficiency**: 15-25% effective RAM increase with optimized ZRAM
-- **Network Latency**: 5-15% reduction with NetworkOptimizer competitive profile
-- **System Stability**: 95%+ stability with built-in validation systems
-          
-## 📦 Release Assets
-          
-### Executable Distribution
-- **bazzite-optimizer-x86_64** - Main optimization executable (UPX compressed)
-- **bazzite-gaming-suite-auxiliary-x86_64.tar.gz** - Supporting tools and documentation
-          
-### Installation Requirements
-- **Operating System**: Bazzite Linux (latest stable release)
-- **Python**: 3.8+ (for auxiliary tools)
-- **Dependencies**: psutil, threading support
-- **Permissions**: sudo access for system optimizations
-          
-## 🎯 Usage Examples
-          
-### Master Script Commands
-```bash
-# Download and make executable
-chmod +x bazzite-optimizer-x86_64
-
-# List available gaming profiles
-./bazzite-optimizer-x86_64 --list-profiles
-
-# Apply competitive profile for maximum performance
-sudo ./bazzite-optimizer-x86_64 --profile competitive
-
-# Run system validation and benchmarking
-./bazzite-optimizer-x86_64 --validate
-sudo ./bazzite-optimizer-x86_64 --profile balanced --benchmark
-
-# Emergency rollback if needed
-sudo ./bazzite-optimizer-x86_64 --rollback
-```
-          
-### Supporting Tools Usage
-```bash
-# Extract auxiliary tools
-tar -xzf bazzite-gaming-suite-auxiliary-x86_64.tar.gz
-
-# Real-time monitoring
-./gaming-monitor-suite.py --mode dashboard
-
-# System health check
-./gaming-manager-suite.py --health
-
-# Manual benchmarking
-./gaming-maintenance-suite.sh
-```
-          
-## 🔗 Resources
-          
-- **Repository**: https://github.com/doublegate/Bazzite-Config
-- **Documentation**: Complete installation guides, troubleshooting, and technical architecture
-- **Issue Tracking**: Bug reports and feature requests welcome
-- **Community**: Professional open-source project with MIT license
-          
-## ⚠️ Important Notes
-          
-- **Backup Recommended**: Master script includes automatic backup systems
-- **Hardware Specific**: Optimized for RTX 5080 + i9-10850K + 64GB RAM configurations
-- **Compatibility**: Full support for Bazzite's composefs/immutable filesystem architecture
-- **Safety**: Built-in stability testing and rollback capabilities included
-          
----
-          
-**Built for the Linux gaming community with ❤️**
-          
-EOL
-          
+          # Continue with the rest of the release notes content using printf
+          printf '\n\n### Master Script (Primary Tool)\n- **bazzite-optimizer.py** - Comprehensive optimization framework\n  - 16 Specialized Optimizer Classes\n  - 4 Gaming Profiles with hardware-specific tuning\n  - Built-in BenchmarkRunner with statistical analysis\n  - Advanced safety systems with rollback capabilities\n  - Signal handling (SIGINT/SIGTERM) and atomic operations\n\n### Supporting Utilities (Auxiliary Tools)\n- **gaming-manager-suite.py** - System control and profile management\n- **gaming-monitor-suite.py** - Real-time performance monitoring with curses dashboard\n- **gaming-maintenance-suite.sh** - Automated benchmarking and system maintenance\n\n## 🔧 Technical Implementation\n\n### Hardware Optimization Features\n- **NVIDIA RTX 5080**: Blackwell architecture with -open driver variant optimization\n- **Intel i9-10850K**: Comet Lake tuning with aggressive C-state management\n- **64GB RAM**: Intelligent ZRAM configuration (8-16GB with LZ4 compression)\n- **Samsung 990 EVO Plus**: NVMe optimization with none/noop I/O scheduler\n- **Bazzite Integration**: fsync kernel, System76-scheduler, GameMode compatibility\n\n### Performance Metrics\n- **Gaming Performance**: 15-25%% improvement through combined optimizations\n- **Cold Start Times**: 13%% improvement with SystemdServiceOptimizer\n- **Frame Time Consistency**: 25%% improvement via NvidiaOptimizer + CPUOptimizer\n- **Memory Efficiency**: 15-25%% effective RAM increase with optimized ZRAM\n- **Network Latency**: 5-15%% reduction with NetworkOptimizer competitive profile\n- **System Stability**: 95%%+ stability with built-in validation systems\n\n## 📦 Release Assets\n\n### Executable Distribution\n- **bazzite-optimizer-x86_64** - Main optimization executable (UPX compressed)\n- **bazzite-gaming-suite-auxiliary-x86_64.tar.gz** - Supporting tools and documentation\n\n### Installation Requirements\n- **Operating System**: Bazzite Linux (latest stable release)\n- **Python**: 3.8+ (for auxiliary tools)\n- **Dependencies**: psutil, threading support\n- **Permissions**: sudo access for system optimizations\n\n## 🎯 Usage Examples\n\n### Master Script Commands\n```bash\n# Download and make executable\nchmod +x bazzite-optimizer-x86_64\n\n# List available gaming profiles\n./bazzite-optimizer-x86_64 --list-profiles\n\n# Apply competitive profile for maximum performance\nsudo ./bazzite-optimizer-x86_64 --profile competitive\n\n# Run system validation and benchmarking\n./bazzite-optimizer-x86_64 --validate\nsudo ./bazzite-optimizer-x86_64 --profile balanced --benchmark\n\n# Emergency rollback if needed\nsudo ./bazzite-optimizer-x86_64 --rollback\n```\n\n### Supporting Tools Usage\n```bash\n# Extract auxiliary tools\ntar -xzf bazzite-gaming-suite-auxiliary-x86_64.tar.gz\n\n# Real-time monitoring\n./gaming-monitor-suite.py --mode dashboard\n\n# System health check\n./gaming-manager-suite.py --health\n\n# Manual benchmarking\n./gaming-maintenance-suite.sh\n```\n\n## 🔗 Resources\n\n- **Repository**: https://github.com/doublegate/Bazzite-Config\n- **Documentation**: Complete installation guides, troubleshooting, and technical architecture\n- **Issue Tracking**: Bug reports and feature requests welcome\n- **Community**: Professional open-source project with MIT license\n\n## ⚠️ Important Notes\n\n- **Backup Recommended**: Master script includes automatic backup systems\n- **Hardware Specific**: Optimized for RTX 5080 + i9-10850K + 64GB RAM configurations\n- **Compatibility**: Full support for Bazzite'\''s composefs/immutable filesystem architecture\n- **Safety**: Built-in stability testing and rollback capabilities included\n\n---\n\n**Built for the Linux gaming community with ❤️**' >> release-notes.md
           
       - name: Create Git tag
         run: |
@@ -370,22 +261,8 @@ EOL
           CURRENT_BODY=$(gh release view "${{ needs.detect-version.outputs.version_tag }}" --json body -q .body)
           
           # Generate automated build information
-          cat > build-info.md << 'EOL'
-
----
-
-## 🤖 Automated Build Information
-
-### Build Environment
-- **Build Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')  
-- **Build System**: Ubuntu Latest (GitHub Actions)
-- **Python Version**: ${{ env.PYTHON_VERSION }}
-- **PyInstaller**: Latest stable
-- **Compression**: UPX LZMA
-- **Architecture**: x86_64
-
-### Build Artifacts Generated
-EOL
+          printf '\n---\n\n## 🤖 Automated Build Information\n\n### Build Environment\n- **Build Date**: %s\n- **Build System**: Ubuntu Latest (GitHub Actions)\n- **Python Version**: %s\n- **PyInstaller**: Latest stable\n- **Compression**: UPX LZMA\n- **Architecture**: x86_64\n\n### Build Artifacts Generated' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" "${{ env.PYTHON_VERSION }}" > build-info.md
           
           # List all uploaded artifacts
           echo "" >> build-info.md
@@ -399,28 +276,8 @@ EOL
             done
           done
           
-          cat >> build-info.md << 'EOL'
-
-### Verification
-All executables have been tested for:
-- ✅ Version display (`--version`)  
-- ✅ Profile listing (`--list-profiles`)
-- ✅ System compatibility validation
-- ✅ Dependency resolution
-- ✅ Compression integrity
-
-### Installation Verification
-```bash
-# Download executable
-wget https://github.com/doublegate/Bazzite-Config/releases/download/${{ needs.detect-version.outputs.version_tag }}/bazzite-optimizer-x86_64
-
-# Make executable and test
-chmod +x bazzite-optimizer-x86_64
-./bazzite-optimizer-x86_64 --version
-```
-
-**🤖 This release was automatically built and published by GitHub Actions**
-EOL
+          printf '\n\n### Verification\nAll executables have been tested for:\n- ✅ Version display (`--version`)\n- ✅ Profile listing (`--list-profiles`)\n- ✅ System compatibility validation\n- ✅ Dependency resolution\n- ✅ Compression integrity\n\n### Installation Verification\n```bash\n# Download executable\nwget https://github.com/doublegate/Bazzite-Config/releases/download/%s/bazzite-optimizer-x86_64\n\n# Make executable and test\nchmod +x bazzite-optimizer-x86_64\n./bazzite-optimizer-x86_64 --version\n```\n\n**🤖 This release was automatically built and published by GitHub Actions**' \
+            "${{ needs.detect-version.outputs.version_tag }}" >> build-info.md
           
           # Update release with combined notes (original + automated)
           COMBINED_BODY="${CURRENT_BODY}$(cat build-info.md)"
