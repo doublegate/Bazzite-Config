@@ -196,35 +196,49 @@ jobs:
           
       - name: Upload release assets
         run: |
-          # Upload main executable
+          # Find and upload all artifacts with proper path handling
+          echo "🔍 Searching for artifacts to upload..."
+          find artifacts/ -name "*" -type f | head -10
+          
           for artifact_dir in artifacts/*/; do
-            if [[ -f "${artifact_dir}bazzite-optimizer-x86_64" ]]; then
+            echo "📁 Processing artifact directory: ${artifact_dir}"
+            
+            # Upload main executable from dist/ subdirectory
+            if [[ -f "${artifact_dir}dist/bazzite-optimizer-x86_64" ]]; then
+              echo "📦 Uploading main executable..."
               gh release upload "${{ needs.detect-version.outputs.version_tag }}" \
-                "${artifact_dir}bazzite-optimizer-x86_64" \
+                "${artifact_dir}dist/bazzite-optimizer-x86_64" \
                 --clobber
             fi
             
-            if [[ -f "${artifact_dir}bazzite-optimizer-x86_64.version" ]]; then
+            # Upload version file from dist/ subdirectory
+            if [[ -f "${artifact_dir}dist/bazzite-optimizer-x86_64.version" ]]; then
+              echo "📝 Uploading version file..."
               gh release upload "${{ needs.detect-version.outputs.version_tag }}" \
-                "${artifact_dir}bazzite-optimizer-x86_64.version" \
+                "${artifact_dir}dist/bazzite-optimizer-x86_64.version" \
                 --clobber
             fi
             
-            if [[ -f "${artifact_dir}bazzite-optimizer-x86_64.build-date" ]]; then
+            # Upload build date file from dist/ subdirectory
+            if [[ -f "${artifact_dir}dist/bazzite-optimizer-x86_64.build-date" ]]; then
+              echo "📅 Uploading build date file..."
               gh release upload "${{ needs.detect-version.outputs.version_tag }}" \
-                "${artifact_dir}bazzite-optimizer-x86_64.build-date" \
+                "${artifact_dir}dist/bazzite-optimizer-x86_64.build-date" \
                 --clobber
             fi
             
-            # Upload auxiliary tools archive
-            for tarball in "${artifact_dir}"*.tar.gz; do
+            # Upload auxiliary tools archive from release-artifacts/ subdirectory
+            for tarball in "${artifact_dir}release-artifacts/"*.tar.gz; do
               if [[ -f "$tarball" ]]; then
+                echo "🗃️  Uploading auxiliary archive: $(basename "$tarball")"
                 gh release upload "${{ needs.detect-version.outputs.version_tag }}" \
                   "$tarball" \
                   --clobber
               fi
             done
           done
+          
+          echo "✅ Asset upload process completed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
