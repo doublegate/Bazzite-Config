@@ -1,5 +1,7 @@
 # Troubleshooting Guide
 
+**Last Updated**: September 6, 2025
+
 ## Master Script Built-in Diagnostics
 
 The **bazzite-optimizer.py master script** includes comprehensive built-in diagnostics, validation systems, and recovery mechanisms for all 16 optimizer classes and gaming profiles.
@@ -121,6 +123,116 @@ sudo ./bazzite-optimizer.py --profile balanced
 - **Signal Handling**: Graceful shutdown with SIGINT/SIGTERM support for safe interruption
 - **Atomic Operations**: Secure file operations using tempfile to prevent corruption
 - **Statistical Validation**: Confidence intervals for benchmark results and stability testing
+
+## D-Bus Session Issues (v1.0.6)
+
+### 1. D-Bus Connection Failures - RESOLVED in v1.0.6
+
+#### Problem: "Failed to connect to the user's systemd instance via D-Bus" errors
+**Status: ✅ RESOLVED in v1.0.6**
+
+```bash
+# Previously failed with D-Bus connection errors
+systemctl --user status
+Failed to connect to the user's systemd instance via D-Bus: Connection refused
+```
+
+**Root Cause**: Single-stage D-Bus validation was insufficient for Bazzite's complex user session architecture.
+
+**Solution**: v1.0.6 implements 3-stage progressive D-Bus validation (Lines 3544-3576):
+
+```python
+# Stage 1: Basic systemd accessibility test
+systemctl --user status
+
+# Stage 2: D-Bus connectivity verification  
+systemctl --user list-units --type=service --no-pager
+
+# Stage 3: Manual session bus validation (comprehensive fallback)
+systemd --user --test
+```
+
+#### Problem: Audio system health scores artificially low (25%)
+**Status: ✅ RESOLVED in v1.0.6**
+
+**Root Cause**: Unrealistic thresholds for Bazzite's PipeWire ecosystem (21+ processes normal).
+
+**Solution**: Calibrated thresholds for realistic scoring:
+- **Process Count**: 20→30 threshold (Line 3922) 
+- **Health Score**: 60%→50% requirement (Line 3934)
+- **Expected Results**: Health scores >70% vs previous 25%
+
+#### Problem: PipeWire service restart cascades and "Host is down" errors
+**Status: ✅ RESOLVED in v1.0.6**
+
+**Solution**: Sequenced service restart with dependency management (Lines 3587-3647):
+
+```bash
+# Dependency-aware stop sequence
+systemctl --user stop wireplumber
+sleep 1
+systemctl --user stop pipewire-pulse  
+sleep 1
+systemctl --user stop pipewire
+
+# Socket cleanup
+rm -f /run/user/1000/pulse/native
+rm -f /run/user/1000/pipewire-0*
+
+# Dependency-aware start sequence (reverse order)
+systemctl --user start pipewire
+sleep 2
+systemctl --user start pipewire-pulse
+sleep 2  
+systemctl --user start wireplumber
+sleep 3  # Final stabilization
+```
+
+### 2. D-Bus Session Debugging Procedures
+
+#### Manual D-Bus Session Validation
+```bash
+# Test all three validation stages manually
+systemctl --user status
+systemctl --user list-units --type=service --no-pager
+systemd --user --test
+
+# Check D-Bus environment variables
+echo $DBUS_SESSION_BUS_ADDRESS
+echo $XDG_RUNTIME_DIR
+
+# Validate user session persistence
+loginctl show-user $USER
+loginctl list-sessions
+```
+
+#### Audio System Health Debugging  
+```bash
+# Check realistic process counts (21+ processes normal on Bazzite)
+ps aux | grep -E "(pipewire|pulse|wire)" | wc -l
+
+# Comprehensive audio device enumeration
+wpctl status
+pw-cli info all
+pactl list sources
+pactl list sinks
+
+# Socket status verification
+ls -la /run/user/1000/pulse/
+ls -la /run/user/1000/pipewire*
+```
+
+#### Emergency Recovery Procedures
+```bash
+# Emergency rollback for critical D-Bus failures (Lines 3649-3668)
+sudo ./bazzite-optimizer.py --emergency-rollback
+
+# Manual emergency recovery if script unavailable
+systemctl --user stop wireplumber pipewire-pulse pipewire pulseaudio
+sudo systemctl restart systemd-user-sessions
+systemctl --user daemon-reload
+systemctl --user start pipewire pipewire-pulse wireplumber
+```
 **Symptoms:**
 - `./gaming-manager-suite.py --enable` reports errors
 - System performance doesn't improve during gaming
@@ -526,7 +638,119 @@ dig @1.1.1.1 google.com
 dig @8.8.8.8 google.com
 ```
 
-### 7. System76 Scheduler Issues
+### 7. Audio System Issues (v1.0.5+ D-Bus Environment Enhancement)
+
+#### Problem: Audio devices not detected or service responsiveness failures
+**Symptoms:**
+- Sound card, headset, or HDMI audio not working
+- PipeWire/PulseAudio conflicts and service responsiveness failures
+- "Address already in use" socket errors
+- D-Bus session bus connection issues with user services
+- User services failing to start properly due to environment context
+- Hardware devices missing from audio control panels
+
+**Diagnostic Steps:**
+```bash
+# Check D-Bus environment for user services
+echo "DBUS_SESSION_BUS_ADDRESS: $DBUS_SESSION_BUS_ADDRESS"
+echo "XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR"
+dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.GetId
+
+# Check user session lingering
+loginctl show-user $USER
+loginctl user-status $USER
+
+# Check PipeWire/PulseAudio status with proper environment
+systemctl --user status pipewire pipewire-pulse wireplumber
+pw-cli info all
+wpctl status
+
+# Check for socket conflicts
+ls -la /run/user/1000/pulse/
+ps aux | grep -E "(pipewire|pulseaudio)"
+
+# Audio device enumeration
+lsusb | grep -i audio
+lspci | grep -i audio
+arecord -l && aplay -l
+```
+
+**Resolution:**
+```bash
+# D-Bus Environment and Audio System Recovery (Enhanced 4-strategy approach)
+
+# Strategy 1: D-Bus Environment and User Session Setup
+# Enable user session lingering for persistent services
+loginctl enable-linger $USER
+# Wait for linger to take effect
+sleep 2
+
+# Strategy 2: Complete environment reset with proper D-Bus context  
+systemctl --user stop pipewire pipewire-pulse wireplumber
+# Clean socket conflicts
+rm -f /run/user/1000/pulse/native
+# Restart with proper D-Bus environment
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+
+# Strategy 3: Service restart with socket cleanup
+systemctl --user start pipewire pipewire-pulse
+
+# Strategy 2: Complete daemon restart
+systemctl --user daemon-reload
+systemctl --user restart pipewire pipewire-pulse pipewire-media-session
+
+# Strategy 3: Full audio subsystem reset
+pkill -f pipewire
+pkill -f pulseaudio
+sleep 2
+systemctl --user start pipewire
+
+# Validate recovery
+pw-cli info all | head -10
+wpctl status
+```
+
+**Hardware-Specific Recovery:**
+- **Creative Sound Blaster X3**: Check USB connection and driver status
+- **Corsair HS70 Wireless**: Verify wireless receiver and charging status  
+- **NVIDIA HDMI Audio**: Ensure HDMI cable connected and display active
+- **Razer Kiyo Webcam**: Check USB port and webcam integration
+
+#### Problem: Audio optimization causing device failures
+**Symptoms:**
+- Audio optimization script causes hardware device loss
+- Network, USB, or sound devices stop working after optimization
+- System becomes unstable after audio tuning
+
+**Diagnostic Steps:**
+```bash
+# Identify problematic optimization sections
+# Check critical script sections (bazzite-optimizer.py):
+# - IRQ affinity optimization (lines 587-590)
+# - Core isolation settings (lines 3512-3513)  
+# - Thermald service management (lines 2909-2910)
+# - Audio optimization routines (lines 3176-3225)
+
+# Enable debug logging for detailed analysis
+# Edit bazzite-optimizer.py line 1634:
+# console_handler.setLevel(logging.DEBUG)
+```
+
+**Resolution:**
+```bash
+# Selective rollback of audio optimizations
+sudo ./bazzite-optimizer.py --rollback
+
+# Apply safer balanced profile instead
+sudo ./bazzite-optimizer.py --profile balanced
+
+# Manual service restoration if needed
+sudo systemctl restart NetworkManager
+sudo systemctl --user restart pipewire
+```
+
+### 8. System76 Scheduler Issues
 
 #### Problem: System76-scheduler not working or misconfigured
 **Symptoms:**

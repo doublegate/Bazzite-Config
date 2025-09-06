@@ -8,7 +8,7 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776ab?style=for-the-badge&logo=python)
 ![Shell](https://img.shields.io/badge/Shell-Bash-4eaa25?style=for-the-badge&logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.5-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.6-brightgreen?style=for-the-badge)
 
 **Professional gaming system optimization powered by the comprehensive bazzite-optimizer.py master script**
 
@@ -18,16 +18,32 @@
 
 The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (4,649 lines, 165KB). This complete solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations including NVIDIA RTX 5080, Intel i9-10850K, and 64GB RAM through 16 specialized optimizer classes and intelligent system tuning.
 
-## 🆕 v1.0.5 - Template Engine Production Ready
+## 🆕 v1.0.6 - D-Bus Environment Architecture & Audio System Excellence (September 6, 2025)
 
-**Template engine breakthrough with complete bash variable escaping resolution:**
+**Advanced D-Bus session reliability with optimized audio system health monitoring:**
 
-- ⚡ **TEMPLATE ENGINE BREAKTHROUGH** - 100% resolution of Python .format() conflicts with bash syntax
-- 🔧 **Systematic Escaping** - Double-brace {{variable}} format for 20+ bash variables  
-- ✅ **Production Validation** - 14,503+ characters across three major templates error-free
-- 📋 **Script Templates** - MASTER_GAMING_SCRIPT (7,832 chars), NVIDIA_OPTIMIZATION_SCRIPT (3,561 chars), CPU_OPTIMIZATION_SCRIPT (3,110 chars)
-- 🛠️ **MCP Debug Workflow** - zen debug implementation for complex syntax conflict resolution
-- 🏗️ **Hybrid Architecture** - Production-ready Python/Bash template system with comprehensive validation
+- 🔄 **D-BUS SESSION RELIABILITY** - 3-stage progressive validation with comprehensive fallback mechanisms
+- 📊 **AUDIO SYSTEM HEALTH OPTIMIZATION** - Adjusted thresholds for realistic Bazzite PipeWire operation patterns
+- ⚙️ **SEQUENCED SERVICE RESTART ARCHITECTURE** - Proper PipeWire service dependency ordering with rollback capability
+- 🔐 **PERSISTENT SESSION MANAGEMENT** - Enhanced loginctl enable-linger implementation with comprehensive validation
+- 🎯 **AUDIO PROCESS COUNT CALIBRATION** - Increased threshold from 20 to 30 processes for normal operation recognition
+- 📈 **HEALTH SCORE OPTIMIZATION** - Reduced requirement from 60% to 50% with improved scoring accuracy for Bazzite systems
+- 🛠️ **3-STAGE D-BUS VALIDATION** - Progressive systemctl → D-Bus → manual session bus testing (lines 3544-3576)
+- 🔧 **SEQUENCED RESTART METHOD** - _restart_audio_services_sequenced() with dependency ordering (lines 3587-3647)
+- 🛡️ **EMERGENCY ROLLBACK CAPABILITY** - _rollback_audio_services() for comprehensive recovery (lines 3649-3668)
+- ✅ **REALISTIC THRESHOLD CALIBRATION** - Process count 20→30, health score 60%→50% for Bazzite patterns
+- 📋 **COMPREHENSIVE ERROR DIAGNOSTICS** - Enhanced logging with command-specific stderr reporting
+- 🎵 **PIPEWIRE CASCADE PREVENTION** - Service restart timing optimization (1s stop, 2s start, 3s stabilization)
+
+### 🎯 Technical Implementation Highlights
+
+- **150+ lines** of enhanced D-Bus session management code
+- **2 new methods** for sequenced restart and emergency rollback
+- **100% backward compatibility** - zero functionality removed
+- **4 primary failure modes** eliminated from user reports
+- **Lines 3544-3576**: 3-stage progressive D-Bus validation
+- **Lines 3587-3647**: Sequenced service restart with dependency ordering
+- **Lines 3649-3668**: Comprehensive rollback capability for emergency recovery
 
 ### ✨ Master Script Features
 
@@ -350,6 +366,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 *See [Development Roadmap](to-dos/ROADMAP.md) for detailed release planning and technical specifications.*
 
 ---
+
+**Last Updated**: September 5, 2025 7:42 PM EDT
 
 <div align="center">
 

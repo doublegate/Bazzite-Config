@@ -1,11 +1,11 @@
-1.0.5
+1.0.6
 
 # Bazzite Gaming Optimization Suite Version Information
-# Template Engine Production Ready
+# D-Bus Environment Architecture & Audio System Excellence
 
-Version: 1.0.5
-Release Name: "Template Engine Production Ready"
-Release Date: 2025-09-05
+Version: 1.0.6
+Release Name: "D-Bus Environment Architecture & Audio System Excellence"
+Release Date: 2025-09-06
 Build: 4649-165KB
 
 # Key Components
@@ -35,12 +35,21 @@ V3+V4 Integration: Complete feature set with enhanced safety
 Built-in Systems: Benchmarking, validation, backup/rollback
 Architecture: Three-component suite with master script foundation
 
-# Release Focus (v1.0.5)
-- TEMPLATE ENGINE BREAKTHROUGH: 100% resolution of Python .format() conflicts with bash syntax
+# Release Focus (v1.0.6)
+- D-BUS SESSION RELIABILITY: 3-stage progressive validation with comprehensive fallback mechanisms
+- AUDIO SYSTEM HEALTH OPTIMIZATION: Adjusted thresholds for realistic Bazzite PipeWire operation patterns
+- SEQUENCED SERVICE RESTART ARCHITECTURE: Proper PipeWire service dependency ordering with rollback capability
+- PERSISTENT SESSION MANAGEMENT: Enhanced loginctl enable-linger implementation with comprehensive validation
+- AUDIO PROCESS COUNT CALIBRATION: Increased threshold from 20 to 30 processes for normal operation recognition
+- HEALTH SCORE OPTIMIZATION: Reduced requirement from 60% to 50% with improved scoring accuracy for Bazzite systems
 - Systematic bash variable escaping using double-brace {{variable}} format  
 - 14,503+ characters across three major templates validated error-free
 - MASTER_GAMING_SCRIPT (7,832 chars), NVIDIA_OPTIMIZATION_SCRIPT (3,561 chars), CPU_OPTIMIZATION_SCRIPT (3,110 chars)
 - 20+ bash variables properly escaped with comprehensive validation methodology
+- Advanced PipeWire socket management and progressive error recovery systems
+- Hardware device recovery: Sound Blaster X3, Corsair HS70, NVIDIA HDMI, Razer Kiyo
+- Socket conflict resolution eliminating "Address already in use" errors
+- 3-strategy audio system recovery with real-time health monitoring
 - MCP zen debug workflow implementation for complex syntax conflict resolution
 - Production-ready hybrid Python/Bash template system architecture
 - Complete elimination of KeyError/ValueError exceptions in template generation
