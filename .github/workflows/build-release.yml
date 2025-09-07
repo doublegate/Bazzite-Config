@@ -53,13 +53,10 @@ jobs:
       - name: Check if release should be created
         id: check-release
         run: |
-          # Check if tag already exists
-          if git rev-parse --verify "refs/tags/${{ steps.get-version.outputs.version_tag }}" >/dev/null 2>&1; then
-            echo "Tag ${{ steps.get-version.outputs.version_tag }} already exists, skipping release"
-            echo "should_release=false" >> $GITHUB_OUTPUT
-          else
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          fi
+          # Always build releases when manually triggered or VERSION file changes
+          # Tags are created manually and we want to build even if tag exists
+          echo "Building release for version ${{ steps.get-version.outputs.version_tag }}"
+          echo "should_release=true" >> $GITHUB_OUTPUT
 
   build-executables:
     needs: detect-version
