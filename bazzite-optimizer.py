@@ -74,6 +74,7 @@ CONFIG_BACKUP_DIR = Path("/var/backups/bazzite-optimizer")
 PROFILE_DIR = Path("/etc/bazzite-optimizer/profiles")
 SHADER_CACHE_DIR = Path("/var/cache/gaming-shaders")
 CRASH_RECOVERY_DIR = Path("/var/cache/bazzite-optimizer/recovery")
+PROFILE_STATE_DIR = Path("/var/lib/bazzite-optimizer")  # State persistence for deduplication
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Minimum requirements
@@ -89,6 +90,21 @@ STABILITY_TEST_DURATION = 300  # 5 minutes default
 MAX_GPU_TEMP_STRESS = 87  # Max allowed during stress test
 MAX_CPU_TEMP_STRESS = 98  # Max allowed during stress test
 MIN_STABILITY_SCORE = 95  # Minimum % to pass
+
+# Kernel Parameter Deduplication Constants
+PROFILE_STATE_FILE = PROFILE_STATE_DIR / "last-profile.json"
+LEGACY_PARAMETERS = [
+    "systemd.unified_cgroup_hierarchy=0",  # v3 → v4 migration cleanup
+    "intel_pstate=disable",                # Old power management
+    "pci=realloc",                        # Now uses enhanced PCIe params
+    "processor.max_cstate=1",             # May conflict with balanced profile
+    "intel_idle.max_cstate=1"             # May conflict with balanced profile
+]
+PROFILE_SPECIFIC_PARAMS = {
+    "competitive": ["nohz_full", "isolcpus", "rcu_nocbs", "mitigations=off", "processor.max_cstate=1", "intel_idle.max_cstate=1"],
+    "balanced": ["mitigations=off", "processor.max_cstate=3", "intel_idle.max_cstate=3"],  
+    "streaming": ["processor.max_cstate=3", "intel_idle.max_cstate=3", "mitigations=auto"]
+}
 
 # Security warning flags
 SECURITY_WARNINGS_SHOWN = False
@@ -4965,7 +4981,7 @@ class KernelOptimizer(BaseOptimizer):
         else:
             isolcpus = ""
 
-        # Build parameter list
+        # Build consolidated parameter list (includes parameters previously duplicated in Boot Infrastructure)
         kernel_params = [
             f"mitigations={mitigations}",
             f"processor.max_cstate={max_cstate}",
@@ -4974,13 +4990,16 @@ class KernelOptimizer(BaseOptimizer):
             "transparent_hugepage=madvise",
             "nvme_core.default_ps_max_latency_us=0",
             "pcie_aspm=off",
-            "pci=realloc,assign-busses,nocrs",
+            "pci=realloc,assign-busses,nocrs,hpiosize=16M,hpmemsize=512M",  # Enhanced PCIe optimization for RTX 5080
             "intel_iommu=on",
             "iommu=pt",
             "threadirqs",
             "preempt=full",
             "nvidia-drm.modeset=1",
-            "nvidia-drm.fbdev=1"
+            "nvidia-drm.fbdev=1",
+            "zswap.enabled=0",           # Disable zswap (consolidated from Boot Infrastructure)
+            "clocksource=tsc",           # TSC clocksource for precision (consolidated from Boot Infrastructure)
+            "tsc=reliable"               # Trust TSC clocksource (consolidated from Boot Infrastructure)
         ]
 
         # Add core isolation parameters if enabled
@@ -4991,13 +5010,23 @@ class KernelOptimizer(BaseOptimizer):
         return self._apply_kernel_params_batch(kernel_params)
 
     def _apply_kernel_params_batch(self, kernel_params: list) -> bool:
-        """Apply kernel parameters in batches with proper transaction handling"""
+        """Apply kernel parameters in batches with proper transaction handling and deduplication"""
         # Step 1: Check and clear any stuck transactions
         if not self._ensure_rpm_ostree_ready():
             self.logger.error("Failed to prepare rpm-ostree for kernel parameter application")
             return False
 
-        # Step 2: Get current kernel parameters
+        # Step 1a: Remove legacy parameters from previous script versions
+        self.logger.info("Phase 1: Cleaning legacy parameters...")
+        if not self._remove_legacy_parameters():
+            self.logger.warning("Legacy parameter cleanup failed, continuing with optimization...")
+
+        # Step 1b: Remove conflicting parameters from previous profile
+        self.logger.info("Phase 2: Cleaning conflicting profile parameters...")
+        if not self._cleanup_conflicting_profile_params(self.profile):
+            self.logger.warning("Profile parameter cleanup failed, continuing with optimization...")
+
+        # Step 2: Get current kernel parameters (after cleanup)
         current_params = self._get_current_kernel_params()
 
         # Step 3: Determine which parameters need to be added/replaced
@@ -5056,6 +5085,14 @@ class KernelOptimizer(BaseOptimizer):
         if total_applied > 0:
             self.logger.info(f"Successfully configured {total_applied} kernel parameters")
             self.logger.info("Kernel parameters will take effect after next reboot")
+
+        # Step 5: Save profile state for future cleanup operations
+        if success:
+            applied_params = params_to_replace + params_to_append
+            if applied_params:
+                self.logger.info("Phase 3: Saving profile state for future cleanup...")
+                if not self._save_profile_state(self.profile, applied_params):
+                    self.logger.warning("Failed to save profile state")
 
         return success
 
@@ -5201,20 +5238,21 @@ class KernelOptimizer(BaseOptimizer):
             return False
 
     def _batch_append_params(self, params_to_append: list) -> bool:
-        """Append multiple kernel parameters in a single transaction"""
+        """Append multiple kernel parameters in a single transaction using --append-if-missing"""
         if not params_to_append:
             return True
             
         try:
-            # Build single append command for all parameters
-            append_args = ' '.join([f"--append={param}" for param in params_to_append])
+            # Build single append-if-missing command for all parameters to prevent duplicates
+            append_args = ' '.join([f"--append-if-missing={param}" for param in params_to_append])
             cmd = f"rpm-ostree kargs {append_args}"
             
             self.logger.info(f"Adding kernel parameters in batch: {', '.join(params_to_append)}")
+            self.logger.debug(f"Using --append-if-missing to prevent parameter duplication")
             returncode, stdout, stderr = run_command(cmd, check=False, timeout=120)
             
             if returncode == 0:
-                self.logger.info("Successfully added kernel parameters")
+                self.logger.info("Successfully added kernel parameters (duplicates automatically prevented)")
                 return True
             else:
                 self.logger.error(f"Failed to add kernel parameters: {stderr}")
@@ -5407,6 +5445,149 @@ class KernelOptimizer(BaseOptimizer):
         validations["modules_loaded"] = self._validate_file_exists("Gaming Kernel Modules", "/etc/modules-load.d/gaming.conf")
 
         return validations
+
+    def _remove_legacy_parameters(self) -> bool:
+        """Remove legacy kernel parameters from previous script versions"""
+        try:
+            self.logger.info("Removing legacy kernel parameters...")
+            
+            # Get current kernel parameters
+            returncode, current_params, _ = run_command("cat /proc/cmdline", check=False)
+            if returncode != 0:
+                self.logger.warning("Could not read current kernel parameters")
+                return False
+                
+            # Find legacy parameters that are currently active
+            active_legacy_params = []
+            for param in LEGACY_PARAMETERS:
+                if param in current_params:
+                    active_legacy_params.append(param)
+                    
+            if not active_legacy_params:
+                self.logger.debug("No legacy parameters found to remove")
+                return True
+                
+            # Remove legacy parameters using batch operation
+            return self._batch_delete_params(active_legacy_params, "legacy parameters")
+            
+        except Exception as e:
+            self.logger.error(f"Error removing legacy parameters: {e}")
+            return False
+
+    def _cleanup_conflicting_profile_params(self, new_profile: str) -> bool:
+        """Remove kernel parameters from previous profile that conflict with new profile"""
+        try:
+            # Get last applied profile from state file
+            last_profile_data = self._get_last_profile_state()
+            if not last_profile_data or last_profile_data.get('profile') == new_profile:
+                self.logger.debug("No profile change detected or no previous profile state")
+                return True
+                
+            last_profile = last_profile_data.get('profile')
+            self.logger.info(f"Cleaning up parameters from previous profile: {last_profile} → {new_profile}")
+            
+            # Get current kernel parameters
+            returncode, current_params, _ = run_command("cat /proc/cmdline", check=False)
+            if returncode != 0:
+                self.logger.warning("Could not read current kernel parameters")
+                return False
+                
+            # Identify parameters to remove based on profile conflicts
+            params_to_remove = []
+            
+            if last_profile in PROFILE_SPECIFIC_PARAMS:
+                last_profile_params = PROFILE_SPECIFIC_PARAMS[last_profile]
+                new_profile_params = PROFILE_SPECIFIC_PARAMS.get(new_profile, [])
+                
+                # Remove parameters that were in last profile but not in new profile
+                for param_pattern in last_profile_params:
+                    if param_pattern not in new_profile_params:
+                        # Handle special cases for parameters with values
+                        if "=" in param_pattern:
+                            # For parameters with values, check if they exist
+                            if param_pattern in current_params:
+                                params_to_remove.append(param_pattern)
+                        else:
+                            # For parameter families (like isolcpus), find all variations
+                            for line in current_params.split():
+                                if line.startswith(param_pattern):
+                                    params_to_remove.append(line)
+                                    
+            if params_to_remove:
+                self.logger.info(f"Removing conflicting parameters: {', '.join(params_to_remove)}")
+                return self._batch_delete_params(params_to_remove, f"conflicting parameters from {last_profile} profile")
+            else:
+                self.logger.debug("No conflicting parameters found to remove")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Error cleaning conflicting profile parameters: {e}")
+            return False
+
+    def _batch_delete_params(self, params_to_delete: list, description: str = "parameters") -> bool:
+        """Delete multiple kernel parameters in a batch operation"""
+        try:
+            if not params_to_delete:
+                return True
+                
+            # Ensure transaction readiness
+            if not self._ensure_ready():
+                return False
+                
+            # Build batch delete command  
+            delete_args = ' '.join([f"--delete={param}" for param in params_to_delete])
+            cmd = f"rpm-ostree kargs {delete_args}"
+            
+            self.logger.info(f"Removing {description}: {', '.join(params_to_delete)}")
+            self.logger.debug(f"Batch delete command: {cmd}")
+            
+            returncode, stdout, stderr = run_command(cmd, check=False, timeout=120)
+            
+            if returncode == 0:
+                self.logger.info(f"Successfully removed {description}")
+                return True
+            else:
+                self.logger.error(f"Failed to remove {description}: {stderr}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error in batch parameter deletion: {e}")
+            return False
+
+    def _save_profile_state(self, profile: str, applied_params: list) -> bool:
+        """Save current profile state for future cleanup operations"""
+        try:
+            PROFILE_STATE_DIR.mkdir(parents=True, exist_ok=True)
+            
+            profile_data = {
+                'profile': profile,
+                'timestamp': datetime.now().isoformat(),
+                'applied_params': applied_params,
+                'script_version': '4.1.0'  # Current script version
+            }
+            
+            with open(PROFILE_STATE_FILE, 'w') as f:
+                json.dump(profile_data, f, indent=2)
+                
+            self.logger.debug(f"Saved profile state for {profile}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error saving profile state: {e}")
+            return False
+
+    def _get_last_profile_state(self) -> dict:
+        """Get the last applied profile state"""
+        try:
+            if not PROFILE_STATE_FILE.exists():
+                return {}
+                
+            with open(PROFILE_STATE_FILE, 'r') as f:
+                return json.load(f)
+                
+        except Exception as e:
+            self.logger.debug(f"Could not read profile state: {e}")
+            return {}
 
 
 class SystemdServiceOptimizer(BaseOptimizer):
@@ -6272,41 +6453,16 @@ class BootConfigurationValidator:
             return False
     
     def _configure_boot_parameters(self) -> bool:
-        """Configure kernel boot parameters via rpm-ostree"""
+        """Configure non-kernel boot parameters (kernel parameters handled by KernelOptimizer)"""
         
-        # Essential boot parameters for gaming optimization
-        boot_params = [
-            "mitigations=off",           # Disable security mitigations for performance
-            "processor.max_cstate=1",    # Limit C-states for low latency
-            "intel_pstate=active",       # Use Intel P-state driver
-            "nvidia-drm.modeset=1",      # Enable NVIDIA DRM modesetting
-            "nvidia-drm.fbdev=1",        # Enable NVIDIA framebuffer device
-            "pci=realloc,assign-busses,nocrs",               # Enable PCI resource reallocation
-            "transparent_hugepage=madvise", # Set THP to madvise mode
-            "zswap.enabled=0",           # Disable zswap (we use zram)
-            "clocksource=tsc",           # Use TSC clocksource for precision
-            "tsc=reliable"               # Trust TSC clocksource
-        ]
+        # Note: All kernel parameters are now handled by KernelOptimizer to prevent duplication
+        # This method now only handles boot-related configuration that doesn't involve kernel parameters
         
-        try:
-            # Use rpm-ostree for immutable system
-            for param in boot_params:
-                self.logger.info(f"Adding kernel parameter: {param}")
-                returncode, stdout, stderr = run_command(f"rpm-ostree kargs --append={param}", check=False)
-                
-                if returncode != 0:
-                    if "already present" in stderr or "already exists" in stderr:
-                        self.logger.debug(f"Kernel parameter {param} already present")
-                    else:
-                        self.logger.warning(f"Failed to add kernel parameter {param}: {stderr}")
-                        return False
-            
-            self.logger.info("Boot parameters configured successfully")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to configure boot parameters: {e}")
-            return False
+        self.logger.info("Boot Infrastructure kernel parameter handling delegated to Kernel & Boot section")
+        self.logger.debug("This prevents duplicate kernel parameter application and rpm-ostree transaction conflicts")
+        
+        # Only handle non-kernel boot configuration here
+        return True
     
     def _setup_early_boot_optimizations(self) -> bool:
         """Set up early boot optimizations"""

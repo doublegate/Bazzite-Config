@@ -1,0 +1,12 @@
+[# Central flake8 configuration]
+[flake8]
+max-line-length = 88
+extend-ignore = E203,W503,E501
+exclude = .git,__pycache__,dist,build,.eggs,.venv
+
+# Temporarily relax strictness on legacy monolithic scripts to avoid
+# mass reformatting without Black. Keep scope tight to avoid masking
+# issues elsewhere. Remove these as files are refactored.
+per-file-ignores =
+  bazzite-optimizer.py: W291,W293,E122
+  undo_bazzite-optimizer.py: W291,W293,E128,E302,E305,F541

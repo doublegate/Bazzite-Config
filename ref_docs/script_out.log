@@ -1,0 +1,282 @@
+ sudo python ./bazzite-optimizer.py --skip-packages
+[sudo] password for parobek:
+==============================================================
+    BAZZITE DX ULTIMATE GAMING OPTIMIZER v4.1.0
+  Enhanced for RTX 5080 Blackwell | i9-10850K | 64GB RAM
+  Now with: Thermal Management | HDR | Profiles | Validation
+==============================================================
+
+
+System Information:
+  OS: Bazzite
+  Kernel: 6.16.4-104.bazzite.fc42.x86_64
+  CPU: Intel(R) Core(TM) i9-10850K CPU @ 3.60GHz
+  Cores: 10 / Threads: 20
+  RAM: 63 GB
+  Free Disk: 816 GB
+  GPU: NVIDIA Corporation GB203 [GeForce RTX 5080] (rev a1)
+  NVIDIA Driver: 580.82.07
+  GPU Temperature: 42°C
+
+Checking system prerequisites...
+
+Hardware Detection:
+  ✔ Nvidia Rtx5080
+  ✔ Intel I9 10850K
+  ✔ Ram 64Gb
+  ✔ Nvme Storage
+  ✔ Creative Audio
+  ✔ Intel I225V
+  ✔ Bazzite Os
+  ✔ Resizable Bar
+  ✔ Nvidia Gpu Present
+
+Selected Profile: BALANCED
+  Good performance with visual quality and moderate thermals
+INFO    - Profile environment exported to /etc/bazzite-optimizer/profiles/balanced.env
+
+Starting optimization process (Profile: BALANCED)...
+
+[1/11] Boot Infrastructure
+INFO    - Applying boot infrastructure optimizations...
+INFO    - Creating missing system groups...
+INFO    - System groups created successfully via systemd-sysusers
+INFO    - Fixing composefs and immutable filesystem compatibility...
+INFO    - Created systemd-remount-fs.service composefs compatibility override
+INFO    - Applied tmpfiles configuration for gaming directories
+INFO    - Configured overlay mount compatibility
+INFO    - Configuring input-remapper for stability...
+INFO    - Created input-remapper configuration
+INFO    - Configured input device whitelist
+INFO    - Configured input device udev rules
+INFO    - Setting up enhanced module loading...
+INFO    - Configured modules-load.d for gaming
+INFO    - Configured modprobe for gaming optimizations
+INFO    - Created module validation script
+INFO    - Fixing boot configuration...
+INFO    - Cleaned fstab duplicates, backup saved to /etc/fstab.backup.20250907_180447
+INFO    - Adding kernel parameter: mitigations=off
+WARNING - Failed to add kernel parameter mitigations=off: Command timed out after 30 seconds
+INFO    - Configured early boot optimizations
+INFO    - Boot infrastructure optimization completed with some failures
+  ⚠ Some validations failed: uinput_module, module_uinput_loaded, processor_max_cstate
+
+[2/11] NVIDIA RTX 5080 Blackwell
+INFO    - Applying NVIDIA RTX 5080 Blackwell optimizations...
+INFO    - Checking RTX 5080 Resizable BAR status...
+DEBUG   - RTX 5080 Resizable BAR method 2 output: 3
+DEBUG   - RTX 5080 Resizable BAR method 4 output: BAR1 Memory Usage
+INFO    - RTX 5080 detected with Resizable BAR capability
+INFO    - Setting up shader cache optimization...
+INFO    - Regenerating initramfs...
+DEBUG   - Applying RTX 5080 PowerMizer mode 1 directly
+INFO    - NVIDIA RTX 5080 optimizations applied
+DEBUG   - Validating GPU Power Mode...
+WARNING - GPU Power Mode validation failed: expected '1', got '0'
+INFO    - Checking RTX 5080 Resizable BAR status...
+DEBUG   - RTX 5080 Resizable BAR method 2 output: 3
+DEBUG   - RTX 5080 Resizable BAR method 4 output: BAR1 Memory Usage
+INFO    - RTX 5080 detected with Resizable BAR capability
+DEBUG   - HDR Gaming Support validation passed: /etc/profile.d/hdr-gaming.sh exists
+DEBUG   - Shader Cache Directory validation passed: /var/cache/gaming-shaders exists
+  ⚠ Some validations failed: gpu_power_mode
+
+[3/11] Intel i9-10850K CPU
+INFO    - Applying Intel i9-10850K optimizations...
+INFO    - Configuring CPU undervolting...
+INFO    - CPU optimizations applied
+DEBUG   - Validating CPU Governor...
+DEBUG   - CPU Governor validation passed: performance
+DEBUG   - Intel Undervolt Configuration validation passed: /etc/intel-undervolt.conf exists
+  ✓ All validations passed
+
+[4/11] Memory & Storage
+INFO    - Configuring ZRAM for optimal gaming performance...
+INFO    - Applying memory and network sysctl optimizations...
+INFO    - Configuring Btrfs optimizations for /var/mnt/Data_SSD
+INFO    - Enabling Multi-Gen LRU...
+INFO    - MGLRU enabled successfully
+DEBUG   - MGLRU Support validation passed: /sys/kernel/mm/lru_gen/enabled exists
+  ⚠ Some validations failed: zram_enabled
+
+[5/11] Audio System
+INFO    - Applying audio optimizations for Creative Sound Blaster...
+DEBUG   - Validating audio environment...
+INFO    - Testing connection to user's D-Bus session...
+INFO    - Successfully connected to user's D-Bus session.
+DEBUG   - Audio environment validation completed successfully
+INFO    - PipeWire configuration applied
+INFO    - WirePlumber configuration applied
+INFO    - Restarting PipeWire audio services with improved sequencing...
+INFO    - Performing sequenced audio service restart...
+DEBUG   - Stopping audio services in reverse dependency order...
+DEBUG   - Stopping wireplumber...
+DEBUG   - Successfully stopped wireplumber
+DEBUG   - Stopping pipewire-pulse...
+DEBUG   - Successfully stopped pipewire-pulse
+DEBUG   - Stopping pipewire...
+DEBUG   - Successfully stopped pipewire
+DEBUG   - Cleaning up stale audio sockets...
+DEBUG   - Socket in use, preserving: /run/user/1000/pulse/native
+DEBUG   - Socket in use, preserving: /run/user/1000/pipewire-0
+DEBUG   - Socket in use, preserving: /run/user/1000/pipewire-0-manager
+DEBUG   - Socket in use, preserving: /run/user/1000/pipewire-0.lock
+DEBUG   - Socket in use, preserving: /run/user/1000/pipewire-0-manager.lock
+DEBUG   - Starting audio services in dependency order...
+DEBUG   - Starting pipewire...
+DEBUG   - Successfully started pipewire
+DEBUG   - Starting pipewire-pulse...
+DEBUG   - Successfully started pipewire-pulse
+DEBUG   - Starting wireplumber...
+DEBUG   - Successfully started wireplumber
+INFO    - Sequenced audio service restart completed successfully
+INFO    - Sequenced audio services restart completed successfully
+DEBUG   - Verifying audio services responsiveness...
+DEBUG   - WirePlumber is managing audio devices
+INFO    - pipewire is active
+INFO    - pipewire-pulse is active
+INFO    - wireplumber is active
+INFO    - PipeWire daemon is responding correctly
+DEBUG   - Verifying audio device detection...
+INFO    - PipeWire audio devices: 3 active, 12 total sinks
+INFO    - Creative Sound Blaster device detected in PipeWire
+INFO    - Audio system operational: 3/3 services ready
+DEBUG   - Service status details: pipewire:active, pipewire-pulse:active, wireplumber:active
+INFO    - Audio optimizations applied successfully
+DEBUG   - Verifying audio services responsiveness...
+DEBUG   - WirePlumber is managing audio devices
+DEBUG   - Verifying audio device detection...
+INFO    - PipeWire audio devices: 3 active, 12 total sinks
+INFO    - Creative Sound Blaster device detected in PipeWire
+DEBUG   - Checking audio system health...
+WARNING - Recent audio service errors detected: Sep 07 11:19:44 AB-i9 (udev-worker)[1032]: 1-12:1.0: /etc/udev/rules.d/99-input-gaming-fixes.rules:5 Failed to write ATTR{/sys/devices/pci0000:00/0000:00:14.0/usb1/1-12/1-12:1.0/authorized}="0", ignor...
+DEBUG   - PipeWire memory usage: 11.1MB (OK)
+DEBUG   - Audio device processes: 9 (OK)
+DEBUG   - Audio system health score: 50.0%
+INFO    - Audio validation results (5/5 passed):
+INFO    -   PipeWire config: ✓
+INFO    -   WirePlumber config: ✓
+INFO    -   Services responsive: ✓
+INFO    -   Devices detected: ✓
+INFO    -   System health: ✓
+DEBUG   - Final audio validation success rate: 100.0%
+DEBUG   - PipeWire Gaming Configuration validation passed: /etc/pipewire/pipewire.conf.d/99-gaming.conf exists
+DEBUG   - Checking audio environment status (read-only)...
+DEBUG   - Audio environment status check completed successfully
+DEBUG   - Verifying audio services responsiveness...
+DEBUG   - WirePlumber is managing audio devices
+DEBUG   - Verifying audio device detection...
+INFO    - PipeWire audio devices: 3 active, 12 total sinks
+INFO    - Creative Sound Blaster device detected in PipeWire
+DEBUG   - Verifying audio services responsiveness...
+DEBUG   - WirePlumber is managing audio devices
+DEBUG   - Verifying audio device detection...
+INFO    - PipeWire audio devices: 3 active, 12 total sinks
+INFO    - Creative Sound Blaster device detected in PipeWire
+DEBUG   - Checking audio system health...
+WARNING - Recent audio service errors detected: Sep 07 11:19:44 AB-i9 (udev-worker)[1032]: 1-12:1.0: /etc/udev/rules.d/99-input-gaming-fixes.rules:5 Failed to write ATTR{/sys/devices/pci0000:00/0000:00:14.0/usb1/1-12/1-12:1.0/authorized}="0", ignor...
+DEBUG   - PipeWire memory usage: 11.1MB (OK)
+DEBUG   - Audio device processes: 9 (OK)
+DEBUG   - Audio system health score: 50.0%
+INFO    - Audio validation results (5/5 passed):
+INFO    -   PipeWire config: ✓
+INFO    -   WirePlumber config: ✓
+INFO    -   Services responsive: ✓
+INFO    -   Devices detected: ✓
+INFO    -   System health: ✓
+DEBUG   - Final audio validation success rate: 100.0%
+  ✓ All validations passed
+
+[6/11] Network (Intel I225-V)
+INFO    - Applying Intel I225-V network optimizations...
+INFO    - Network optimizations applied
+DEBUG   - Network Optimization Script validation passed: /usr/local/bin/ethernet-optimize.sh exists
+  ✓ All validations passed
+
+[7/11] Gaming Tools
+INFO    - Configuring GameMode...
+DEBUG   - Starting GameMode daemon...
+INFO    - Configuring MangoHud...
+INFO    - Configuring System76 Scheduler...
+INFO    - Skipping package installation: system76-scheduler (--skip-packages enabled)
+DEBUG   - Starting System76 scheduler...
+DEBUG   - MangoHud Configuration validation passed: /home/parobek/.config/MangoHud/MangoHud.conf exists
+  ✓ All validations passed
+
+[8/11] Kernel & Boot
+INFO    - Bazzite immutable system detected, using rpm-ostree kargs
+INFO    - Applying kernel parameters via rpm-ostree kargs (batch mode)...
+DEBUG   - Will add: mitigations=off
+DEBUG   - Will add: processor.max_cstate=3
+DEBUG   - Will add: intel_idle.max_cstate=3
+DEBUG   - Will add: intel_pstate=active
+DEBUG   - Will add: transparent_hugepage=madvise
+DEBUG   - Will add: nvme_core.default_ps_max_latency_us=0
+DEBUG   - Will add: pcie_aspm=off
+DEBUG   - Will add: pci=realloc,assign-busses,nocrs
+DEBUG   - Will add: intel_iommu=on
+DEBUG   - Will add: iommu=pt
+DEBUG   - Will add: threadirqs
+DEBUG   - Will add: preempt=full
+DEBUG   - Will add: nvidia-drm.modeset=1
+DEBUG   - Will add: nvidia-drm.fbdev=1
+INFO    - Adding 14 kernel parameters in batch...
+INFO    - Adding kernel parameters in batch: mitigations=off, processor.max_cstate=3, intel_idle.max_cstate=3, intel_pstate=active, transparent_hugepage=madvise, nvme_core.default_ps_max_latency_us=0, pcie_aspm=off, pci=realloc,assign-busses,nocrs, intel_iommu=on, iommu=pt, threadirqs, preempt=full, nvidia-drm.modeset=1, nvidia-drm.fbdev=1
+ERROR   - Failed to add kernel parameters: error: Transaction in progress: kargs --append=mitigations=off
+ You can cancel the current transaction with `rpm-ostree cancel`
+
+INFO    - Configuring kernel modules...
+DEBUG   - Gaming Kernel Modules validation passed: /etc/modules-load.d/gaming.conf exists
+  ✓ All validations passed
+
+[9/11] Systemd Services
+INFO    - Creating gaming optimization service...
+INFO    - Gaming optimization service created and enabled
+INFO    - Disabling unnecessary services...
+DEBUG   - Gaming Optimizations Service validation passed: /etc/systemd/system/gaming-optimizations.service exists
+  ✓ All validations passed
+
+[10/11] KDE Plasma 6 Wayland
+INFO    - Applying KDE Plasma 6 Wayland optimizations...
+INFO    - KDE Plasma optimizations applied
+DEBUG   - KWin Configuration validation passed: /home/parobek/.config/kwinrc exists
+  ✓ All validations passed
+
+[11/11] Bazzite Specific
+INFO    - Applying Bazzite-specific optimizations...
+  ✓ All validations passed
+INFO    - Thermal monitoring started with balanced profile
+
+==============================================================
+Optimization completed with some failures:
+  ✗ Boot Infrastructure
+  ✗ NVIDIA RTX 5080 Blackwell
+  ✗ Memory & Storage
+  ✗ Kernel & Boot
+
+==============================================================
+VALIDATION SUMMARY
+Profile: Balanced Gaming (balanced)
+==============================================================
+⚠ Boot Infrastructure: 30/33 checks passed
+    ✗ uinput_module
+    ✗ module_uinput_loaded
+    ✗ processor_max_cstate
+⚠ NVIDIA RTX 5080 Blackwell: 4/5 checks passed
+    ✗ gpu_power_mode
+✓ Intel i9-10850K CPU: 2/2 checks passed
+⚠ Memory & Storage: 2/3 checks passed
+    ✗ zram_enabled
+✓ Audio System: 9/9 checks passed
+✓ Network (Intel I225-V): 2/2 checks passed
+✓ Gaming Tools: 3/3 checks passed
+✓ Kernel & Boot: 2/2 checks passed
+✓ Systemd Services: 1/1 checks passed
+✓ KDE Plasma 6 Wayland: 1/1 checks passed
+✓ Bazzite Specific: 1/1 checks passed
+--------------------------------------------------------------
+Overall: 57/62 (91.9%) validations passed
+
+✗ Optimization completed with errors. Check logs for details.
+
+Log file: /var/log/bazzite-optimizer/optimization_20250907_180447.log

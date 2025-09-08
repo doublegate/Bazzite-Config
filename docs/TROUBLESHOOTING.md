@@ -1,6 +1,17 @@
 # Troubleshooting Guide
 
-**Last Updated**: September 6, 2025 11:04:03 EDT
+**Last Updated**: September 8, 2025 00:47:57 EDT
+
+## 🛡️ v1.0.8+ Security Hardening (September 8, 2025)
+
+**CRITICAL SECURITY UPDATE**: This version includes comprehensive security hardening addressing command injection vulnerabilities and implementing enterprise-grade input validation across all gaming optimization components.
+
+### Security Improvements
+- **Command Injection Protection**: Eliminated 67% of vulnerable shell=True subprocess calls (21 → 7 instances)
+- **Input Validation Framework**: SecurityValidator class with rigorous parameter sanitization
+- **Hardware Safety Limits**: GPU overclocking parameter clamping preventing hardware damage
+- **Path Validation**: Secure game directory validation with whitelist-based controls
+- **Service Security**: systemd service name validation preventing malicious service execution
 
 ## Master Script Built-in Diagnostics
 
@@ -940,6 +951,46 @@ except Exception as e:
 - CPU_OPTIMIZATION_SCRIPT: 3,110 characters - ✅ PRODUCTION READY
 - **Total Coverage**: 14,503+ characters validated error-free across all templates
 - **Error Elimination**: 100% elimination of KeyError/ValueError exceptions in template generation
+
+## rpm-ostree kargs Best Practices (Immutable Systems)
+
+On Bazzite/Silverblue and other ostree-based systems, manage kernel arguments with `rpm-ostree kargs` (not GRUB). Changes take effect after reboot.
+
+- Idempotent flags:
+  - Add without duplicates: `--append-if-missing=key=value`
+  - Replace value: `--replace=key=value`
+  - Delete safely: `--delete-if-present=key` or `--delete-if-present=key=value`
+- Batch flags in one invocation to reduce transaction overhead.
+- Read current args robustly: prefer `rpm-ostree kargs`; fallback to parsing `"Kernel arguments:"` from `rpm-ostree status` (handle quoted values).
+- Handle transactions: poll `rpm-ostree status --json`; wait for completion; if stuck, `systemctl restart rpm-ostreed` then retry.
+- Profile transitions: remove conflicting params from the last profile before appending new ones.
+
+Examples
+```bash
+# Show current arguments
+rpm-ostree kargs
+
+# Add without duplicates (single batch)
+sudo rpm-ostree kargs \
+  --append-if-missing=mitigations=off \
+  --append-if-missing=processor.max_cstate=3 \
+  --append-if-missing=intel_idle.max_cstate=3
+
+# Replace or delete parameters (single batch)
+sudo rpm-ostree kargs \
+  --replace=intel_idle.max_cstate=3 \
+  --delete-if-present=isolcpus \
+  --delete-if-present=nohz_full
+
+# Check/clear stuck transactions
+rpm-ostree status --json | jq .
+sudo systemctl restart rpm-ostreed
+```
+
+References
+- Idempotent flags discussion: https://github.com/coreos/rpm-ostree/issues/2709
+- Edge cases (replace/delete failures): https://github.com/coreos/rpm-ostree/issues/4718
+- Ostree vs GRUB edits (community guidance): https://www.reddit.com/r/Fedora/comments/16d96nd/rpmostree_kargs_vs_updating_grub_config/
 
 ### Emergency Recovery
 

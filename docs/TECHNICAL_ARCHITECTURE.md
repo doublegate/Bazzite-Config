@@ -1,8 +1,16 @@
 # Technical Architecture
 
-## Master Script Foundation
+**Last Updated**: September 8, 2025 00:47:57 EDT
 
-The Bazzite Gaming Optimization Suite is built around the comprehensive **bazzite-optimizer.py master script** (4,649 lines, 165KB) - a complete gaming optimization framework with 16 specialized optimizer classes, advanced safety systems, and integrated benchmarking capabilities.
+## 🛡️ v1.0.8+ Security Hardened Architecture
+
+The Bazzite Gaming Optimization Suite is built around the comprehensive **bazzite-optimizer.py master script** (4,649 lines, 165KB) - a complete gaming optimization framework with 16 specialized optimizer classes, enterprise-grade security controls, and comprehensive input validation systems.
+
+### Security Architecture Highlights
+- **SecurityValidator Class**: Comprehensive input validation and security utilities
+- **Command Injection Protection**: 67% reduction in vulnerable shell=True usage (21 → 7 instances)
+- **Hardware Safety Controls**: GPU overclocking parameter clamping preventing hardware damage
+- **Path Security**: Game directory validation with whitelist-based access controls
 
 ## Boot Infrastructure Excellence Implementation
 

@@ -213,7 +213,12 @@ wifi-passwords.txt           # WiFi passwords (if accidentally created)
 # TEMPORARY AND EXCLUDED FILES
 # ============================================================================
 
+# MCP-specific files that shouldn't be tracked
+tools/                       # Development tools directory
+tests/__pycache__/           # Test cache files
+
 # Temporary documentation files
+AGENTS.md                        # Agent contributor guide (local only)
 WARP.md                          # Temporary WARP documentation file
 
 # ============================================================================
