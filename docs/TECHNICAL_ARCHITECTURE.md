@@ -1,10 +1,10 @@
 # Technical Architecture
 
-**Last Updated**: September 8, 2025 00:47:57 EDT
+**Last Updated**: September 8, 2025 21:42:11 EDT
 
-## 🛡️ v1.0.8+ Security Hardened Architecture
+## 🛡️ v1.0.8+ Security Excellence + Command Injection Protection + Selective Restoration Framework
 
-The Bazzite Gaming Optimization Suite is built around the comprehensive **bazzite-optimizer.py master script** (4,649 lines, 165KB) - a complete gaming optimization framework with 16 specialized optimizer classes, enterprise-grade security controls, and comprehensive input validation systems.
+The Bazzite Gaming Optimization Suite is built around the comprehensive **bazzite-optimizer.py master script** (7,637 lines, 300KB) - a complete gaming optimization framework with 16 specialized optimizer classes, enterprise-grade security controls, comprehensive input validation systems, and advanced system restoration capabilities.
 
 ### Security Architecture Highlights
 - **SecurityValidator Class**: Comprehensive input validation and security utilities
@@ -101,7 +101,7 @@ The BootInfrastructureOptimizer class represents a comprehensive implementation 
                               │
         ┌─────────────────────▼─────────────────────┐
         │         bazzite-optimizer.py              │
-        │      (Master Script - 4,649 lines)        │
+        │      (Master Script - 7,637 lines)        │
         │                                           │
         │  ┌─────────────────────────────────────┐  │
         │  │     16 Specialized Optimizers       │  │
@@ -131,8 +131,8 @@ The BootInfrastructureOptimizer class represents a comprehensive implementation 
 
 **Purpose**: Comprehensive gaming optimization framework with 16 specialized optimizer classes
 
-**Current Version**: v1.0.8 "Complete Validation Excellence + BaseOptimizer Architecture"
-- **Script Size**: 4,649 lines, 165KB  
+**Current Version**: v1.0.8+ "Security Excellence + Command Injection Protection + Selective Restoration Framework"
+- **Script Size**: 7,637 lines, 300KB  
 - **Validation Success**: 100% validation success rate (29/29 tests passing)
 - **Transaction Handling**: Eliminated 60-second rpm-ostree timeout hangs with batch processing
 - **Profile-Aware Validation**: Smart validation logic understanding "Balanced" vs "Competitive" modes
@@ -886,7 +886,7 @@ def ensure_directory_with_fallback(system_path, user_subpath, description="direc
 ### Code Organization
 ```
 bazzite-config/
-├── bazzite-optimizer.py        # MASTER SCRIPT (4,649 lines, 165KB)
+├── bazzite-optimizer.py        # MASTER SCRIPT (7,637 lines, 300KB)
 │   ├── 16 Specialized Optimizers
 │   ├── Advanced Management Systems  
 │   ├── 4 Gaming Profiles
@@ -936,8 +936,8 @@ The master script represents the complete integration of V3 and V4 features:
 - Emergency thermal throttling
 
 ### Implementation Excellence
-- **4,649 Lines**: Comprehensive implementation covering all optimization aspects
-- **165KB Size**: Complete feature set with no placeholders or stubs
+- **7,637 Lines**: Comprehensive implementation covering all optimization aspects
+- **300KB Size**: Complete feature set with no placeholders or stubs
 - **16 Classes**: Specialized optimization coverage for every system component
 - **4 Profiles**: Hardware-specific gaming optimization templates
 - **V3+V4 Complete**: Full integration of all planned features

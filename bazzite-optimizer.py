@@ -1193,7 +1193,7 @@ fi
 STABILITY_TEST_SCRIPT = """#!/bin/bash
 # System stability testing script v4
 
-DURATION=${1:-300}  # Default 5 minutes
+DURATION=${{1:-300}}  # Default 5 minutes
 RESULT_DIR="/var/log/bazzite-optimizer/stability_test_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$RESULT_DIR"
 
@@ -1201,7 +1201,7 @@ echo "Starting stability test for $DURATION seconds..."
 echo "Test started at $(date)" > "$RESULT_DIR/test.log"
 
 # Function to monitor temperatures
-monitor_temps() {
+monitor_temps() {{
     while [ -f "$RESULT_DIR/.running" ]; do
         GPU_TEMP=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null || echo "0")
         CPU_TEMP=$(sensors -j 2>/dev/null | grep -o '"temp[0-9]_input":[0-9.]*' | head -1 | cut -d: -f2 | cut -d. -f1 || echo "0")
@@ -1210,7 +1210,7 @@ monitor_temps() {
 
         # Safety check
         if [ "$GPU_TEMP" -gt {MAX_GPU_TEMP_STRESS} ] || [ "$CPU_TEMP" -gt {MAX_CPU_TEMP_STRESS} ]; then
-            echo "CRITICAL: Temperature limit exceeded! GPU:${GPU_TEMP}°C CPU:${CPU_TEMP}°C" | tee -a "$RESULT_DIR/test.log"
+            echo "CRITICAL: Temperature limit exceeded! GPU:${{GPU_TEMP}}°C CPU:${{CPU_TEMP}}°C" | tee -a "$RESULT_DIR/test.log"
             rm -f "$RESULT_DIR/.running"
             pkill -f "stress-ng|gpu-burn|glmark2"
             exit 1
@@ -1218,7 +1218,7 @@ monitor_temps() {
 
         sleep 1
     done
-}
+}}
 
 # Start temperature monitoring
 touch "$RESULT_DIR/.running"
@@ -1230,7 +1230,7 @@ if command -v glmark2 &> /dev/null && nvidia-smi &> /dev/null; then
     echo "Starting GPU stress test..." | tee -a "$RESULT_DIR/test.log"
 
     # Run multiple instances for maximum load
-    for i in {1..2}; do
+    for i in {{1..2}}; do
         timeout $DURATION glmark2 --run-forever --fullscreen &>> "$RESULT_DIR/gpu_stress.log" &
     done
 
@@ -1243,15 +1243,15 @@ fi
 # CPU Stress Test
 if command -v stress-ng &> /dev/null; then
     echo "Starting CPU stress test..." | tee -a "$RESULT_DIR/test.log"
-    stress-ng --cpu $(nproc) --cpu-method all --metrics --timeout ${DURATION}s &>> "$RESULT_DIR/cpu_stress.log" &
+    stress-ng --cpu $(nproc) --cpu-method all --metrics --timeout ${{DURATION}}s &>> "$RESULT_DIR/cpu_stress.log" &
 elif command -v stress &> /dev/null; then
-    stress --cpu $(nproc) --timeout ${DURATION}s &>> "$RESULT_DIR/cpu_stress.log" &
+    stress --cpu $(nproc) --timeout ${{DURATION}}s &>> "$RESULT_DIR/cpu_stress.log" &
 fi
 
 # Memory stress test
 if command -v stress-ng &> /dev/null; then
     echo "Starting memory stress test..." | tee -a "$RESULT_DIR/test.log"
-    stress-ng --vm 4 --vm-bytes 8G --mmap 4 --timeout ${DURATION}s &>> "$RESULT_DIR/mem_stress.log" &
+    stress-ng --vm 4 --vm-bytes 8G --mmap 4 --timeout ${{DURATION}}s &>> "$RESULT_DIR/mem_stress.log" &
 fi
 
 # Wait for tests to complete
@@ -1274,8 +1274,8 @@ AVG_GPU_TEMP=$(cut -d, -f2 "$RESULT_DIR/temps.csv" | awk '{{sum+=$1}} END {{prin
 AVG_CPU_TEMP=$(cut -d, -f3 "$RESULT_DIR/temps.csv" | awk '{{sum+=$1}} END {{print int(sum/NR)}}')
 
 echo "Temperature Summary:" | tee -a "$RESULT_DIR/test.log"
-echo "  GPU Max: ${MAX_GPU_TEMP}°C, Avg: ${AVG_GPU_TEMP}°C" | tee -a "$RESULT_DIR/test.log"
-echo "  CPU Max: ${MAX_CPU_TEMP}°C, Avg: ${AVG_CPU_TEMP}°C" | tee -a "$RESULT_DIR/test.log"
+echo "  GPU Max: ${{MAX_GPU_TEMP}}°C, Avg: ${{AVG_GPU_TEMP}}°C" | tee -a "$RESULT_DIR/test.log"
+echo "  CPU Max: ${{MAX_CPU_TEMP}}°C, Avg: ${{AVG_CPU_TEMP}}°C" | tee -a "$RESULT_DIR/test.log"
 
 # Check for errors
 ERRORS=0
@@ -1299,11 +1299,11 @@ Stability Test Report
 ==============================================
 Date: $(date)
 Duration: $DURATION seconds
-Profile: ${GAMING_PROFILE:-unknown}
+Profile: ${{GAMING_PROFILE:-unknown}}
 
 Temperature Results:
-  GPU: Max ${MAX_GPU_TEMP}°C, Avg ${AVG_GPU_TEMP}°C
-  CPU: Max ${MAX_CPU_TEMP}°C, Avg ${AVG_CPU_TEMP}°C
+  GPU: Max ${{MAX_GPU_TEMP}}°C, Avg ${{AVG_GPU_TEMP}}°C
+  CPU: Max ${{MAX_CPU_TEMP}}°C, Avg ${{AVG_CPU_TEMP}}°C
 
 Errors Detected: $ERRORS
 Stability Score: $SCORE/100
@@ -2552,8 +2552,9 @@ class BaseOptimizer:
 class StabilityTester:
     """System stability testing after overclocking"""
 
-    def __init__(self, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger, profile: str = "unknown"):
         self.logger = logger
+        self.profile = profile
         self.test_duration = STABILITY_TEST_DURATION
 
     def run_full_test(self, duration: int = None) -> Tuple[bool, int, str]:
@@ -2568,7 +2569,8 @@ class StabilityTester:
                           STABILITY_TEST_SCRIPT.format(
             MAX_GPU_TEMP_STRESS=MAX_GPU_TEMP_STRESS,
             MAX_CPU_TEMP_STRESS=MAX_CPU_TEMP_STRESS,
-            MIN_STABILITY_SCORE=MIN_STABILITY_SCORE
+            MIN_STABILITY_SCORE=MIN_STABILITY_SCORE,
+            GAMING_PROFILE=self.profile
         ),
             executable=True)
 
@@ -3209,6 +3211,9 @@ class NvidiaOptimizer(BaseOptimizer):
         # Apply immediate optimizations - RTX 5080 Blackwell specific
         run_command("/usr/local/bin/nvidia-gaming-optimize.sh", check=False)
         
+        # Check DISPLAY environment for GUI operations
+        display_env = os.environ.get('DISPLAY', '')
+        
         # v4.1: Progressive overclocking for competitive profile (safer than immediate application)
         if self.profile == "competitive" and display_env:
             self.logger.info("Competitive profile detected - using progressive RTX 5080 overclocking for safety")
@@ -3220,7 +3225,6 @@ class NvidiaOptimizer(BaseOptimizer):
                 self.logger.warning("Progressive overclocking failed - RTX 5080 running at conservative settings")
         
         # For RTX 5080 Blackwell, also apply PowerMizer mode directly if possible
-        display_env = os.environ.get('DISPLAY', '')
         if display_env:
             # Apply PowerMizer mode immediately for validation
             power_mode = profile_settings.get("gpu_power_mode", 1)
@@ -3258,7 +3262,7 @@ class NvidiaOptimizer(BaseOptimizer):
         core_steps = sorted(list(set(core_steps)))
         memory_steps = sorted(list(set(memory_steps)))
         
-        stability_tester = StabilityTester(self.logger)
+        stability_tester = StabilityTester(self.logger, self.profile)
         
         # Apply progressive overclocking
         current_core = 0

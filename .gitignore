@@ -88,6 +88,13 @@ cpu-info.cache               # CPU information cache
 system-config.backup         # System configuration backups
 kernel-params.backup         # Kernel parameter backups
 
+# System restoration and reset artifacts
+/var/backups/bazzite-reset-* # reset-bazzite-defaults.sh backup directories
+STATE.txt                    # System state capture files
+kargs.txt                    # Kernel arguments backup files
+etc.tar.zst                  # Compressed /etc backups
+etc.tar.gz                   # Compressed /etc backups (fallback)
+
 # ============================================================================
 # DEVELOPMENT AND BUILD ARTIFACTS
 # ============================================================================

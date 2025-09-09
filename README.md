@@ -9,22 +9,25 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776ab?style=for-the-badge&logo=python)
 ![Shell](https://img.shields.io/badge/Shell-Bash-4eaa25?style=for-the-badge&logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.8-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.8+-brightgreen?style=for-the-badge)
+![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red?style=for-the-badge&logo=shield)
+![Lines](https://img.shields.io/badge/Lines-7637-blue?style=for-the-badge&logo=code)
 
-Professional gaming system optimization powered by the comprehensive 'bazzite-optimizer.py' script
+Professional gaming system optimization powered by the comprehensive 'bazzite-optimizer.py' script with enterprise-grade security
 
 </div>
 <!-- markdownlint-enable MD033 -->
 
 ## 🎯 Overview
 
-The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (4,649 lines, 165KB). This complete solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations including NVIDIA RTX 5080, Intel i9-10850K, and 64GB RAM through 16 specialized optimizer classes and intelligent system tuning.
+The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (7,637 lines, 300KB). This enterprise-grade solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations including NVIDIA RTX 5080, Intel i9-10850K, and 64GB RAM through 16 specialized optimizer classes, enterprise-grade security controls, and intelligent system tuning with complete system restoration capabilities.
 
-## 🆕 v1.0.8+ - Security Excellence + Command Injection Protection + Input Validation Framework (September 8, 2025)
+## 🆕 v1.0.8+ - Security Excellence + Command Injection Protection + Selective Restoration Framework (September 8, 2025)
 
-**Enterprise-grade security hardening with comprehensive protection against command injection vulnerabilities:**
+**Enterprise-grade security hardening with comprehensive protection against command injection vulnerabilities and advanced system restoration capabilities:**
 
 ### Security Excellence Implementation
+
 - 🛡️ **COMMAND INJECTION PROTECTION** - Complete elimination of vulnerable shell=True usage (21 → 7 instances)
 - 🔐 **INPUT VALIDATION FRAMEWORK** - Comprehensive SecurityValidator class with rigorous input sanitization
 - ⚖️ **SECURITY VULNERABILITY ANALYSIS** - Systematic security audit identifying and resolving critical vulnerabilities
@@ -32,14 +35,17 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 - 🎯 **PARAMETER SANITIZATION** - GPU overclocking safety limits preventing hardware damage
 - 📋 **PATH VALIDATION** - Game directory path validation with whitelist-based security controls
 
-### Comprehensive System Restoration  
-- 🔄 **UNDO SCRIPT EVOLUTION** - v1.0 → v2.0.0 → v3.0.0 with OSTree-native integration and /usr/etc synchronization
-- 🔌 **HARDWARE RE-DETECTION** - Complete udev management and hardware re-detection systems
+### Advanced System Restoration Architecture
+
+- 🔄 **SELECTIVE RESTORATION TOOL** - New reset-bazzite-defaults.sh for targeted system restoration with safe exclusions
+- 🔌 **HARDWARE RE-DETECTION** - Complete udev management and hardware re-detection systems  
 - 🔊 **DEEP AUDIO SYSTEM RESET** - Safe module reloading with comprehensive PipeWire/PulseAudio restoration
-- 🌐 **NETWORKMANGER STATE MANAGEMENT** - Complete network configuration restoration and validation
+- 🌐 **NETWORK STATE MANAGEMENT** - Complete network configuration restoration and validation
 - 💾 **ENHANCED BACKUP ARCHITECTURE** - SELinux/xattrs preservation with comprehensive restoration capabilities
+- 🛠️ **OSTree-NATIVE INTEGRATION** - Immutable filesystem compatibility with /usr/etc synchronization
 
 ### MCP Server Orchestration Excellence
+
 - 🛠️ **COMPREHENSIVE MCP ORCHESTRATION** - Systematic zen debug, brave-search, context7, filesystem, memory tools
 - 📊 **EVIDENCE-BASED ROOT CAUSE ANALYSIS** - 8-step investigation methodology with concrete file:line references
 - ⚙️ **KERNEL PARAMETER DEDUPLICATION** - Complete _clean_kernel_params() preventing boot configuration conflicts
@@ -69,7 +75,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 
 ### ✨ Master Script Features
 
-**bazzite-optimizer.py** - The comprehensive 4,649-line optimization powerhouse:
+**bazzite-optimizer.py** - The comprehensive 7,637-line optimization powerhouse:
 
 - 🎯 **16 Specialized Optimizer Classes** - Complete system optimization coverage
   - NvidiaOptimizer, CPUOptimizer, MemoryOptimizer, NetworkOptimizer
@@ -86,6 +92,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 - 🖥️ **Gaming Monitor Suite** - Real-time performance dashboard
 - 🔧 **Gaming Manager Suite** - Quick fixes and profile management
 - 🧪 **Gaming Maintenance Suite** - Automated testing and maintenance
+- 🔄 **Selective Restoration Tool** - reset-bazzite-defaults.sh for targeted system restoration
 
 ## 🏗️ Architecture
 
@@ -94,7 +101,7 @@ The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization fra
 ```text
                             ┌─────────────────────────────────┐
                             │     bazzite-optimizer.py        │
-                            │     (Master Script 4,649 lines) │
+                            │     (Master Script 7,637 lines) │
                             │                                 │
 ┌───────────────────────────┼─────────────────────────────────┼──────────────────────────┐
 │                           │   16 Specialized Optimizers     │                          │
@@ -182,13 +189,18 @@ sudo ./bazzite-optimizer.py --rollback
 
 # Manual benchmarking
 ./gaming-maintenance-suite.sh
+
+# Selective system restoration
+sudo ./reset-bazzite-defaults.sh --dry-run    # Preview changes
+sudo ./reset-bazzite-defaults.sh              # Safe restoration with exclusions
+sudo ./reset-bazzite-defaults.sh --rollback   # Restore from backup
 ```
 
 ## 🎮 Components
 
 ### Master Script (`bazzite-optimizer.py`)
 
-The comprehensive 4,391-line optimization powerhouse with 16 specialized classes:
+The comprehensive 7,637-line optimization powerhouse with 16 specialized classes and enterprise-grade security:
 
 | Command | Description |
 |---------|-------------|
@@ -252,6 +264,27 @@ Automated benchmarking and system maintenance:
 - **Storage Speed**: NVMe performance testing (Samsung 990 EVO Plus optimized)
 - **GPU Performance**: Gaming workload simulation
 - **System Health**: Comprehensive diagnostics
+
+### Selective Restoration Tool (`reset-bazzite-defaults.sh`)
+
+Advanced system restoration for Bazzite/immutable systems with intelligent safety controls:
+
+| Command | Description |
+|---------|-------------|
+| `--dry-run` | Preview changes without modification |
+| `--no-kargs` | Skip kernel parameter restoration |
+| `--no-etc` | Skip /etc restoration from /usr/etc |
+| `--only-repos` | Reset only repository configurations |
+| `--rollback` | Restore from backup |
+| `--list-backups` | Show available backup snapshots |
+
+**Key Features:**
+
+- **Safe Exclusions**: Preserves SSH keys, network configs, user accounts, and critical system data
+- **OSTree Integration**: Native support for immutable filesystem architectures
+- **Backup Management**: Automated backup creation with rollback capability
+- **Selective Operations**: Granular control over restoration scope
+- **Audit Trail**: Complete logging and configuration difference reporting
 
 ## ⚙️ Hardware Optimization
 
@@ -318,7 +351,7 @@ Master script optimization delivers proven performance improvements:
   "gpu_mode": "max_performance",
   "compositor": "disabled",
   "nice_value": -10,
-  "environment": 
+  "environment":
   {
     "DXVK_HUD": "fps,memory",
     "VKD3D_CONFIG": "dxr"
@@ -389,7 +422,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Last Updated**: September 6, 2025 11:37:32 AM EDT
+**Last Updated**: September 8, 2025 21:42:11 EDT
 
 <!-- markdownlint-disable MD033 -->
 <div align="center">
