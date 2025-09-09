@@ -194,10 +194,85 @@ backup_kargs() {
 reset_kargs() {
   log "Reset kernel args (clear overrides → image defaults)"
   if (( DRY_RUN )); then
-    vlog "[dry-run] rpm-ostree kargs --delete-all"
+    vlog "[dry-run] Remove individual kernel parameters with improved error handling"
     return
   fi
-  rpm-ostree kargs --delete-all
+  
+  # Common parameters to remove (from gaming optimizations)
+  local params_to_remove=(
+    "mitigations=off"
+    "processor.max_cstate=1"
+    "intel_idle.max_cstate=1" 
+    "processor.max_cstate=3"
+    "intel_idle.max_cstate=3"
+    "intel_pstate=active"
+    "transparent_hugepage=madvise"
+    "nvme_core.default_ps_max_latency_us=0"
+    "pcie_aspm=off"
+    "pci=realloc,assign-busses,nocrs,hpiosize=16M,hpmemsize=512M"
+    "intel_iommu=on"
+    "iommu=pt"
+    "threadirqs"
+    "preempt=full"
+    "nvidia-drm.modeset=1"
+    "nvidia-drm.fbdev=1"
+    "zswap.enabled=0"
+    "clocksource=tsc"
+    "tsc=reliable"
+    "nohz_full=4-9"
+    "isolcpus=4-9"
+    "rcu_nocbs=4-9"
+  )
+  
+  # Count parameters to remove for progress tracking
+  local current_kargs
+  current_kargs=$(rpm-ostree kargs 2>/dev/null || echo "")
+  local params_found=()
+  for param in "${params_to_remove[@]}"; do
+    if echo "$current_kargs" | grep -q "$param"; then
+      params_found+=("$param")
+    fi
+  done
+  
+  local total_params=${#params_found[@]}
+  if [[ $total_params -eq 0 ]]; then
+    log "No gaming optimization parameters found to remove"
+    return
+  fi
+  
+  log "Found $total_params gaming optimization parameters to remove"
+  log "NOTE: Batch rpm-ostree operation may take 5-10 minutes. Please be patient."
+  
+  # Build batch delete command
+  local delete_args=()
+  for param in "${params_found[@]}"; do
+    delete_args+=("--delete=$param")
+  done
+  
+  log "Removing all $total_params parameters in one batch operation..."
+  log "Parameters to remove: ${params_found[*]}"
+  
+  # Use timeout for batch operation (15 minute timeout for batch)
+  if timeout 900 rpm-ostree kargs "${delete_args[@]}"; then
+    log "✓ Successfully removed all $total_params gaming optimization parameters"
+  else
+    log "⚠ Batch removal failed or timed out. Falling back to individual removal..."
+    
+    # Fallback to individual removal
+    for param in "${params_found[@]}"; do
+      current_kargs=$(rpm-ostree kargs 2>/dev/null || echo "")
+      if echo "$current_kargs" | grep -q "$param"; then
+        log "Removing individually: $param"
+        if timeout 600 rpm-ostree kargs --delete="$param"; then
+          log "✓ Successfully removed: $param"
+        else
+          log "⚠ Failed to remove: $param"
+        fi
+      fi
+    done
+  fi
+  
+  log "Kernel parameter removal complete. Changes will take effect after reboot."
   echo "--- New kargs (view) ---" >> "${BACKUP_DIR}/kargs.txt"
   rpm-ostree kargs >> "${BACKUP_DIR}/kargs.txt" || true
 }
@@ -209,6 +284,19 @@ reset_kargs() {
 # Rule of thumb:
 #   * Preserve identity, network, secrets, and stateful service configs.
 #   * If you want a clean slate for a category, remove it from this list.
+
+# CRITICAL files that should NEVER be deleted even in aggressive mode
+CRITICAL_EXCLUDES=(
+  # --- CRITICAL USER AUTHENTICATION (NEVER DELETE THESE)
+  "/etc/passwd"                 # user accounts - CRITICAL
+  "/etc/shadow"                 # user passwords - CRITICAL  
+  "/etc/group"                  # user groups - CRITICAL
+  "/etc/gshadow"                # group passwords - CRITICAL
+  "/etc/subuid"                 # user namespaces - CRITICAL
+  "/etc/subgid"                 # group namespaces - CRITICAL
+  "/etc/machine-id"             # unique system identity - CRITICAL
+  "/etc/ssh"                    # SSH host keys - CRITICAL
+)
 
 SAFE_EXCLUDES=(
   # --- Identity and host specifics
@@ -299,13 +387,21 @@ restore_etc() {
   log "Restore /etc from /usr/etc (safe exclusions unless aggressive)"
   local RSYNC_ARGS
   RSYNC_ARGS=(-aHAX --delete --numeric-ids)
+  
+  # ALWAYS apply critical exclusions regardless of mode
+  for p in "${CRITICAL_EXCLUDES[@]}"; do
+    RSYNC_ARGS+=(--exclude="${p#/}")
+  done
+  log "Applied CRITICAL exclusions (user accounts, SSH keys, machine-id)"
+  
+  # Apply additional exclusions only in non-aggressive mode
   if (( ! AGGRESSIVE )); then
     for p in "${SAFE_EXCLUDES[@]}"; do
       RSYNC_ARGS+=(--exclude="${p#/}")
     done
-    log "Using SAFE exclusions (identity, net, secrets, services)"
+    log "Applied SAFE exclusions (identity, net, secrets, services)"
   else
-    log "AGGRESSIVE: NO exclusions (destructive)"
+    log "AGGRESSIVE mode: Only CRITICAL files protected (user accounts preserved)"
   fi
   if (( DRY_RUN )); then
     echo "[dry-run] rsync ${RSYNC_ARGS[*]} /usr/etc/ /etc/"
@@ -319,15 +415,32 @@ restore_etc() {
 reset_repos() {
   log "Reset /etc/yum.repos.d to image defaults"
   if (( DRY_RUN )); then
-    vlog "[dry-run] rm repos; cp from /usr/etc/yum.repos.d/"
+    vlog "[dry-run] backup existing repos; rm repos; cp from /usr/etc/yum.repos.d/"
     return
   fi
+  
+  # Create backup of existing repos before deletion
+  if [[ -d /etc/yum.repos.d ]] && [[ -n "$(ls -A /etc/yum.repos.d/*.repo 2>/dev/null)" ]]; then
+    local backup_dir="${BACKUP_DIR}/yum.repos.d"
+    mkdir -p "${backup_dir}"
+    cp -a /etc/yum.repos.d/*.repo "${backup_dir}/" 2>/dev/null || true
+    log "Backed up existing repository files to ${backup_dir}"
+  fi
+  
+  # Verify source directory exists before deletion
+  if [[ ! -d /usr/etc/yum.repos.d ]]; then
+    err "Source /usr/etc/yum.repos.d not found; skipping repo reset"
+    return 1
+  fi
+  
   mkdir -p /etc/yum.repos.d
   rm -f /etc/yum.repos.d/*.repo || true
-  if [[ -d /usr/etc/yum.repos.d ]]; then
-    cp -a /usr/etc/yum.repos.d/*.repo /etc/yum.repos.d/ 2>/dev/null \
-      || true
-  fi
+  cp -a /usr/etc/yum.repos.d/*.repo /etc/yum.repos.d/ 2>/dev/null || {
+    err "Failed to copy repository files from /usr/etc/yum.repos.d"
+    return 1
+  }
+  
+  log "Repository files reset to image defaults"
 }
 
 # ----------------------------- Diff for audit --------------------------------
@@ -379,10 +492,82 @@ restore_kargs_from_backup() {
   fi
   log "Restore kernel args from backup"
   if (( DRY_RUN )); then
-    echo "[dry-run] rpm-ostree kargs --delete-all; append tokens"
+    echo "[dry-run] Clear current kargs; append tokens from backup"
     return
   fi
-  rpm-ostree kargs --delete-all
+  
+  # Clear current optimization parameters first
+  local current_kargs
+  current_kargs=$(rpm-ostree kargs 2>/dev/null || echo "")
+  
+  # Remove common optimization parameters
+  local params_to_remove=(
+    "mitigations=off"
+    "processor.max_cstate=1"
+    "intel_idle.max_cstate=1" 
+    "processor.max_cstate=3"
+    "intel_idle.max_cstate=3"
+    "intel_pstate=active"
+    "transparent_hugepage=madvise"
+    "nvme_core.default_ps_max_latency_us=0"
+    "pcie_aspm=off"
+    "pci=realloc,assign-busses,nocrs,hpiosize=16M,hpmemsize=512M"
+    "intel_iommu=on"
+    "iommu=pt"
+    "threadirqs"
+    "preempt=full"
+    "nvidia-drm.modeset=1"
+    "nvidia-drm.fbdev=1"
+    "zswap.enabled=0"
+    "clocksource=tsc"
+    "tsc=reliable"
+    "nohz_full=4-9"
+    "isolcpus=4-9"
+    "rcu_nocbs=4-9"
+  )
+  
+  # Count parameters to remove for rollback progress tracking
+  local params_found=()
+  for param in "${params_to_remove[@]}"; do
+    if echo "$current_kargs" | grep -q "$param"; then
+      params_found+=("$param")
+    fi
+  done
+  
+  local total_params=${#params_found[@]}
+  if [[ $total_params -gt 0 ]]; then
+    log "Clearing $total_params optimization parameters during rollback"
+    log "NOTE: Batch rpm-ostree operation may take 5-10 minutes. Please be patient."
+    
+    # Build batch delete command for rollback
+    local delete_args=()
+    for param in "${params_found[@]}"; do
+      delete_args+=("--delete=$param")
+    done
+    
+    log "Clearing all $total_params parameters in one batch operation..."
+    
+    # Use timeout for batch rollback operation
+    if timeout 900 rpm-ostree kargs "${delete_args[@]}"; then
+      log "✓ Successfully cleared all $total_params optimization parameters"
+    else
+      log "⚠ Batch clearing failed during rollback. Falling back to individual removal..."
+      
+      # Fallback to individual removal for rollback
+      for param in "${params_found[@]}"; do
+        current_kargs=$(rpm-ostree kargs 2>/dev/null || echo "")
+        if echo "$current_kargs" | grep -q "$param"; then
+          log "Clearing individually: $param"
+          if timeout 600 rpm-ostree kargs --delete="$param"; then
+            log "✓ Cleared: $param"
+          else
+            log "⚠ Failed to clear: $param during rollback"
+          fi
+        fi
+      done
+    fi
+  fi
+  
   # Split effective cmdline into tokens and append each.
   # shellcheck disable=SC2206
   local tokens=( $line )

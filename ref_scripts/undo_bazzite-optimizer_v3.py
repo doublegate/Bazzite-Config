@@ -787,8 +787,35 @@ class OSTreeRestorer:
             
             self.logger.info("Performing OSTree /usr/etc to /etc synchronization")
             
-            # OSTree-native synchronization with extended attributes
-            cmd = "rsync -aAXH --delete /usr/etc/ /etc/"
+            # OSTree-native synchronization with extended attributes and CRITICAL SAFETY EXCLUSIONS
+            # NEVER delete user authentication files or user data - THESE EXCLUSIONS CANNOT BE BYPASSED
+            critical_excludes = [
+                "--exclude=passwd",         # CRITICAL: user accounts - NEVER DELETE
+                "--exclude=shadow",         # CRITICAL: user passwords - NEVER DELETE
+                "--exclude=group",          # CRITICAL: user groups - NEVER DELETE
+                "--exclude=gshadow",        # CRITICAL: group passwords - NEVER DELETE
+                "--exclude=subuid",         # CRITICAL: user namespaces - NEVER DELETE
+                "--exclude=subgid",         # CRITICAL: group namespaces - NEVER DELETE
+                "--exclude=ssh",            # CRITICAL: SSH host keys - NEVER DELETE
+                "--exclude=machine-id",     # CRITICAL: unique system identity - NEVER DELETE
+            ]
+            
+            additional_excludes = [
+                "--exclude=hostname",       # host name
+                "--exclude=hosts",          # local name resolution
+                "--exclude=fstab",          # mount points
+                "--exclude=crypttab",       # LUKS mappings
+                "--exclude=NetworkManager/system-connections",  # saved network profiles
+                "--exclude=systemd",        # systemd overrides
+                "--exclude=sudoers*",       # sudo configuration
+                "--exclude=security",       # PAM and security policies
+            ]
+            
+            # Combine all exclusions
+            safety_excludes = critical_excludes + additional_excludes
+            
+            cmd = f"rsync -aAXH --delete {' '.join(safety_excludes)} /usr/etc/ /etc/"
+            self.logger.info(f"Executing SAFE OSTree sync with critical exclusions: {len(safety_excludes)} protections")
             returncode, stdout, stderr = run_command(cmd, timeout=300)
             
             if returncode == 0:
