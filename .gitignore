@@ -232,3 +232,5 @@ WARP.md                          # Temporary WARP documentation file
 # END OF GITIGNORE
 # ============================================================================
 __pycache__/
+# GitHub Actions workflow - requires manual setup
+.github/workflows/
