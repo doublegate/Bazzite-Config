@@ -1,0 +1,22 @@
+# Runtime Dependencies
+# Bazzite Gaming Optimization Suite v1.1.0+
+
+# Core Python Dependencies
+psutil>=5.9.0
+
+# GTK4 GUI Dependencies (Optional - required for GUI only)
+# Install via system package manager:
+# Fedora/Bazzite: sudo dnf install python3-gobject gtk4
+# Debian/Ubuntu: sudo apt install python3-gi gir1.2-gtk-4.0
+# PyGObject>=3.44.0  # Installed via system packages
+
+# System utilities (installed via system package manager)
+# stress-ng  # CPU benchmarking
+# sysbench   # System benchmarking
+# nvidia-settings  # NVIDIA GPU control (NVIDIA systems only)
+# rocm-smi   # AMD GPU control (AMD systems only)
+
+# Note: Most dependencies are system-level tools installed via:
+# - dnf/rpm-ostree (Bazzite/Fedora)
+# - apt (Debian/Ubuntu)
+# - pacman (Arch)

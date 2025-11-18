@@ -1,0 +1,70 @@
+app-id: org.bazzite.optimizer
+runtime: org.gnome.Platform
+runtime-version: '47'
+sdk: org.gnome.Sdk
+command: bazzite-optimizer-gui
+
+finish-args:
+  # X11 + Wayland access
+  - --socket=x11
+  - --socket=wayland
+
+  # GPU access
+  - --device=dri
+
+  # System monitoring access
+  - --filesystem=host:ro
+  - --filesystem=/sys:ro
+  - --filesystem=/proc:ro
+
+  # Configuration access
+  - --filesystem=xdg-config/bazzite-optimizer:create
+
+  # D-Bus access for system interaction
+  - --system-talk-name=org.freedesktop.systemd1
+  - --session-talk-name=org.freedesktop.systemd1
+
+  # pkexec for privilege escalation
+  - --talk-name=org.freedesktop.PolicyKit1
+
+  # Network access (for updates/community features)
+  - --share=network
+
+modules:
+  # Python dependencies
+  - name: python3-psutil
+    buildsystem: simple
+    build-commands:
+      - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} psutil
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/source/p/psutil/psutil-5.9.6.tar.gz
+        sha256: e4b92ddcd7dd4cdd3f900180ea1e104932c7bce234fb88976e2a3b296441225a
+
+  # Main application
+  - name: bazzite-optimizer
+    buildsystem: simple
+    build-commands:
+      # Install Python scripts
+      - install -Dm755 bazzite-optimizer.py ${FLATPAK_DEST}/bin/bazzite-optimizer
+      - install -Dm755 bazzite-optimizer-gui.py ${FLATPAK_DEST}/bin/bazzite-optimizer-gui
+      - install -Dm755 reset-bazzite-defaults.sh ${FLATPAK_DEST}/bin/reset-bazzite-defaults
+
+      # Install GUI modules
+      - cp -r gui ${FLATPAK_DEST}/share/bazzite-optimizer/
+
+      # Install desktop file
+      - install -Dm644 bazzite-optimizer-gui.desktop ${FLATPAK_DEST}/share/applications/org.bazzite.optimizer.desktop
+
+      # Install metadata
+      - install -Dm644 org.bazzite.optimizer.metainfo.xml ${FLATPAK_DEST}/share/metainfo/org.bazzite.optimizer.metainfo.xml
+
+      # Install documentation
+      - install -Dm644 README.md ${FLATPAK_DEST}/share/doc/bazzite-optimizer/README.md
+      - install -Dm644 CHANGELOG.md ${FLATPAK_DEST}/share/doc/bazzite-optimizer/CHANGELOG.md
+      - cp -r docs ${FLATPAK_DEST}/share/doc/bazzite-optimizer/
+
+    sources:
+      - type: git
+        url: https://github.com/doublegate/Bazzite-Config.git
+        tag: v1.1.0

@@ -1,0 +1,81 @@
+# Maintainer: Bazzite Optimizer Team <noreply@github.com>
+
+pkgname=bazzite-optimizer
+pkgver=1.1.0
+pkgrel=1
+pkgdesc="Professional gaming system optimization suite for Bazzite Linux and derivatives"
+arch=('any')
+url="https://github.com/doublegate/Bazzite-Config"
+license=('MIT')
+depends=(
+    'python>=3.8'
+    'python-psutil'
+    'systemd'
+    'stress-ng'
+    'sysbench'
+)
+optdepends=(
+    'python-gobject: GUI support'
+    'gtk4>=4.6: GUI support'
+    'nvidia-settings: NVIDIA GPU optimization'
+    'rocm-smi-lib: AMD GPU optimization'
+    'gamemode: GameMode integration'
+    'mangohud: Performance overlay'
+)
+provides=('bazzite-optimizer')
+conflicts=('bazzite-optimizer-git')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/doublegate/Bazzite-Config/archive/v${pkgver}.tar.gz")
+sha256sums=('SKIP')  # Update with actual checksum
+
+package() {
+    cd "${srcdir}/Bazzite-Config-${pkgver}"
+
+    # Install main scripts
+    install -Dm755 bazzite-optimizer.py "${pkgdir}/usr/bin/bazzite-optimizer"
+    install -Dm755 reset-bazzite-defaults.sh "${pkgdir}/usr/bin/reset-bazzite-defaults"
+
+    # Install GUI
+    install -Dm755 bazzite-optimizer-gui.py "${pkgdir}/usr/bin/bazzite-optimizer-gui"
+    install -d "${pkgdir}/usr/share/bazzite-optimizer"
+    cp -r gui "${pkgdir}/usr/share/bazzite-optimizer/"
+
+    # Install desktop file
+    install -Dm644 bazzite-optimizer-gui.desktop \
+        "${pkgdir}/usr/share/applications/bazzite-optimizer-gui.desktop"
+
+    # Install configuration directory
+    install -d "${pkgdir}/etc/bazzite-optimizer/profiles"
+
+    # Install documentation
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+    install -Dm644 CHANGELOG.md "${pkgdir}/usr/share/doc/${pkgname}/CHANGELOG.md"
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    cp -r docs "${pkgdir}/usr/share/doc/${pkgname}/"
+
+    # Create necessary directories
+    install -d "${pkgdir}/var/log/gaming-benchmark"
+    install -d "${pkgdir}/var/log/gaming-metrics"
+}
+
+package_bazzite-optimizer-gui() {
+    pkgdesc="GTK4 graphical interface for Bazzite Gaming Optimizer"
+    depends=(
+        'bazzite-optimizer'
+        'python-gobject>=3.44'
+        'gtk4>=4.6'
+    )
+
+    cd "${srcdir}/Bazzite-Config-${pkgver}"
+
+    # Install GUI application
+    install -Dm755 bazzite-optimizer-gui.py \
+        "${pkgdir}/usr/bin/bazzite-optimizer-gui"
+
+    # Install GUI modules
+    install -d "${pkgdir}/usr/share/bazzite-optimizer"
+    cp -r gui "${pkgdir}/usr/share/bazzite-optimizer/"
+
+    # Install desktop file
+    install -Dm644 bazzite-optimizer-gui.desktop \
+        "${pkgdir}/usr/share/applications/bazzite-optimizer-gui.desktop"
+}

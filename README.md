@@ -9,20 +9,105 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776ab?style=for-the-badge&logo=python)
 ![Shell](https://img.shields.io/badge/Shell-Bash-4eaa25?style=for-the-badge&logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.8+-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.1.0-brightgreen?style=for-the-badge)
 ![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red?style=for-the-badge&logo=shield)
-![Lines](https://img.shields.io/badge/Lines-7637-blue?style=for-the-badge&logo=code)
+![Lines](https://img.shields.io/badge/Lines-10245-blue?style=for-the-badge&logo=code)
+![Tests](https://img.shields.io/badge/Tests-250%2B-success?style=for-the-badge&logo=pytest)
+![Coverage](https://img.shields.io/badge/Coverage-80%25%2B-brightgreen?style=for-the-badge&logo=codecov)
 
-Professional gaming system optimization powered by the comprehensive 'bazzite-optimizer.py' script with enterprise-grade security
+Professional gaming system optimization with GTK4 GUI, automated testing, multi-GPU support, and enterprise-grade security
 
 </div>
 <!-- markdownlint-enable MD033 -->
 
 ## 🎯 Overview
 
-The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (7,637 lines, 300KB). This enterprise-grade solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations including NVIDIA RTX 5080, Intel i9-10850K, and 64GB RAM through 16 specialized optimizer classes, enterprise-grade security controls, and intelligent system tuning with complete system restoration capabilities.
+The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (7,637 lines, 300KB) with a modern **GTK4 graphical interface** (~2,600 lines). This enterprise-grade solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations supporting **NVIDIA RTX/AMD RDNA2-3 GPUs**, Intel/AMD CPUs, and handheld devices (Steam Deck) through automated testing, multi-distribution packaging, and intelligent system tuning.
 
-## 🆕 v1.0.8+ - Security Excellence + Command Injection Protection + Selective Restoration Framework (September 9, 2025)
+## 🆕 v1.1.0 - Complete Feature Implementation: Testing + Packaging + Multi-GPU + Handheld Support (November 18, 2025)
+
+**MAJOR MILESTONE RELEASE** - Complete implementation of all planned Phase 1-6 features with comprehensive testing infrastructure, multi-distribution packaging, AMD GPU support, and Steam Deck optimization:
+
+### 🧪 Automated Testing Infrastructure (Phase 1-3)
+
+- **250+ Test Cases** - Comprehensive unit, integration, and GUI tests
+- **80%+ Code Coverage** - Professional test coverage across all modules
+- **CI/CD Pipeline** - GitHub Actions automated testing on Python 3.8-3.12
+- **Code Quality** - Pylint, Flake8, Black, Bandit security scanning
+- **Multiple Test Categories** - Unit, integration, GUI, slow, hardware-specific
+- **pytest Framework** - Modern testing with fixtures, mocking, parallel execution
+
+**Test Organization:**
+- `tests/unit/` - 150+ unit tests for individual components
+- `tests/integration/` - 50+ integration tests for workflows
+- `tests/gui/` - 40+ GUI tests with GTK mocking
+- `tests/conftest.py` - Shared fixtures and configuration
+- `.github/workflows/ci-testing.yml` - Automated CI/CD pipeline
+
+### 📦 Multi-Distribution Packaging (Phase 4)
+
+- **RPM Packages** - Fedora/Bazzite/RHEL native packages
+- **Flatpak** - Universal Linux distribution via Flathub
+- **AUR** - Arch Linux User Repository packages
+- **Copr Repository** - Automated Fedora/Bazzite builds
+
+**Package Features:**
+- Split packages (core + GUI)
+- Automatic dependency management
+- Desktop integration
+- Post-install scripts
+- Copr automated builds from GitHub
+
+### 🔴 AMD GPU Support (Phase 5)
+
+- **AMD GPU Detection** - RDNA2/RDNA3 architecture recognition
+- **ROCm Integration** - AMD compute platform support
+- **Multi-GPU Support** - Hybrid NVIDIA + AMD configurations
+- **AMD-Specific Profiles** - Optimized gaming profiles for AMD GPUs
+- **Power Management** - AMD GPU power profile optimization
+- **Overclocking** - Safe AMD GPU overclocking with limits
+
+**Supported AMD GPUs:**
+- RX 7900 XTX/XT (RDNA3)
+- RX 7800/7700/7600 XT (RDNA3)
+- RX 6900/6800/6700/6600 XT (RDNA2)
+
+**Implementation:**
+- `amd_support/amd_gpu_optimizer.py` - Complete AMD GPU optimization module
+- Sysfs-based power management
+- Fan control and temperature monitoring
+- VRAM tracking and clock management
+
+### 🎮 Steam Deck Support (Phase 6)
+
+- **Steam Deck Detection** - LCD and OLED model recognition
+- **Handheld Profiles** - Performance, Balanced, Battery Saver, Silent
+- **TDP Management** - 4-30W power control with ryzenadj
+- **Battery Optimization** - Power-efficient gaming modes
+- **Display Optimization** - Handheld-specific screen settings
+
+**Steam Deck Features:**
+- Automatic LCD/OLED detection
+- Battery life estimation per TDP
+- Silent mode for quiet gaming
+- Screen brightness control
+- Handheld-optimized kernel parameters
+
+**Implementation:**
+- `steamdeck_support/steamdeck_optimizer.py` - Complete Steam Deck optimization module
+- TDP control via ryzenadj and sysfs
+- Battery-aware profile switching
+- Fan and temperature management
+
+### 📚 Comprehensive Documentation
+
+- **TESTING.md** - Complete testing guide for developers
+- **PACKAGING.md** - Multi-distribution packaging instructions
+- **CI/CD Documentation** - GitHub Actions workflow guide
+- **AMD GPU Guide** - AMD-specific optimization documentation
+- **Steam Deck Guide** - Handheld optimization instructions
+
+## 🔒 v1.0.8+ - Security Excellence + Command Injection Protection + Selective Restoration Framework (September 9, 2025)
 
 **Enterprise-grade security hardening with comprehensive protection against command injection vulnerabilities and advanced system restoration capabilities:**
 
