@@ -42,10 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release Notes Synchronization**: Comprehensive release documentation with current timestamp
 
 #### **Legacy Management System**
-- **Historical Reference**: reset-bazzite-defaults.sh moved to ref_scripts/ for reference
-- **Version Clarity**: undo_bazzite-optimizer.py renamed to undo_bazzite-optimizer_v3.py for clear versioning
+- **Historical Reference**: Legacy undo scripts moved to ref_scripts/ for reference (undo_bazzite-optimizer_v3.py)
+- **Version Clarity**: Historical optimizer versions organized in ref_scripts/Master Script - Versions/ for development reference
 - **Development Continuity**: Preserved all historical optimization versions for development reference
 - **Clean Project Structure**: Root directory focused on current production optimization tools
+- **Production Tool Maintenance**: reset-bazzite-defaults.sh maintained in root as active production restoration tool
 
 ### Enhanced
 - **Project Organization**: Professional directory structure with clear separation of concerns
