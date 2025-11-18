@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # FastAPI ML/Cloud API
+  api:
+    build: ..
+    container_name: bazzite-optimizer-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ml-models:/app/models
+      - community-data:/app/data
+      - api-logs:/app/logs
+    environment:
+      - ML_MODELS_DIR=/app/models
+      - DATA_DIR=/app/data
+      - LOG_DIR=/app/logs
+    restart: unless-stopped
+    networks:
+      - bazzite-network
+
+  # Mobile WebSocket API
+  mobile-api:
+    build: ..
+    container_name: bazzite-mobile-api
+    command: ["python", "-m", "mobile_api.server"]
+    ports:
+      - "8081:8081"
+    volumes:
+      - mobile-data:/app/data
+    restart: unless-stopped
+    networks:
+      - bazzite-network
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: bazzite-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+      - mobile-api
+    restart: unless-stopped
+    networks:
+      - bazzite-network
+
+volumes:
+  ml-models:
+  community-data:
+  api-logs:
+  mobile-data:
+
+networks:
+  bazzite-network:
+    driver: bridge
