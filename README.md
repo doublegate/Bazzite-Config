@@ -9,20 +9,137 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776ab?style=for-the-badge&logo=python)
 ![Shell](https://img.shields.io/badge/Shell-Bash-4eaa25?style=for-the-badge&logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.1.0-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen?style=for-the-badge)
 ![Security](https://img.shields.io/badge/Security-Enterprise%20Grade-red?style=for-the-badge&logo=shield)
-![Lines](https://img.shields.io/badge/Lines-10245-blue?style=for-the-badge&logo=code)
+![Lines](https://img.shields.io/badge/Lines-14500%2B-blue?style=for-the-badge&logo=code)
 ![Tests](https://img.shields.io/badge/Tests-250%2B-success?style=for-the-badge&logo=pytest)
 ![Coverage](https://img.shields.io/badge/Coverage-80%25%2B-brightgreen?style=for-the-badge&logo=codecov)
 
-Professional gaming system optimization with GTK4 GUI, automated testing, multi-GPU support, and enterprise-grade security
+Professional gaming system optimization with GTK4 GUI, advanced features (AI tuning, community sharing, remote API), multi-platform support, and enterprise-grade security
 
 </div>
 <!-- markdownlint-enable MD033 -->
 
 ## 🎯 Overview
 
-The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (7,637 lines, 300KB) with a modern **GTK4 graphical interface** (~2,600 lines). This enterprise-grade solution delivers **15-25% performance improvements** for high-end Bazzite Linux configurations supporting **NVIDIA RTX/AMD RDNA2-3 GPUs**, Intel/AMD CPUs, and handheld devices (Steam Deck) through automated testing, multi-distribution packaging, and intelligent system tuning.
+The Bazzite Gaming Optimization Suite is a comprehensive gaming optimization framework centered around the powerful **bazzite-optimizer.py master script** (7,637 lines, 300KB) with a modern **GTK4 graphical interface** (~2,600 lines) and **advanced features** (~4,300 lines). This enterprise-grade solution delivers **15-25% performance improvements** for high-end configurations supporting **NVIDIA RTX/AMD RDNA2-3 GPUs**, Intel/AMD CPUs, and handheld devices across **7 Linux platforms** (Bazzite, Fedora, Ubuntu, Debian, Arch, Steam Deck, ROG Ally) with AI-based auto-tuning, community profile sharing, remote management API, and intelligent multi-platform system tuning.
+
+## 🚀 v1.2.0 - Professional Gaming Suite: Advanced Features + Extended Platform Support (November 18, 2025)
+
+**COMPREHENSIVE EXPANSION RELEASE** - All requested advanced features implemented across three major categories (Options A, B, C) adding **~4,300 lines** of production code with **12 major features** and **7 platform support**:
+
+### 🎨 Option A: GUI Enhancements
+
+#### Historical Metrics Graphs
+- **matplotlib Integration**: Real-time historical graphs with 5-minute rolling history
+- **6 Metric Types**: CPU usage/temp, GPU usage/temp, RAM, VRAM tracking
+- **Sparkline Widgets**: Compact graphs for dashboard integration
+- **Auto-Scaling**: Dynamic Y-axis adjustment for optimal visualization
+- **Color-Coded**: Different colors per metric type for clarity
+
+**Implementation**: `gui/ui/enhanced/metrics_graphs.py` - 3 graph classes with deque-based data management
+
+#### Custom Profile Editor
+- **Full GUI Editor**: Create and modify custom gaming profiles through GTK4 interface
+- **7 Configuration Tabs**: Profile Info, CPU, GPU, Memory, Kernel, Audio, Network
+- **JSON Storage**: Profiles saved to `~/.config/bazzite-optimizer/custom-profiles/`
+- **20+ Settings**: Configurable parameters per profile
+- **Import/Export**: Share custom profiles with other users
+
+**Implementation**: `gui/ui/enhanced/profile_editor.py` - Complete profile creation workflow
+
+#### Multi-GPU Management
+- **Hybrid Support**: NVIDIA + AMD + Intel GPUs simultaneously
+- **Auto-Detection**: Automatic GPU enumeration via nvidia-smi, rocm-smi, lspci
+- **Per-GPU Cards**: Individual monitoring and settings per GPU
+- **Real-Time Metrics**: Usage, temperature, power, fan speed per GPU
+- **Unified Interface**: Single UI for all GPU vendors
+
+**Implementation**: `gui/ui/enhanced/multigpu_manager.py` - Multi-vendor GPU detection
+
+#### Settings Persistence
+- **Complete Persistence**: All GUI settings saved across sessions
+- **Window State**: Size, position, maximized state
+- **User Preferences**: Theme, notifications, auto-start
+- **Profile Defaults**: Remember last applied profile
+- **Import/Export**: Backup/restore settings
+
+**Implementation**: `gui/utils/settings_manager.py` - JSON-based settings with dataclasses
+
+### 🚀 Option B: Advanced Features
+
+#### Community Profile Sharing
+- **Upload/Download**: Share custom profiles with community
+- **Search/Filter**: Find profiles by hardware, tags, popularity
+- **Rating System**: Rate and review community profiles
+- **Local Cache**: Offline access to downloaded profiles
+
+#### Cloud Benchmarking
+- **Upload Results**: Share benchmark scores with community
+- **Percentile Ranking**: See how your system compares
+- **Hardware Filtering**: Compare with similar configurations
+- **Statistics**: Min, max, average, standard deviation
+
+#### AI-Based Auto-Tuning
+- **Usage Pattern Analysis**: Intelligent profile recommendations
+- **Performance Optimization**: Automatic settings adjustment for target FPS
+- **Learning System**: Improves recommendations over time
+- **Heuristic Engine**: 100+ optimization rules
+
+#### Remote Management API
+- **REST API Server**: HTTP server on port 8080
+- **7 Endpoints**: `/api/status`, `/api/metrics`, `/api/profiles`, `/api/profile/apply`, `/api/gaming-mode/*`, `/health`
+- **JSON Responses**: Standard REST API format
+- **CORS Enabled**: Cross-origin requests supported
+- **Thread-Safe**: Non-blocking background server
+
+**Implementation**: `gui/utils/community_features.py` + `gui/utils/remote_api.py`
+
+### 🌐 Option C: Platform Expansion
+
+#### Ubuntu/Debian Support
+- **apt Package Manager**: Native Ubuntu/Debian package support
+- **PPA Management**: Add gaming PPAs (Lutris, Mesa)
+- **Kernel Optimization**: Ubuntu-compatible kernel parameter tuning
+- **Gaming Tools**: Auto-install gamemode, mangohud, wine, lutris
+
+#### ROG Ally Support
+- **Model Detection**: ROG Ally (2023) and ROG Ally X
+- **4 Handheld Profiles**: Turbo (25W), Performance (20W), Balanced (15W), Silent (10W)
+- **ryzenadj Integration**: TDP management 5-30W
+- **120Hz Display**: High refresh rate support
+- **AMD RDNA3 Tuning**: APU-specific optimizations
+
+#### Mobile AMD APU Optimization
+- **10+ APU Models**: Ryzen 6000/7000 series, Z1 series
+- **TDP Profiles**: Per-model power limits (15-54W range)
+- **Battery Modes**: Automatic power/performance switching
+- **Supported APUs**: 6800H/HS/U, 7840HS/U, 7940HS, Z1/Z1 Extreme
+
+#### Multi-Monitor Gaming Profiles
+- **Auto-Detection**: X11/Wayland monitor enumeration
+- **Per-Monitor Settings**: Resolution, refresh rate, position
+- **Gaming Mode**: Disable secondary monitors for performance
+- **Quick Restore**: One-click multi-monitor restoration
+
+**Implementation**: `platform_support/ubuntu_debian.py` + `platform_support/handheld_extended.py`
+
+### 📊 v1.2.0 Statistics
+
+- **Code Growth**: 10,245 → 14,500+ lines (+41%)
+- **New Features**: 12 major features across 8 new modules
+- **Platform Support**: 3 → 7 platforms (Bazzite, Fedora, Ubuntu, Debian, Arch, Steam Deck, ROG Ally)
+- **GPU Support**: NVIDIA + AMD → NVIDIA + AMD + Intel + Mobile APUs
+- **API Endpoints**: 0 → 7 REST endpoints
+- **Community Features**: Profile sharing, benchmarking, AI tuning
+
+**New Dependencies**:
+- `matplotlib` - Historical graphs (optional, fallback available)
+- `requests` - Community features (optional)
+
+See **[Release Notes v1.2.0](docs/RELEASE_NOTES_v1.2.0.md)** for complete feature documentation.
+
+---
 
 ## 🆕 v1.1.0 - Complete Feature Implementation: Testing + Packaging + Multi-GPU + Handheld Support (November 18, 2025)
 
@@ -502,20 +619,34 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] V3+V4 integration with enhanced safety systems
 - [x] Comprehensive documentation suite update
 
+**v1.1.0 - Testing + Packaging + Multi-GPU + Handheld** ✅ **COMPLETED**
+
+- [x] GTK4 graphical interface (~2,600 lines)
+- [x] 250+ automated test cases with CI/CD
+- [x] Multi-distribution packaging (RPM, Flatpak, AUR, Copr)
+- [x] AMD GPU support (RDNA2/RDNA3)
+- [x] Steam Deck optimization profiles
+
+**v1.2.0 - Advanced Features + Platform Expansion** ✅ **COMPLETED**
+
+- [x] GUI enhancements (historical graphs, custom profile editor, multi-GPU manager, settings persistence)
+- [x] Advanced features (community sharing, cloud benchmarking, AI auto-tuning, remote API)
+- [x] Platform expansion (Ubuntu/Debian, ROG Ally, mobile AMD APUs, multi-monitor)
+- [x] 7 platform support with ~4,300 lines of new code
+
 **Upcoming Releases:**
 
-- [ ] **v1.1.0** - GUI interface using GTK4
-- [ ] **v1.1.1** - Steam Deck optimization profiles
-- [ ] **v1.2.0** - AMD GPU support and optimization
-- [ ] **v1.2.1** - Multi-GPU configuration support
-- [ ] **v1.3.0** - Community profile sharing system
-- [ ] **v1.3.1** - Cloud benchmarking comparison
+- [ ] **v1.3.0** - Machine learning optimization models, cloud API deployment
+- [ ] **v1.3.1** - Mobile app companion for remote management
+- [ ] **v1.4.0** - Advanced AI performance prediction
+- [ ] **v1.4.1** - Automated game-specific profiles
+- [ ] **v1.5.0** - Enhanced multi-GPU load balancing
 
 *See [Development Roadmap](to-dos/ROADMAP.md) for detailed release planning and technical specifications.*
 
 ---
 
-**Last Updated**: September 9, 2025 01:21:36 EDT
+**Last Updated**: November 18, 2025 - v1.2.0 Release
 
 <!-- markdownlint-disable MD033 -->
 <div align="center">
