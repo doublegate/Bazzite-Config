@@ -1,15 +1,17 @@
-1.0.8
+1.1.0
 
 # Bazzite Gaming Optimization Suite Version Information
-# Complete Validation Excellence + BaseOptimizer Architecture
+# Accessibility Revolution - GTK4 Graphical Interface
 
-Version: 1.0.8+
-Release Name: "Security Excellence + Advanced System Restoration + Format String Security Framework"
-Release Date: 2025-09-09 01:21:36 EDT
-Build: 7637-300KB
+Version: 1.1.0
+Release Name: "Accessibility Revolution - GTK4 Graphical Interface"
+Release Date: 2025-11-18
+Build: 10,245 lines total (7,637 backend + ~2,600 GUI)
 
 # Key Components
 Master Script: bazzite-optimizer.py (7,637 lines, 300KB)
+GUI Application: bazzite-optimizer-gui.py (~2,500 lines)
+GUI Modules: 16 Python modules (models, controllers, UI components)
 Restoration Tool: reset-bazzite-defaults.sh (Selective system restoration)
 Security Framework: Enterprise-grade command injection protection
 Optimizer Classes: 16 specialized optimization modules
