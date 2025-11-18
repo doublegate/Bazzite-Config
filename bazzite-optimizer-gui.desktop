@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Bazzite Gaming Optimizer
+Comment=Professional gaming system optimization suite
+Exec=/usr/local/bin/bazzite-optimizer-gui
+Icon=bazzite-optimizer
+Terminal=false
+Type=Application
+Categories=System;Settings;Game;Utility;
+Keywords=gaming;optimization;performance;bazzite;nvidia;amd;
+StartupNotify=true
+X-GNOME-UsesNotifications=true
