@@ -41,6 +41,26 @@ modules:
         url: https://files.pythonhosted.org/packages/source/p/psutil/psutil-5.9.6.tar.gz
         sha256: e4b92ddcd7dd4cdd3f900180ea1e104932c7bce234fb88976e2a3b296441225a
 
+  # Optional: matplotlib for historical graphs
+  - name: python3-matplotlib
+    buildsystem: simple
+    build-commands:
+      - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} matplotlib
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/source/m/matplotlib/matplotlib-3.8.2.tar.gz
+        sha256: 01a978b871b881ee76017152f1f1a0cbf6bd5f7b8ff8c96df0df1bd57d8755a1
+
+  # Optional: requests for community features
+  - name: python3-requests
+    buildsystem: simple
+    build-commands:
+      - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} requests
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/source/r/requests/requests-2.31.0.tar.gz
+        sha256: 942c5a758f98d7479d5a3c5f7d8c9de1b02fc1e5fe31e8e7ce5d5d2f8a6d5b5e
+
   # Main application
   - name: bazzite-optimizer
     buildsystem: simple
@@ -52,6 +72,9 @@ modules:
 
       # Install GUI modules
       - cp -r gui ${FLATPAK_DEST}/share/bazzite-optimizer/
+
+      # Install platform support modules
+      - cp -r platform_support ${FLATPAK_DEST}/share/bazzite-optimizer/
 
       # Install desktop file
       - install -Dm644 bazzite-optimizer-gui.desktop ${FLATPAK_DEST}/share/applications/org.bazzite.optimizer.desktop
@@ -67,4 +90,4 @@ modules:
     sources:
       - type: git
         url: https://github.com/doublegate/Bazzite-Config.git
-        tag: v1.1.0
+        tag: v1.2.0

@@ -1,9 +1,9 @@
 # Maintainer: Bazzite Optimizer Team <noreply@github.com>
 
 pkgname=bazzite-optimizer
-pkgver=1.1.0
+pkgver=1.2.0
 pkgrel=1
-pkgdesc="Professional gaming system optimization suite for Bazzite Linux and derivatives"
+pkgdesc="Professional gaming system optimization suite for Linux with advanced features and multi-platform support"
 arch=('any')
 url="https://github.com/doublegate/Bazzite-Config"
 license=('MIT')
@@ -21,6 +21,9 @@ optdepends=(
     'rocm-smi-lib: AMD GPU optimization'
     'gamemode: GameMode integration'
     'mangohud: Performance overlay'
+    'python-matplotlib: Historical metrics graphs'
+    'python-requests: Community profile sharing and cloud benchmarking'
+    'ryzenadj: ROG Ally TDP management'
 )
 provides=('bazzite-optimizer')
 conflicts=('bazzite-optimizer-git')
@@ -38,6 +41,9 @@ package() {
     install -Dm755 bazzite-optimizer-gui.py "${pkgdir}/usr/bin/bazzite-optimizer-gui"
     install -d "${pkgdir}/usr/share/bazzite-optimizer"
     cp -r gui "${pkgdir}/usr/share/bazzite-optimizer/"
+
+    # Install platform support modules
+    cp -r platform_support "${pkgdir}/usr/share/bazzite-optimizer/"
 
     # Install desktop file
     install -Dm644 bazzite-optimizer-gui.desktop \
@@ -58,11 +64,15 @@ package() {
 }
 
 package_bazzite-optimizer-gui() {
-    pkgdesc="GTK4 graphical interface for Bazzite Gaming Optimizer"
+    pkgdesc="GTK4 graphical interface for Bazzite Gaming Optimizer with advanced features"
     depends=(
         'bazzite-optimizer'
         'python-gobject>=3.44'
         'gtk4>=4.6'
+    )
+    optdepends=(
+        'python-matplotlib: Historical metrics graphs'
+        'python-requests: Community features'
     )
 
     cd "${srcdir}/Bazzite-Config-${pkgver}"
@@ -74,6 +84,9 @@ package_bazzite-optimizer-gui() {
     # Install GUI modules
     install -d "${pkgdir}/usr/share/bazzite-optimizer"
     cp -r gui "${pkgdir}/usr/share/bazzite-optimizer/"
+
+    # Install platform support modules
+    cp -r platform_support "${pkgdir}/usr/share/bazzite-optimizer/"
 
     # Install desktop file
     install -Dm644 bazzite-optimizer-gui.desktop \

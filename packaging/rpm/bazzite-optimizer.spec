@@ -1,5 +1,5 @@
 Name:           bazzite-optimizer
-Version:        1.1.0
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        Professional gaming system optimization suite for Bazzite Linux
 
@@ -29,19 +29,31 @@ Recommends:     rocm-smi
 Recommends:     gamemode
 Recommends:     mangohud
 
+# v1.2.0 Advanced features (optional)
+Recommends:     python3-matplotlib
+Recommends:     python3-requests
+
+# Platform expansion support (optional)
+Recommends:     ryzenadj
+
 %description
 Bazzite Gaming Optimization Suite is a comprehensive system optimization
-tool designed specifically for Bazzite Linux gaming systems. It provides
+tool designed for Linux gaming systems with support for 7 platforms
+(Bazzite, Fedora, Ubuntu, Debian, Arch, Steam Deck, ROG Ally). It provides
 intelligent hardware detection, automated gaming optimizations, real-time
-performance monitoring, and a professional GTK4 graphical interface.
+performance monitoring, and a professional GTK4 graphical interface with
+advanced features including AI-based auto-tuning and remote management.
 
 Features:
 - 4 gaming profiles (Competitive, Balanced, Streaming, Creative)
-- Hardware-specific optimizations for NVIDIA RTX 5080, Intel i9-10850K
-- Real-time performance monitoring with 1Hz update rate
-- One-click quick fixes for common gaming issues
+- Multi-GPU support (NVIDIA + AMD + Intel simultaneous)
+- Real-time performance monitoring with historical graphs
+- Community profile sharing and cloud benchmarking
+- AI-based auto-tuning with intelligent recommendations
+- REST API for remote management (7 endpoints)
 - Progressive GPU overclocking with safety limits
-- Immutable filesystem (OSTree) compatibility
+- Platform expansion (Ubuntu/Debian, ROG Ally, mobile AMD APUs)
+- Multi-monitor gaming profiles
 - Complete backup and rollback capabilities
 
 %package gui
@@ -53,13 +65,18 @@ Requires:       python3-gobject >= 3.44
 %description gui
 This package provides a professional GTK4 graphical user interface for
 the Bazzite Gaming Optimization Suite, making gaming optimizations
-accessible through an intuitive point-and-click interface.
+accessible through an intuitive point-and-click interface with advanced
+features including historical metrics graphs, custom profile editor,
+and multi-GPU management.
 
 Features:
 - 5-tab interface (Dashboard, Profiles, Monitoring, Quick Fixes, Settings)
+- Historical metrics graphs with 5-minute rolling history
+- Custom profile editor with 7 configuration tabs
+- Multi-GPU management (NVIDIA + AMD + Intel)
+- Settings persistence across sessions
 - Real-time system metrics visualization
 - One-click profile application
-- Quick fix solutions for common issues
 - Desktop application menu integration
 
 %prep
@@ -83,6 +100,9 @@ install -m 0755 reset-bazzite-defaults.sh %{buildroot}%{_bindir}/reset-bazzite-d
 # Install GUI
 install -m 0755 bazzite-optimizer-gui.py %{buildroot}%{_bindir}/bazzite-optimizer-gui
 cp -r gui %{buildroot}%{_datadir}/%{name}/
+
+# Install platform support modules
+cp -r platform_support %{buildroot}%{_datadir}/%{name}/
 
 # Install desktop file
 install -m 0644 bazzite-optimizer-gui.desktop %{buildroot}%{_datadir}/applications/
@@ -125,6 +145,21 @@ if [ $1 -eq 0 ]; then
 fi
 
 %changelog
+* Mon Nov 18 2025 Bazzite Optimizer Team <noreply@github.com> - 1.2.0-1
+- v1.2.0 Release: Professional Gaming Suite - Advanced Features + Extended Platform Support
+- Added GUI enhancements: historical metrics graphs, custom profile editor, multi-GPU manager
+- Added settings persistence with window state and profile caching
+- Added community profile sharing with rating system
+- Added cloud benchmarking with percentile ranking
+- Added AI-based auto-tuning with intelligent recommendations
+- Added remote management REST API with 7 endpoints
+- Added Ubuntu/Debian platform support with apt integration
+- Added ROG Ally support with handheld profiles and TDP management
+- Added mobile AMD APU optimization for 10+ APU models
+- Added multi-monitor gaming profiles with X11/Wayland support
+- Code growth: 10,245 → 14,500+ lines (+41%)
+- Platform support expanded from 3 to 7 distributions
+
 * Mon Nov 18 2025 Bazzite Optimizer Team <noreply@github.com> - 1.1.0-1
 - v1.1.0 Release: Accessibility Revolution - GTK4 Graphical Interface
 - Added complete GTK4-based GUI with 5-tab interface
