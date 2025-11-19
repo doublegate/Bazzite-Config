@@ -234,3 +234,4 @@ WARP.md                          # Temporary WARP documentation file
 __pycache__/
 # GitHub Actions workflow - requires manual setup
 .github/workflows/
+.coverage\ncoverage.xml\nhtmlcov/\nmobile-app/node_modules/
