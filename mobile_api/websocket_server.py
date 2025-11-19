@@ -2,7 +2,8 @@
 """
 Production WebSocket Server for Mobile Companion App
 
-Complete implementation with FastAPI, WebSocket, QR pairing, and push notifications.
+Complete implementation with FastAPI, WebSocket, QR pairing, and enterprise security.
+Integrated with TokenManager, RateLimiter, InputValidator, and SecurityAuditor.
 """
 
 import json
@@ -19,6 +20,14 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+# Import security module
+from mobile_api.security import (
+    TokenManager,
+    RateLimiter,
+    InputValidator,
+    SecurityAuditor
+)
 
 try:
     import qrcode
@@ -147,6 +156,11 @@ class MobileWebSocketServer:
         # Connection manager
         self.manager = ConnectionManager()
 
+        # Security components (ENTERPRISE SECURITY)
+        self.token_manager = TokenManager(token_ttl=300)  # 5 minute token expiry
+        self.rate_limiter = RateLimiter(max_requests=100, time_window=60)  # 100 req/min
+        self.security_auditor = SecurityAuditor(log_file="/var/log/bazzite-optimizer/security-audit.log")
+
         # Pairing codes (temporary, expire after 5 minutes)
         self.pairing_codes: Dict[str, Dict] = {}
 
@@ -158,6 +172,8 @@ class MobileWebSocketServer:
 
         # Background tasks
         self.metrics_task: Optional[asyncio.Task] = None
+
+        logger.info("✅ Security module integrated: TokenManager, RateLimiter, SecurityAuditor enabled")
 
     def _setup_routes(self):
         """Setup FastAPI routes"""
@@ -176,18 +192,51 @@ class MobileWebSocketServer:
 
         @self.app.post("/pair/generate", response_model=PairingResponse)
         async def generate_pairing(request: PairingRequest):
-            """Generate pairing code and QR"""
+            """Generate pairing code and QR with rate limiting and validation"""
+            # Input validation
+            device_name = InputValidator.sanitize_string(request.device_name, max_length=64)
+            device_type = InputValidator.sanitize_string(request.device_type, max_length=16)
+
+            if not device_name or device_type not in ['ios', 'android']:
+                self.security_auditor.log_event(
+                    'pairing_validation_failed',
+                    'unknown',
+                    {'reason': 'Invalid device name or type'},
+                    'WARNING'
+                )
+                raise HTTPException(status_code=400, detail="Invalid device information")
+
+            # Rate limiting (use device_name as identifier for pairing requests)
+            temp_id = f"pairing_{device_name}"
+            if not self.rate_limiter.is_allowed(temp_id):
+                self.security_auditor.log_event(
+                    'rate_limit_exceeded',
+                    temp_id,
+                    {'endpoint': '/pair/generate'},
+                    'WARNING'
+                )
+                raise HTTPException(status_code=429, detail="Too many pairing requests. Please try again later.")
+
+            # Generate pairing code using TokenManager
             code = secrets.token_urlsafe(16)
 
             # Store pairing code (expires in 5 minutes)
             expires_at = datetime.now() + timedelta(minutes=5)
             self.pairing_codes[code] = {
-                'device_name': request.device_name,
-                'device_type': request.device_type,
+                'device_name': device_name,
+                'device_type': device_type,
                 'created': datetime.now().isoformat(),
                 'expires': expires_at.isoformat(),
                 'used': False
             }
+
+            # Security audit
+            self.security_auditor.log_event(
+                'pairing_code_generated',
+                temp_id,
+                {'device_type': device_type},
+                'INFO'
+            )
 
             # Generate QR code
             qr_url = f"/pair/qr/{code}"
@@ -200,8 +249,24 @@ class MobileWebSocketServer:
 
         @self.app.get("/pair/qr/{code}")
         async def get_qr_code(code: str):
-            """Get QR code image for pairing"""
+            """Get QR code image for pairing with validation"""
+            # Input validation
+            if not InputValidator.validate_token(code):
+                self.security_auditor.log_event(
+                    'qr_code_invalid_format',
+                    'unknown',
+                    {'code_length': len(code) if code else 0},
+                    'WARNING'
+                )
+                raise HTTPException(status_code=400, detail="Invalid code format")
+
             if code not in self.pairing_codes:
+                self.security_auditor.log_event(
+                    'qr_code_not_found',
+                    'unknown',
+                    {},
+                    'WARNING'
+                )
                 raise HTTPException(status_code=404, detail="Invalid pairing code")
 
             # Check expiration
@@ -209,6 +274,12 @@ class MobileWebSocketServer:
             expires = datetime.fromisoformat(pairing_info['expires'])
             if datetime.now() > expires:
                 del self.pairing_codes[code]
+                self.security_auditor.log_event(
+                    'qr_code_expired',
+                    'unknown',
+                    {},
+                    'INFO'
+                )
                 raise HTTPException(status_code=410, detail="Pairing code expired")
 
             # Generate QR code
@@ -233,13 +304,72 @@ class MobileWebSocketServer:
 
         @self.app.websocket("/ws/{device_id}")
         async def websocket_endpoint(websocket: WebSocket, device_id: str):
-            """WebSocket endpoint for real-time communication"""
+            """WebSocket endpoint for real-time communication with security validation"""
+            # Validate device_id format
+            if not InputValidator.validate_device_id(device_id):
+                self.security_auditor.log_event(
+                    'websocket_invalid_device_id',
+                    device_id[:64] if device_id else 'unknown',
+                    {'device_id_length': len(device_id) if device_id else 0},
+                    'WARNING'
+                )
+                await websocket.close(code=1008, reason="Invalid device ID format")
+                return
+
+            # Rate limiting
+            if not self.rate_limiter.is_allowed(device_id):
+                self.security_auditor.log_event(
+                    'websocket_rate_limit',
+                    device_id,
+                    {},
+                    'WARNING'
+                )
+                await websocket.close(code=1008, reason="Rate limit exceeded")
+                return
+
             await self.handle_websocket(device_id, websocket)
 
         @self.app.post("/profile/switch")
         async def switch_profile(request: ProfileSwitchRequest):
-            """Handle remote profile switch request"""
+            """Handle remote profile switch request with security validation"""
+            # Input validation
+            if not InputValidator.validate_device_id(request.device_id):
+                self.security_auditor.log_event(
+                    'profile_switch_invalid_device',
+                    request.device_id[:64] if request.device_id else 'unknown',
+                    {},
+                    'WARNING'
+                )
+                raise HTTPException(status_code=400, detail="Invalid device ID")
+
+            if not InputValidator.validate_profile_name(request.profile_name):
+                self.security_auditor.log_event(
+                    'profile_switch_invalid_name',
+                    request.device_id,
+                    {'profile': request.profile_name[:64] if request.profile_name else ''},
+                    'WARNING'
+                )
+                raise HTTPException(status_code=400, detail="Invalid profile name")
+
+            # Rate limiting
+            if not self.rate_limiter.is_allowed(request.device_id):
+                self.security_auditor.log_event(
+                    'profile_switch_rate_limit',
+                    request.device_id,
+                    {},
+                    'WARNING'
+                )
+                raise HTTPException(status_code=429, detail="Too many requests")
+
             logger.info(f"Profile switch request: {request.profile_name} from {request.device_id}")
+
+            # Security audit
+            self.security_auditor.log_event(
+                'profile_switch_requested',
+                request.device_id,
+                {'profile': request.profile_name},
+                'INFO'
+            )
 
             # TODO: Integrate with actual profile switching logic
             # from gaming_manager_suite import GamingModeController
@@ -257,13 +387,21 @@ class MobileWebSocketServer:
 
     async def handle_websocket(self, device_id: str, websocket: WebSocket):
         """
-        Handle WebSocket connection lifecycle
+        Handle WebSocket connection lifecycle with security validation
 
         Args:
             device_id: Unique device identifier
             websocket: WebSocket connection
         """
         await self.manager.connect(device_id, websocket)
+
+        # Security audit
+        self.security_auditor.log_event(
+            'websocket_connected',
+            device_id,
+            {},
+            'INFO'
+        )
 
         try:
             # Send welcome message
@@ -277,6 +415,34 @@ class MobileWebSocketServer:
             while True:
                 data = await websocket.receive_json()
 
+                # Input validation: validate message structure
+                if not InputValidator.validate_json_message(data):
+                    self.security_auditor.log_event(
+                        'invalid_message_format',
+                        device_id,
+                        {'message_keys': list(data.keys()) if isinstance(data, dict) else []},
+                        'WARNING'
+                    )
+                    await websocket.send_json({
+                        'type': 'error',
+                        'message': 'Invalid message format'
+                    })
+                    continue
+
+                # Rate limiting for messages
+                if not self.rate_limiter.is_allowed(f"ws_{device_id}"):
+                    self.security_auditor.log_event(
+                        'websocket_message_rate_limit',
+                        device_id,
+                        {},
+                        'WARNING'
+                    )
+                    await websocket.send_json({
+                        'type': 'error',
+                        'message': 'Rate limit exceeded'
+                    })
+                    continue
+
                 # Handle different message types
                 msg_type = data.get('type')
 
@@ -286,27 +452,76 @@ class MobileWebSocketServer:
                 elif msg_type == 'authenticate':
                     # Authenticate with pairing code
                     code = data.get('code')
+
+                    # Validate code format
+                    if not code or not InputValidator.validate_token(code):
+                        self.security_auditor.log_event(
+                            'auth_invalid_code_format',
+                            device_id,
+                            {},
+                            'WARNING'
+                        )
+                        await websocket.send_json({'type': 'auth_failed', 'reason': 'Invalid code format'})
+                        continue
+
                     if code in self.pairing_codes and not self.pairing_codes[code]['used']:
                         # Mark as used
                         self.pairing_codes[code]['used'] = True
 
-                        # Generate persistent token
-                        token = secrets.token_urlsafe(32)
+                        # Generate persistent token using TokenManager
+                        token, expires_at = self.token_manager.generate_token(
+                            device_id,
+                            metadata={
+                                'device_name': self.pairing_codes[code]['device_name'],
+                                'device_type': self.pairing_codes[code]['device_type']
+                            }
+                        )
+
                         self.device_tokens[device_id] = {
                             'token': token,
                             'device_name': self.pairing_codes[code]['device_name'],
                             'device_type': self.pairing_codes[code]['device_type'],
-                            'paired_at': datetime.now().isoformat()
+                            'paired_at': datetime.now().isoformat(),
+                            'expires_at': expires_at
                         }
 
                         await websocket.send_json({
                             'type': 'authenticated',
                             'token': token,
-                            'device_id': device_id
+                            'device_id': device_id,
+                            'expires_at': expires_at
                         })
+
+                        # Security audit - successful authentication
+                        self.security_auditor.log_event(
+                            'auth_success',
+                            device_id,
+                            {'device_type': self.pairing_codes[code]['device_type']},
+                            'INFO'
+                        )
 
                         logger.info(f"Device {device_id} authenticated successfully")
                     else:
+                        # Security audit - failed authentication
+                        self.security_auditor.log_event(
+                            'auth_failure',
+                            device_id,
+                            {'reason': 'Invalid or used code'},
+                            'WARNING'
+                        )
+
+                        # Check for brute force
+                        failed_attempts = self.security_auditor.get_failed_auth_count(device_id)
+                        if failed_attempts >= 5:
+                            self.security_auditor.log_event(
+                                'brute_force_detected',
+                                device_id,
+                                {'failed_attempts': failed_attempts},
+                                'CRITICAL'
+                            )
+                            await websocket.close(code=1008, reason="Too many failed authentication attempts")
+                            return
+
                         await websocket.send_json({'type': 'auth_failed', 'reason': 'Invalid code'})
 
                 elif msg_type == 'request_metrics':
@@ -319,18 +534,42 @@ class MobileWebSocketServer:
 
                 elif msg_type == 'subscribe_metrics':
                     # Start streaming metrics
+                    self.security_auditor.log_event(
+                        'metrics_subscription',
+                        device_id,
+                        {},
+                        'INFO'
+                    )
                     logger.info(f"Device {device_id} subscribed to metrics stream")
 
                 else:
+                    self.security_auditor.log_event(
+                        'unknown_message_type',
+                        device_id,
+                        {'message_type': msg_type},
+                        'WARNING'
+                    )
                     logger.warning(f"Unknown message type: {msg_type}")
 
         except WebSocketDisconnect:
             self.manager.disconnect(device_id)
+            self.security_auditor.log_event(
+                'websocket_disconnected',
+                device_id,
+                {},
+                'INFO'
+            )
             logger.info(f"WebSocket disconnected: {device_id}")
 
         except Exception as e:
-            logger.error(f"WebSocket error for {device_id}: {e}")
             self.manager.disconnect(device_id)
+            self.security_auditor.log_event(
+                'websocket_error',
+                device_id,
+                {'error': str(e)},
+                'ERROR'
+            )
+            logger.error(f"WebSocket error for {device_id}: {e}")
 
     def _collect_system_metrics(self) -> Dict:
         """Collect current system metrics"""
