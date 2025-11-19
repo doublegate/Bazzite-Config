@@ -67,9 +67,17 @@ class RealDataCollector:
     - Automatic data export for ML training
     """
 
-    def __init__(self, output_dir: Optional[Path] = None):
-        self.output_dir = output_dir or Path.home() / '.local/share/bazzite-optimizer/real-benchmarks'
+    def __init__(self, output_dir: Optional[Path] = None, collection_interval: float = 1.0):
+        # Convert to Path if string is provided
+        if output_dir is None:
+            self.output_dir = Path.home() / '.local/share/bazzite-optimizer/real-benchmarks'
+        elif isinstance(output_dir, str):
+            self.output_dir = Path(output_dir)
+        else:
+            self.output_dir = output_dir
+
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.collection_interval = collection_interval  # Interval in seconds for automated collection
 
         self.current_session = None
         self.snapshots = []
@@ -229,7 +237,7 @@ class RealDataCollector:
 
         return base_power + cpu_power + gpu_power
 
-    def start_session(self, profile: str, game: str,
+    def start_session(self, game_name: str, profile_name: str,
                      resolution: str = "1440p",
                      graphics_preset: str = "high") -> str:
         """Start new benchmark session"""
@@ -238,8 +246,8 @@ class RealDataCollector:
         self.current_session = {
             'session_id': session_id,
             'start_time': datetime.now().isoformat(),
-            'profile': profile,
-            'game': game,
+            'profile': profile_name,
+            'game': game_name,
             'resolution': resolution,
             'graphics_preset': graphics_preset,
             'hardware': self.get_hardware_info()
@@ -248,8 +256,8 @@ class RealDataCollector:
         self.snapshots = []
 
         print(f"📊 Started benchmark session: {session_id}")
-        print(f"   Game: {game}")
-        print(f"   Profile: {profile}")
+        print(f"   Game: {game_name}")
+        print(f"   Profile: {profile_name}")
         print(f"   Resolution: {resolution}")
         print(f"   Graphics: {graphics_preset}")
 
@@ -262,6 +270,32 @@ class RealDataCollector:
 
         snapshot = self.collect_snapshot(fps, self.current_session['game'])
         self.snapshots.append(asdict(snapshot))
+
+    def stop_session(self) -> Dict:
+        """Stop session and return summary with CSV export"""
+        if not self.current_session:
+            raise RuntimeError("No active session to stop.")
+
+        # Export snapshots to CSV
+        import pandas as pd
+
+        df = pd.DataFrame(self.snapshots)
+        output_file = self.output_dir / f"session_{self.current_session['session_id']}.csv"
+        df.to_csv(output_file, index=False)
+
+        summary = {
+            'total_snapshots': len(self.snapshots),
+            'output_file': str(output_file),
+            'session_id': self.current_session['session_id']
+        }
+
+        print(f"\n✅ Session stopped: {len(self.snapshots)} snapshots saved to {output_file}")
+
+        # Reset session
+        self.current_session = None
+        self.snapshots = []
+
+        return summary
 
     def end_session(self) -> Path:
         """End session and save benchmark data"""

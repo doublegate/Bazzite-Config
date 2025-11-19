@@ -9,7 +9,7 @@ for all ML models in the Bazzite Optimizer suite.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from datetime import datetime
 
 import numpy as np
