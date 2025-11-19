@@ -1,8 +1,17 @@
-# Machine Learning Training Guide
+# Machine Learning Training Guide (v1.5.0)
+
+> **⚠️ NOTE**: This guide covers v1.5.0 ML components (ProfileOptimizer, PerformancePredictor).
+> **For v1.6.0+**, see the comprehensive **[ML Model Training Guide](ML_MODEL_TRAINING_GUIDE.md)** which includes:
+> - Real data collection with RealDataCollector (v1.6.0)
+> - 6-phase training workflow (Data Collection → Deployment)
+> - Hyperparameter optimization with ModelOptimizer (v1.6.0)
+> - Integration testing and validation
+>
+> This guide is maintained for v1.5.0 compatibility and legacy reference.
 
 ## Overview
 
-The Bazzite Optimizer uses machine learning models to provide intelligent profile recommendations and performance predictions. This guide covers training, evaluation, and deployment of ML models.
+The Bazzite Optimizer uses machine learning models to provide intelligent profile recommendations and performance predictions. This guide covers training, evaluation, and deployment of ML models for v1.5.0 components.
 
 ## Models Overview
 
