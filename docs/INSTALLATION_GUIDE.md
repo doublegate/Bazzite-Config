@@ -125,13 +125,14 @@ python ai_engine/game_detection/detector.py
 
 ### GUI Application
 
-**Install Qt dependencies**:
+**Install GTK4 dependencies**:
 ```bash
 # Bazzite/Fedora
-sudo dnf install python3-qt6 python3-matplotlib
+sudo dnf install python3-gobject gtk4 python3-matplotlib
 
 # Ubuntu/Debian
-sudo apt install python3-pyqt6 python3-matplotlib
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 python3-matplotlib
+
 
 # Then launch GUI
 python bazzite-optimizer-gui.py
