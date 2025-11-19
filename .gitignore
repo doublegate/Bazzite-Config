@@ -234,4 +234,12 @@ WARP.md                          # Temporary WARP documentation file
 __pycache__/
 # GitHub Actions workflow - requires manual setup
 .github/workflows/
-.coverage\ncoverage.xml\nhtmlcov/\nmobile-app/node_modules/
+
+# Node.js and React Native
+node_modules/
+*.log.npm
+
+# Python testing artifacts (already covered above but being explicit)
+.coverage
+coverage.xml
+htmlcov/
