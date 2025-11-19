@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazzite-optimizer-api
+  labels:
+    app: bazzite-optimizer
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bazzite-optimizer
+      component: api
+  template:
+    metadata:
+      labels:
+        app: bazzite-optimizer
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: bazzite-optimizer:1.5.0
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ML_MODELS_DIR
+          value: /app/models
+        - name: DATA_DIR
+          value: /app/data
+        - name: LOG_DIR
+          value: /app/logs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: ml-models
+          mountPath: /app/models
+        - name: community-data
+          mountPath: /app/data
+      volumes:
+      - name: ml-models
+        persistentVolumeClaim:
+          claimName: bazzite-models-pvc
+      - name: community-data
+        persistentVolumeClaim:
+          claimName: bazzite-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazzite-optimizer-api-service
+spec:
+  selector:
+    app: bazzite-optimizer
+    component: api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bazzite-models-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bazzite-data-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
