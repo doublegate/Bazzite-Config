@@ -465,6 +465,6 @@ class ProfileEditor(Gtk.Window):
             buttons=Gtk.ButtonsType.OK,
             text="Error"
         )
-        dialog.set_property("secondary-text", message)
+        dialog.set_secondary_text(message)
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.present()
