@@ -65,7 +65,9 @@
 
 - [x] Step 3.3 covers conditional Bazzite features ✓
 - [x] Step 3.4 covers dynamic hardware UI ✓
-- [ ] **Expand Step 3.4**: Include `gaming-maintenance-suite.sh`, `gaming-monitor-suite.py`
+- [x] Step 3.4 expanded: `gaming-maintenance-suite.sh`, `gaming-monitor-suite.py` (TEAM_004)
+- [x] **Step 3.6 added**: Embedded shell script migration (TEAM_005)
+- [x] **Step 3.7 added**: Log message & branding cleanup (TEAM_005)
 - [ ] **Decision needed**: Path renaming (`bazzite-optimizer` → `linux-gaming-optimizer`?)
 
 ### Phase 4 Updates Needed
