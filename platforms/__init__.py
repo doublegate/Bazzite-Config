@@ -11,7 +11,16 @@ Provides:
 - PlatformServices: Factory for platform-specific implementations
 """
 
-from .detection import PlatformType, PlatformInfo, detect_platform
+from .detection import (
+    PlatformType,
+    PlatformInfo,
+    detect_platform,
+    # TEAM_009: eGPU support
+    GPUInfo,
+    detect_gpus,
+    get_primary_gpu,
+    detect_thunderbolt_devices,
+)
 from .base import PackageManager, KernelParamManager
 from .services import PlatformServices, UnsupportedPlatformError
 
@@ -19,6 +28,11 @@ __all__ = [
     "PlatformType",
     "PlatformInfo", 
     "detect_platform",
+    # TEAM_009: eGPU support
+    "GPUInfo",
+    "detect_gpus",
+    "get_primary_gpu",
+    "detect_thunderbolt_devices",
     "PackageManager",
     "KernelParamManager",
     "PlatformServices",

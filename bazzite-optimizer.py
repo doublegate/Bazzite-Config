@@ -1963,6 +1963,8 @@ def get_system_info() -> Dict[str, Any]:
 
     # Get CPU info
     info["cpu_model"] = platform.processor() or "unknown"
+    info["cpu_cores"] = psutil.cpu_count(logical=False) or 0
+    info["cpu_threads"] = psutil.cpu_count(logical=True) or 0
     if "intel" in info["cpu_model"].lower():
         info["cpu_vendor"] = "intel"
     elif "amd" in info["cpu_model"].lower():
@@ -1978,17 +1980,32 @@ def get_system_info() -> Dict[str, Any]:
     except Exception:
         pass
 
-    # Get GPU info
-    returncode, stdout, _ = run_command("lspci | grep -E 'VGA|3D|Display'", check=False)
-    if returncode == 0:
-        info["gpus"] = stdout.strip().split("\n")
-        gpu_str = stdout.lower()
-        if "nvidia" in gpu_str:
-            info["gpu_vendor"] = "nvidia"
-        elif "amd" in gpu_str or "ati" in gpu_str:
-            info["gpu_vendor"] = "amd"
-        elif "intel" in gpu_str:
-            info["gpu_vendor"] = "intel"
+    # TEAM_009: Get GPU info using new detection (supports eGPU)
+    try:
+        from platforms.detection import detect_gpus, get_primary_gpu
+        gpus = detect_gpus()
+        info["gpus"] = [g.name for g in gpus]
+        info["gpu_info"] = gpus  # Full GPUInfo objects
+        primary = get_primary_gpu()
+        if primary:
+            info["gpu_vendor"] = primary.vendor
+            info["gpu_name"] = primary.name
+            info["gpu_is_egpu"] = primary.is_egpu
+            info["gpu_driver"] = primary.driver
+        else:
+            info["gpu_vendor"] = "unknown"
+    except ImportError:
+        # Fallback to old method if platforms module not available
+        returncode, stdout, _ = run_command("lspci | grep -E 'VGA|3D|Display'", check=False)
+        if returncode == 0:
+            info["gpus"] = stdout.strip().split("\n")
+            gpu_str = stdout.lower()
+            if "nvidia" in gpu_str:
+                info["gpu_vendor"] = "nvidia"
+            elif "amd" in gpu_str or "ati" in gpu_str:
+                info["gpu_vendor"] = "amd"
+            elif "intel" in gpu_str:
+                info["gpu_vendor"] = "intel"
 
     # Get network interfaces
     for interface in psutil.net_if_addrs().keys():

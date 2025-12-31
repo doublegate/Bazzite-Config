@@ -14,7 +14,9 @@ import shutil
 from enum import Enum, auto
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Optional
+import logging
+import os
 
 
 class PlatformType(Enum):
@@ -24,6 +26,28 @@ class PlatformType(Enum):
     FEDORA_TRADITIONAL = auto()  # Fedora Workstation, Ultramarine, Nobara
     DEBIAN_BASED = auto()       # Ubuntu, Debian, Pop!_OS, Linux Mint
     UNKNOWN = auto()
+
+
+# TEAM_009: GPU vendor IDs
+GPU_VENDORS = {
+    "0x10de": "nvidia",
+    "0x1002": "amd",
+    "0x8086": "intel",
+}
+
+
+@dataclass
+class GPUInfo:
+    """TEAM_009: GPU information for eGPU and multi-GPU support."""
+    card_path: str              # /sys/class/drm/card0
+    vendor: str                 # "nvidia", "amd", "intel"
+    vendor_id: str              # "0x10de"
+    device_id: str              # "0x2504"
+    name: str                   # "GeForce RTX 3060" or "Unknown"
+    is_egpu: bool               # True if connected via Thunderbolt
+    is_primary: bool            # True if selected for gaming
+    is_rendering: bool          # True if actively rendering
+    driver: Optional[str]       # "nvidia", "nouveau", "amdgpu", "i915"
 
 
 @dataclass
@@ -76,6 +100,210 @@ def _detect_boot_method(is_immutable: bool) -> str:
     if Path("/boot/loader/entries").exists():
         return "systemd-boot"
     return "unknown"
+
+
+# TEAM_009: GPU Detection Functions
+
+def detect_thunderbolt_devices() -> List[str]:
+    """TEAM_009: Detect Thunderbolt devices (for eGPU detection)."""
+    devices = []
+    tb_path = Path("/sys/bus/thunderbolt/devices")
+    if tb_path.exists():
+        for device in tb_path.iterdir():
+            name_file = device / "device_name"
+            if name_file.exists():
+                try:
+                    name = name_file.read_text().strip()
+                    if name:
+                        devices.append(name)
+                except Exception:
+                    pass
+    return devices
+
+
+def _get_gpu_name_from_lspci(pci_slot: str) -> str:
+    """TEAM_009: Get GPU name from lspci output."""
+    try:
+        result = subprocess.run(
+            ["lspci", "-s", pci_slot, "-mm"],
+            capture_output=True, timeout=5
+        )
+        if result.returncode == 0:
+            # Parse lspci -mm output: Slot, Class, Vendor, Device, ...
+            parts = result.stdout.decode().strip().split('"')
+            if len(parts) >= 6:
+                return parts[5]  # Device name
+    except Exception:
+        pass
+    return "Unknown"
+
+
+def _get_active_rendering_gpu() -> Optional[str]:
+    """TEAM_009: Detect which GPU is actively rendering (for Q3:C)."""
+    logger = logging.getLogger(__name__)
+    
+    # Method 1: Check DRI_PRIME environment
+    dri_prime = os.environ.get("DRI_PRIME", "")
+    if dri_prime:
+        logger.debug(f"DRI_PRIME set to: {dri_prime}")
+        return f"card{dri_prime}" if dri_prime.isdigit() else dri_prime
+    
+    # Method 2: Check which card has connected displays
+    drm_path = Path("/sys/class/drm")
+    for card_dir in sorted(drm_path.glob("card[0-9]*")):
+        if "-" not in card_dir.name:  # Skip card0-DP-1 etc
+            continue
+        status_file = card_dir / "status"
+        if status_file.exists():
+            try:
+                status = status_file.read_text().strip()
+                if status == "connected":
+                    # Extract card number from card0-DP-1
+                    card_name = card_dir.name.split("-")[0]
+                    logger.debug(f"Found connected display on {card_name}")
+                    return card_name
+            except Exception:
+                pass
+    
+    # Method 3: Check /proc/driver/nvidia for NVIDIA
+    nvidia_proc = Path("/proc/driver/nvidia/gpus")
+    if nvidia_proc.exists():
+        for gpu_dir in nvidia_proc.iterdir():
+            # GPU directories are named by PCI address
+            return "nvidia"  # NVIDIA is actively loaded
+    
+    return None
+
+
+def detect_gpus() -> List[GPUInfo]:
+    """
+    TEAM_009: Detect all GPUs with detailed info.
+    
+    Scans /sys/class/drm for GPU cards and determines:
+    - Vendor (nvidia, amd, intel)
+    - Whether it's an eGPU (via Thunderbolt)
+    - Whether it's actively rendering
+    - Driver in use
+    
+    Returns:
+        List of GPUInfo objects, sorted with primary GPU first
+    """
+    logger = logging.getLogger(__name__)
+    gpus = []
+    thunderbolt_devices = detect_thunderbolt_devices()
+    has_egpu_enclosure = any(
+        "core" in d.lower() or "egpu" in d.lower() or "breakaway" in d.lower()
+        for d in thunderbolt_devices
+    )
+    
+    active_gpu = _get_active_rendering_gpu()
+    drm_path = Path("/sys/class/drm")
+    
+    for card_dir in sorted(drm_path.glob("card[0-9]")):
+        device_path = card_dir / "device"
+        if not device_path.exists():
+            continue
+        
+        # Read vendor and device IDs
+        vendor_file = device_path / "vendor"
+        device_file = device_path / "device"
+        driver_link = device_path / "driver"
+        
+        try:
+            vendor_id = vendor_file.read_text().strip() if vendor_file.exists() else ""
+            device_id = device_file.read_text().strip() if device_file.exists() else ""
+            vendor = GPU_VENDORS.get(vendor_id, "unknown")
+            
+            # Get driver name
+            driver = None
+            if driver_link.exists():
+                driver = driver_link.resolve().name
+            
+            # Get PCI slot for name lookup
+            pci_slot = ""
+            uevent_file = device_path / "uevent"
+            if uevent_file.exists():
+                for line in uevent_file.read_text().splitlines():
+                    if line.startswith("PCI_SLOT_NAME="):
+                        pci_slot = line.split("=")[1]
+                        break
+            
+            name = _get_gpu_name_from_lspci(pci_slot) if pci_slot else "Unknown"
+            
+            # Determine if eGPU: discrete GPU + Thunderbolt enclosure present
+            # High PCI bus numbers (>0x10) often indicate external
+            is_egpu = False
+            if has_egpu_enclosure and vendor in ("nvidia", "amd"):
+                # Check PCI bus number - eGPUs typically have high bus numbers
+                # PCI slot format: domain:bus:device.function (e.g., 0000:3c:00.0)
+                if pci_slot:
+                    try:
+                        parts = pci_slot.split(":")
+                        if len(parts) >= 2:
+                            bus_num = int(parts[1], 16)  # [1] is bus, not [0] (domain)
+                            is_egpu = bus_num > 0x10  # External buses are usually > 16
+                    except (ValueError, IndexError):
+                        pass
+            
+            # Check if this is the active rendering GPU
+            is_rendering = (active_gpu == card_dir.name or 
+                           (active_gpu == "nvidia" and vendor == "nvidia"))
+            
+            # Primary GPU logic: prefer discrete GPU that's rendering
+            is_primary = False
+            if is_rendering:
+                is_primary = True
+            elif vendor in ("nvidia", "amd") and not active_gpu:
+                # If no active detection, prefer discrete
+                is_primary = True
+            
+            gpu = GPUInfo(
+                card_path=str(card_dir),
+                vendor=vendor,
+                vendor_id=vendor_id,
+                device_id=device_id,
+                name=name,
+                is_egpu=is_egpu,
+                is_primary=is_primary,
+                is_rendering=is_rendering,
+                driver=driver
+            )
+            gpus.append(gpu)
+            logger.debug(f"Detected GPU: {gpu}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to read GPU info from {card_dir}: {e}")
+    
+    # Sort: primary first, then discrete, then integrated
+    def gpu_sort_key(g: GPUInfo) -> tuple:
+        return (
+            not g.is_primary,
+            not g.is_rendering,
+            g.vendor == "intel",  # Intel last
+            g.card_path
+        )
+    
+    gpus.sort(key=gpu_sort_key)
+    
+    # If no GPU marked primary, mark first discrete as primary
+    if gpus and not any(g.is_primary for g in gpus):
+        for gpu in gpus:
+            if gpu.vendor in ("nvidia", "amd"):
+                gpu.is_primary = True
+                break
+        else:
+            gpus[0].is_primary = True
+    
+    return gpus
+
+
+def get_primary_gpu() -> Optional[GPUInfo]:
+    """TEAM_009: Get the primary GPU for gaming optimizations."""
+    gpus = detect_gpus()
+    for gpu in gpus:
+        if gpu.is_primary:
+            return gpu
+    return gpus[0] if gpus else None
 
 
 def detect_platform() -> PlatformInfo:
