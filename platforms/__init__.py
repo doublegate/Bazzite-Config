@@ -20,6 +20,9 @@ from .detection import (
     detect_gpus,
     get_primary_gpu,
     detect_thunderbolt_devices,
+    # TEAM_012: CPU topology support
+    CPUTopology,
+    detect_cpu_topology,
 )
 from .base import PackageManager, KernelParamManager
 from .services import PlatformServices, UnsupportedPlatformError
@@ -33,6 +36,9 @@ __all__ = [
     "detect_gpus",
     "get_primary_gpu",
     "detect_thunderbolt_devices",
+    # TEAM_012: CPU topology support
+    "CPUTopology",
+    "detect_cpu_topology",
     "PackageManager",
     "KernelParamManager",
     "PlatformServices",

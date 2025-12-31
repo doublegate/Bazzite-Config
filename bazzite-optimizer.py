@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Professional Gaming Optimization Master Script
 Universal Support for Fedora-based Systems (Bazzite, Silverblue, Workstation)
@@ -1801,9 +1802,9 @@ Use with caution on systems with sensitive data.
             sys.exit(1)
 
 
-def print_colored(message: str, color: str = Colors.ENDC) -> None:
+def print_colored(message: str, color: str = Colors.ENDC, end: str = "\n") -> None:
     """Print colored message to terminal"""
-    print(f"{color}{message}{Colors.ENDC}")
+    print(f"{color}{message}{Colors.ENDC}", end=end)
 
 
 def run_command(command: str, shell: bool = True, check: bool = True,
@@ -1965,6 +1966,7 @@ def get_system_info() -> Dict[str, Any]:
     info["cpu_model"] = platform.processor() or "unknown"
     info["cpu_cores"] = psutil.cpu_count(logical=False) or 0
     info["cpu_threads"] = psutil.cpu_count(logical=True) or 0
+    info["cpu_vendor"] = "unknown"  # Default
     if "intel" in info["cpu_model"].lower():
         info["cpu_vendor"] = "intel"
     elif "amd" in info["cpu_model"].lower():
@@ -3725,8 +3727,8 @@ class NetworkOptimizer(BaseOptimizer):
 class AudioOptimizer(BaseOptimizer):
     """Audio system optimization module with profile support"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
 
     def apply_optimizations(self) -> bool:
         """Apply PipeWire and WirePlumber optimizations with enhanced error handling and validation"""
@@ -4691,8 +4693,8 @@ class AudioOptimizer(BaseOptimizer):
 class GamingToolsOptimizer(BaseOptimizer):
     """Gaming-specific tools and configurations with profile support"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
 
     def install_tools(self) -> bool:
         """Install gaming tools via package manager and Flatpak"""
@@ -4974,10 +4976,23 @@ class KernelOptimizer(BaseOptimizer):
         mitigations = "off" if profile_settings.get("disable_mitigations", True) else "auto"
         max_cstate = "1" if profile_settings.get("isolate_cores", False) else "3"
 
+        # TEAM_012: Use CPU topology detection for correct core isolation
+        isolcpus = ""
         if profile_settings.get("isolate_cores", False):
-            isolcpus = "nohz_full=4-9 isolcpus=4-9 rcu_nocbs=4-9"
-        else:
-            isolcpus = ""
+            try:
+                from platforms.detection import detect_cpu_topology
+                topology = detect_cpu_topology()
+                if topology.recommended_isolate:
+                    cores = ",".join(map(str, topology.recommended_isolate))
+                    isolcpus = f"nohz_full={cores} isolcpus={cores} rcu_nocbs={cores}"
+                    if topology.is_hybrid:
+                        self.logger.info(f"Hybrid CPU detected: isolating E-cores {cores}")
+                    else:
+                        self.logger.info(f"Isolating cores: {cores}")
+                else:
+                    self.logger.warning("Could not detect CPU topology, skipping core isolation")
+            except Exception as e:
+                self.logger.warning(f"CPU topology detection failed: {e}, skipping core isolation")
 
         # Build consolidated parameter list (includes parameters previously duplicated in Boot Infrastructure)
         kernel_params = [
@@ -5003,6 +5018,19 @@ class KernelOptimizer(BaseOptimizer):
         # Add core isolation parameters if enabled
         if isolcpus:
             kernel_params.extend(isolcpus.split())
+
+        # TEAM_012: Add eGPU-specific kernel params for Thunderbolt stability
+        try:
+            from platforms.detection import get_primary_gpu
+            primary_gpu = get_primary_gpu()
+            if primary_gpu and primary_gpu.is_egpu:
+                self.logger.info(f"eGPU detected ({primary_gpu.name}), adding Thunderbolt stability params")
+                kernel_params.extend([
+                    "pcie_port_pm=off",
+                    "thunderbolt.force_power=1",
+                ])
+        except Exception as e:
+            self.logger.debug(f"Could not check for eGPU: {e}")
 
         # TEAM_006: Apply kernel parameters using platform abstraction
         return self._apply_kernel_params_via_abstraction(kernel_params)
@@ -5300,10 +5328,21 @@ class KernelOptimizer(BaseOptimizer):
         mitigations = "off" if profile_settings.get("disable_mitigations", True) else "auto"
         max_cstate = "1" if profile_settings.get("isolate_cores", False) else "3"
 
+        # TEAM_012: Use CPU topology detection for correct core isolation
+        isolcpus = ""
         if profile_settings.get("isolate_cores", False):
-            isolcpus = "nohz_full=4-9 isolcpus=4-9 rcu_nocbs=4-9"
-        else:
-            isolcpus = ""
+            try:
+                from platforms.detection import detect_cpu_topology
+                topology = detect_cpu_topology()
+                if topology.recommended_isolate:
+                    cores = ",".join(map(str, topology.recommended_isolate))
+                    isolcpus = f"nohz_full={cores} isolcpus={cores} rcu_nocbs={cores}"
+                    if topology.is_hybrid:
+                        self.logger.info(f"Hybrid CPU detected: isolating E-cores {cores}")
+                    else:
+                        self.logger.info(f"Isolating cores: {cores}")
+            except Exception as e:
+                self.logger.warning(f"CPU topology detection failed: {e}")
             
         security_params = ""
 
@@ -5692,8 +5731,8 @@ class SystemdServiceOptimizer(BaseOptimizer):
 class PlasmaOptimizer(BaseOptimizer):
     """KDE Plasma 6 Wayland optimization module with profile support"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
 
     def apply_optimizations(self) -> bool:
         """Apply KDE Plasma 6 Wayland gaming optimizations"""
@@ -5766,8 +5805,8 @@ class PlasmaOptimizer(BaseOptimizer):
 class BootInfrastructureOptimizer(BaseOptimizer):
     """Boot infrastructure management for comprehensive boot error resolution"""
     
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
         self.system_group_manager = SystemGroupManager(logger)
         self.filesystem_manager = FilesystemCompatibilityManager(logger)
         self.input_device_manager = InputDeviceManager(logger)
@@ -7023,24 +7062,41 @@ class BazziteGamingOptimizer:
             return False
 
         # Check hardware compatibility
-        self.hardware_checks = check_hardware_compatibility()
+        self.hardware_checks = check_hardware_capabilities()
 
         print("\nHardware Detection:")
-        optimal_config = True
-        for component, detected in self.hardware_checks.items():
-            status = "✔" if detected else "✗"
-            color = Colors.OKGREEN if detected else Colors.WARNING
-            component_name = component.replace('_', ' ').title()
-            print_colored(f"  {status} {component_name}", color)
-
-            # Special warning for Resizable BAR
-            if component == "resizable_bar" and not detected:
-                print_colored(
-                    "    → Enable Resizable BAR in BIOS for better performance",
-                    Colors.WARNING)
-
-            if not detected and component != "bazzite_os":
-                optimal_config = False
+        # Only show relevant hardware info, don't treat alternatives as failures
+        important_checks = ["has_nvme", "resizable_bar"]
+        has_any_gpu = self.hardware_checks.get("has_nvidia") or \
+                      self.hardware_checks.get("has_amd_gpu") or \
+                      self.hardware_checks.get("has_intel_gpu")
+        
+        # Show GPU status
+        if self.hardware_checks.get("has_nvidia"):
+            print_colored("  ✔ NVIDIA GPU detected", Colors.OKGREEN)
+        elif self.hardware_checks.get("has_amd_gpu"):
+            print_colored("  ✔ AMD GPU detected", Colors.OKGREEN)
+        elif self.hardware_checks.get("has_intel_gpu"):
+            print_colored("  ✔ Intel GPU detected", Colors.OKGREEN)
+        else:
+            print_colored("  ✗ No GPU detected", Colors.WARNING)
+        
+        # Show important checks
+        if self.hardware_checks.get("has_nvme"):
+            print_colored("  ✔ NVMe storage", Colors.OKGREEN)
+        if self.hardware_checks.get("resizable_bar"):
+            print_colored("  ✔ Resizable BAR enabled", Colors.OKGREEN)
+        else:
+            print_colored("  ✗ Resizable BAR not detected", Colors.WARNING)
+            print_colored("    → Enable in BIOS for better GPU performance", Colors.WARNING)
+        
+        # RAM and CPU info
+        ram_gb = self.hardware_checks.get("ram_gb", 0)
+        print_colored(f"  ✔ RAM: {ram_gb} GB", Colors.OKGREEN)
+        cpu_vendor = self.hardware_checks.get("cpu_vendor", "unknown").upper()
+        print_colored(f"  ✔ CPU: {cpu_vendor}", Colors.OKGREEN)
+        
+        optimal_config = has_any_gpu  # Only fail if no GPU at all
 
         # TEAM_006: Platform-aware warnings using platform_info
         from platforms import PlatformType
@@ -7048,6 +7104,7 @@ class BazziteGamingOptimizer:
             print_colored("\nWARNING: Unknown platform detected.", Colors.WARNING)
             print_colored("Some optimizations may not work correctly.", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
+            sys.stdout.flush()
             if input().lower() != 'y':
                 return False
         elif not self.platform_info.is_immutable:
@@ -7061,6 +7118,7 @@ class BazziteGamingOptimizer:
                 Colors.WARNING)
             print_colored("The optimizations are tailored for specific hardware.", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
+            sys.stdout.flush()
             if input().lower() != 'y':
                 return False
 
@@ -7070,6 +7128,7 @@ class BazziteGamingOptimizer:
             print_colored(f"\nWARNING: GPU temperature is high ({gpu_temp}°C)", Colors.WARNING)
             print_colored("Consider improving cooling before applying overclocking", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
+            sys.stdout.flush()
             if input().lower() != 'y':
                 return False
 
@@ -7504,6 +7563,15 @@ Examples:
                             help='List available profiles')
         parser.add_argument('--version', action='version',
                             version=f'%(prog)s {SCRIPT_VERSION}')
+        # TEAM_012: Kernel profile management CLI
+        parser.add_argument('--save-baseline', action='store_true',
+                            help='Save current kernel params as baseline before optimization')
+        parser.add_argument('--kernel-profile', type=str, metavar='NAME',
+                            help='Apply a saved kernel profile (use --list-kernel-profiles to see available)')
+        parser.add_argument('--list-kernel-profiles', action='store_true',
+                            help='List available kernel profiles')
+        parser.add_argument('--kernel-diff', type=str, metavar='NAME',
+                            help='Show difference between current kernel params and a profile')
 
         args = parser.parse_args()
 
@@ -7513,6 +7581,77 @@ Examples:
             for profile_name, profile_data in GAMING_PROFILES.items():
                 print(f"\n{Colors.OKCYAN}{profile_name}:{Colors.ENDC}")
                 print(f"  {profile_data['description']}")
+            return 0
+
+        # TEAM_012: Handle kernel profile management commands
+        # These commands use GrubKernelParams directly (no root needed for read ops)
+        def _get_kernel_profile_manager():
+            """Get kernel profile manager for CLI commands."""
+            try:
+                from platforms.traditional.grub import GrubKernelParams
+                from pathlib import Path
+                if Path("/etc/default/grub").exists():
+                    return GrubKernelParams()
+            except ImportError:
+                pass
+            return None
+
+        if args.list_kernel_profiles:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'list_profiles'):
+                profiles = kpm.list_profiles()
+                if profiles:
+                    print_colored("\nAvailable Kernel Profiles:", Colors.HEADER)
+                    for p in profiles:
+                        print(f"  - {p}")
+                else:
+                    print("No kernel profiles saved yet. Run --save-baseline first.")
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
+            return 0
+
+        if args.kernel_diff:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'diff_profile'):
+                diff = kpm.diff_profile(args.kernel_diff)
+                if "error" in diff:
+                    print_colored(diff["error"], Colors.FAIL)
+                else:
+                    print_colored(f"\nDiff vs '{args.kernel_diff}':", Colors.HEADER)
+                    if diff["add"]:
+                        print_colored("  Would add:", Colors.OKGREEN)
+                        for p in diff["add"]:
+                            print(f"    + {p}")
+                    if diff["remove"]:
+                        print_colored("  Would remove:", Colors.FAIL)
+                        for p in diff["remove"]:
+                            print(f"    - {p}")
+                    if not diff["add"] and not diff["remove"]:
+                        print("  No differences")
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
+            return 0
+
+        if args.save_baseline:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'save_baseline'):
+                if kpm.save_baseline():
+                    print_colored("Baseline kernel params saved successfully", Colors.OKGREEN)
+                else:
+                    print_colored("Failed to save baseline (may already exist)", Colors.WARNING)
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
+            return 0
+
+        if args.kernel_profile:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'apply_profile'):
+                if kpm.apply_profile(args.kernel_profile):
+                    print_colored(f"Applied kernel profile '{args.kernel_profile}'. Reboot required.", Colors.OKGREEN)
+                else:
+                    print_colored(f"Failed to apply profile '{args.kernel_profile}'", Colors.FAIL)
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
             return 0
 
         # Handle verify mode

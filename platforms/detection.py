@@ -51,6 +51,17 @@ class GPUInfo:
 
 
 @dataclass
+class CPUTopology:
+    """TEAM_012: CPU topology information for hybrid CPU support."""
+    total_cores: int            # Physical cores
+    total_threads: int          # Logical CPUs (with hyperthreading)
+    is_hybrid: bool             # True for Intel Alder Lake, Raptor Lake, etc.
+    p_cores: List[int]          # Performance core CPU IDs
+    e_cores: List[int]          # Efficiency core CPU IDs
+    recommended_isolate: List[int]  # Cores safe to isolate for gaming
+
+
+@dataclass
 class PlatformInfo:
     """Platform metadata collected during detection."""
     platform_type: PlatformType
@@ -100,6 +111,104 @@ def _detect_boot_method(is_immutable: bool) -> str:
     if Path("/boot/loader/entries").exists():
         return "systemd-boot"
     return "unknown"
+
+
+# TEAM_012: CPU Topology Detection
+
+def detect_cpu_topology() -> CPUTopology:
+    """
+    TEAM_012: Detect CPU topology including hybrid P-core/E-core architecture.
+    
+    For Intel Alder Lake and newer hybrid CPUs, identifies:
+    - P-cores (Performance): Higher max frequency
+    - E-cores (Efficiency): Lower max frequency
+    
+    Returns CPUTopology with recommended cores to isolate for gaming.
+    """
+    logger = logging.getLogger(__name__)
+    
+    cpu_path = Path("/sys/devices/system/cpu")
+    
+    # Get total CPUs
+    online_cpus = []
+    for cpu_dir in sorted(cpu_path.glob("cpu[0-9]*")):
+        cpu_name = cpu_dir.name
+        if cpu_name.startswith("cpu") and cpu_name[3:].isdigit():
+            cpu_id = int(cpu_name[3:])
+            online_cpus.append(cpu_id)
+    
+    total_threads = len(online_cpus)
+    if total_threads == 0:
+        logger.warning("Could not detect CPU topology")
+        return CPUTopology(
+            total_cores=0, total_threads=0, is_hybrid=False,
+            p_cores=[], e_cores=[], recommended_isolate=[]
+        )
+    
+    # Get physical core count
+    try:
+        import psutil
+        total_cores = psutil.cpu_count(logical=False) or total_threads
+    except ImportError:
+        total_cores = total_threads
+    
+    # Detect hybrid architecture by checking max frequencies
+    cpu_freqs = {}
+    for cpu_id in online_cpus:
+        freq_file = cpu_path / f"cpu{cpu_id}" / "cpufreq" / "cpuinfo_max_freq"
+        if freq_file.exists():
+            try:
+                freq = int(freq_file.read_text().strip())
+                cpu_freqs[cpu_id] = freq
+            except (ValueError, IOError):
+                pass
+    
+    # Determine if hybrid based on frequency variance
+    p_cores = []
+    e_cores = []
+    is_hybrid = False
+    
+    if cpu_freqs:
+        freqs = list(cpu_freqs.values())
+        max_freq = max(freqs)
+        min_freq = min(freqs)
+        
+        # Hybrid if there's >15% frequency difference between cores
+        if min_freq < max_freq * 0.85:
+            is_hybrid = True
+            threshold = (max_freq + min_freq) / 2
+            
+            for cpu_id, freq in cpu_freqs.items():
+                if freq >= threshold:
+                    p_cores.append(cpu_id)
+                else:
+                    e_cores.append(cpu_id)
+            
+            p_cores.sort()
+            e_cores.sort()
+            logger.info(f"Detected hybrid CPU: P-cores={p_cores}, E-cores={e_cores}")
+    
+    # Determine recommended cores to isolate
+    recommended_isolate = []
+    
+    if is_hybrid and e_cores:
+        # For hybrid CPUs, isolate E-cores (they're for efficiency, not gaming)
+        recommended_isolate = e_cores.copy()
+        logger.info(f"Hybrid CPU: Recommending E-core isolation: {recommended_isolate}")
+    elif total_threads >= 8:
+        # For non-hybrid, isolate last 25% of cores (traditional approach)
+        num_to_isolate = max(2, total_threads // 4)
+        recommended_isolate = list(range(total_threads - num_to_isolate, total_threads))
+        logger.info(f"Non-hybrid CPU: Recommending last {num_to_isolate} cores: {recommended_isolate}")
+    
+    return CPUTopology(
+        total_cores=total_cores,
+        total_threads=total_threads,
+        is_hybrid=is_hybrid,
+        p_cores=p_cores,
+        e_cores=e_cores,
+        recommended_isolate=recommended_isolate
+    )
 
 
 # TEAM_009: GPU Detection Functions
