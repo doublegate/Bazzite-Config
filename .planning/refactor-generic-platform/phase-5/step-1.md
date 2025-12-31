@@ -146,8 +146,28 @@ chmod +x tests/test_platform_matrix.sh
 
 ---
 
+## UoW 5.1.4: Update test mocks for platform abstraction
+
+**Goal**: Update test fixtures to mock new platform abstractions instead of raw rpm-ostree calls.
+
+**Files to update** (based on Phase 1 audit):
+- `tests/integration/test_profile_workflows.py` — 5 rpm-ostree references
+- `tests/unit/test_base_optimizer.py` — 4 rpm-ostree references
+- `tests/test_bazzite_optimizer_enhanced_kargs.py` — 2 rpm-ostree references
+- `tests/unit/test_optimizers.py` — 2 rpm-ostree references
+
+**Changes**:
+1. Replace `mock.patch("subprocess.run")` for rpm-ostree with `mock.patch("platforms.immutable.rpm_ostree.RpmOstreeKernelParams")`
+2. Update assertions to use new abstraction methods
+3. Add platform detection mocks where needed
+
+**Note**: Added based on Phase 1 audit findings (TEAM_004)
+
+---
+
 ## Step Exit Criteria
 
 - [ ] Test script created
 - [ ] Tests pass on Ultramarine
 - [ ] Results documented
+- [ ] Test mocks updated for platform abstraction

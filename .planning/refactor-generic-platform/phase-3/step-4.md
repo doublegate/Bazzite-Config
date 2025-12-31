@@ -105,7 +105,39 @@ def initialize_optimizers(self):
 
 ---
 
-## UoW 3.4.4: Test banner output
+## UoW 3.4.4: Update gaming-maintenance-suite.sh hardware labels
+
+**Goal**: Replace hard-coded hardware in benchmark script.
+
+**File**: `gaming-maintenance-suite.sh`
+**Locations**: Lines 79, 187, 691-693, 744, 748-749
+
+**Changes**:
+- Add hardware detection functions at script start
+- Replace "RTX 5080", "i9-10850K", "64GB" with detected values
+- Update HTML report generation
+
+**Note**: Added based on Phase 1 audit findings (TEAM_004)
+
+---
+
+## UoW 3.4.5: Update gaming-monitor-suite.py hardware labels
+
+**Goal**: Replace hard-coded hardware in monitoring script.
+
+**File**: `gaming-monitor-suite.py`
+**Locations**: Lines 324, 397, 657
+
+**Changes**:
+- Import/create hardware detection utility
+- Replace static subtitle with detected hardware
+- Update GPU metrics header
+
+**Note**: Added based on Phase 1 audit findings (TEAM_004)
+
+---
+
+## UoW 3.4.6: Test banner output
 
 **Goal**: Verify hardware is correctly displayed.
 
@@ -121,4 +153,6 @@ sudo ./bazzite-optimizer.py --validate 2>&1 | head -10
 - [ ] Banner shows dynamic hardware
 - [ ] No hard-coded "RTX 5080" or "i9-10850K" in banner or logs
 - [ ] Optimizer names are generic
-- [ ] Global search for hardware models returns 0 results
+- [ ] `gaming-maintenance-suite.sh` uses dynamic hardware
+- [ ] `gaming-monitor-suite.py` uses dynamic hardware
+- [ ] Global search for hardware models returns 0 results (excluding tests/fixtures)

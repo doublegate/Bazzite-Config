@@ -78,14 +78,42 @@ grep -n "rpm-ostree" bazzite-optimizer.py | grep -v "# \|\".*rpm-ostree"
 
 ---
 
-## UoW 4.1.5: Run tests after cleanup
+## UoW 4.1.5: Make reset-bazzite-defaults.sh platform-aware
+
+**Goal**: Add platform detection to reset script or create GRUB alternative.
+
+**File**: `reset-bazzite-defaults.sh`
+**Issue**: Script has 20 rpm-ostree calls and only works on immutable systems.
+
+**Options** (choose one):
+1. Add platform guard at script start, exit gracefully on non-rpm-ostree systems
+2. Create parallel `reset-grub-defaults.sh` for traditional systems
+3. Make script detect platform and use appropriate method
+
+**Recommended**: Option 1 (minimal change, script is Bazzite-specific by design)
+
+**Implementation**:
+```bash
+# Add after line 127 (after rpm-ostree status check)
+if ! rpm-ostree status >/dev/null 2>&1; then
+  echo "This script is designed for rpm-ostree systems (Bazzite, Silverblue, etc.)"
+  echo "For traditional systems, manually edit /etc/default/grub and run grub2-mkconfig"
+  exit 1
+fi
+```
+
+**Note**: Added based on Phase 1 audit findings (TEAM_004)
+
+---
+
+## UoW 4.1.6: Run tests after cleanup
 
 **Goal**: Verify nothing broke.
 
 **Task**:
 ```bash
 # All tests
-pytest -q
+pytest -q --override-ini="addopts="
 
 # Full validation on Ultramarine
 sudo ./bazzite-optimizer.py --validate
@@ -102,5 +130,6 @@ sudo ./bazzite-optimizer.py --validate
 
 - [ ] `enhanced_rpm_ostree_kargs()` removed
 - [ ] Deprecated methods removed
-- [ ] No direct rpm-ostree calls remaining
+- [ ] No direct rpm-ostree calls remaining in main script
+- [ ] `reset-bazzite-defaults.sh` has platform guard
 - [ ] All tests pass
