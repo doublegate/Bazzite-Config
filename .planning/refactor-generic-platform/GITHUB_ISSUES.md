@@ -13,17 +13,18 @@ Copy each issue into GitHub Issues with the appropriate labels.
 
 Transform bazzite-optimizer from a Bazzite-specific tool into a generic Linux gaming optimizer supporting:
 - rpm-ostree immutable systems (Bazzite, Silverblue, Kinoite, Aurora)
-- Traditional RPM-based systems (Fedora Workstation, Ultramarine, etc.)
-- Debian-based systems (Ubuntu, Debian, Pop!_OS)
+- Traditional RPM-based systems (Fedora Workstation, Ultramarine, CentOS Stream)
 
 **Primary target**: Bazzite (maintain full compatibility)
-**Secondary target**: Traditional Fedora-based distros with hybrid GPU configurations
+**Secondary target**: Traditional RPM-based distros (Fedora, Ultramarine)
+
+> **Note**: Debian-based support (Ubuntu, Pop!_OS) deferred to stretch goals.
 
 ---
 
 ## Phase 1: Foundation
 
-### Issue #1: Create platform detection module
+### Issue #1: Create platforms detection module
 
 **Labels**: `enhancement`, `platform-support`, `priority-high`
 
@@ -31,20 +32,20 @@ Transform bazzite-optimizer from a Bazzite-specific tool into a generic Linux ga
 Create a platform detection system that identifies:
 - OS distribution and version
 - Whether system is rpm-ostree based (immutable) or traditional
-- Available package manager (rpm-ostree, dnf, apt)
+- Available package manager (rpm-ostree, dnf)
 - Boot configuration method (rpm-ostree kargs, grub, systemd-boot)
 - Bazzite-specific features availability (ujust)
 
 **Acceptance Criteria**:
-- [ ] `PlatformType` enum with values: `BAZZITE`, `FEDORA_OSTREE`, `FEDORA_TRADITIONAL`, `DEBIAN_BASED`, `UNKNOWN`
+- [ ] `PlatformType` enum with values: `BAZZITE`, `FEDORA_OSTREE`, `FEDORA_TRADITIONAL`, `UNKNOWN` (DEBIAN_BASED deferred)
 - [ ] `PlatformInfo` dataclass with all platform metadata
 - [ ] `detect_platform()` function that returns `PlatformInfo`
 - [ ] Unit tests for each platform type
-- [ ] Works correctly on Bazzite, Fedora, and Ubuntu
+- [ ] Works correctly on Bazzite and Fedora
 
 **Files to create**:
-- `platform/__init__.py`
-- `platform/detection.py`
+- `platforms/__init__.py`
+- `platforms/detection.py`
 - `tests/unit/test_platform_detection.py`
 
 ---
@@ -63,7 +64,7 @@ Define abstract interfaces for platform-specific operations to enable consistent
 - [ ] Docstrings documenting expected behavior
 
 **Files to create**:
-- `platform/base.py`
+- `platforms/base.py`
 
 ---
 
@@ -104,7 +105,7 @@ Extract existing rpm-ostree kargs handling into a dedicated class implementing `
 - [ ] No regression on Bazzite/Silverblue
 
 **Files to create**:
-- `platform/immutable/rpm_ostree.py`
+- `platforms/immutable/rpm_ostree.py`
 - `tests/unit/test_rpm_ostree_kernel_params.py`
 
 ---
@@ -120,14 +121,14 @@ Create kernel parameter management for systems using GRUB bootloader (traditiona
 - [ ] `GrubKernelParams` class implementing `KernelParamManager`
 - [ ] Parse `GRUB_CMDLINE_LINUX` from `/etc/default/grub`
 - [ ] Safely modify grub config with backup
-- [ ] Run `grub2-mkconfig` (Fedora) or `update-grub` (Debian) after changes
+- [ ] Run `grub2-mkconfig` (Fedora), `update-grub` (Debian), or `grub-mkconfig` after changes
 - [ ] Handle EFI vs BIOS boot paths
 - [ ] Kernel parameter deduplication (match rpm-ostree behavior)
 - [ ] Unit tests with mocked file operations
 - [ ] Integration test on non-rpm-ostree system
 
 **Files to create**:
-- `platform/traditional/grub.py`
+- `platforms/traditional/grub.py`
 - `tests/unit/test_grub_kernel_params.py`
 
 **Notes**:
@@ -151,7 +152,7 @@ Extract existing rpm-ostree package installation into a dedicated class implemen
 - [ ] Unit tests with mocked rpm-ostree calls
 
 **Files to create**:
-- `platform/immutable/rpm_ostree.py` (extend)
+- `platforms/immutable/rpm_ostree.py` (extend)
 - `tests/unit/test_rpm_ostree_package_manager.py`
 
 ---
@@ -173,14 +174,16 @@ Create package management for systems using dnf (Fedora, RHEL, CentOS, Ultramari
 - [ ] Unit tests
 
 **Files to create**:
-- `platform/traditional/rpm.py`
+- `platforms/traditional/rpm.py`
 - `tests/unit/test_dnf_package_manager.py`
 
 ---
 
-### Issue #8: Refactor AptPackageManager from existing code
+### Issue #8: Refactor AptPackageManager from existing code (Deferred)
 
-**Labels**: `enhancement`, `platform-support`, `priority-medium`
+**Labels**: `enhancement`, `platform-support`, `priority-low`, `stretch-goal`
+
+> **DEFERRED**: Debian support moved to stretch goals. Focus on RPM-based systems first.
 
 **Description**:
 Refactor existing `UbuntuDebianOptimizer` from `platform_support/ubuntu_debian.py` into the new platform abstraction.
@@ -193,7 +196,7 @@ Refactor existing `UbuntuDebianOptimizer` from `platform_support/ubuntu_debian.p
 - [ ] Unit tests
 
 **Files to create/modify**:
-- `platform/traditional/deb.py`
+- `platforms/traditional/deb.py`
 - `tests/unit/test_apt_package_manager.py`
 
 ---
@@ -203,7 +206,7 @@ Refactor existing `UbuntuDebianOptimizer` from `platform_support/ubuntu_debian.p
 **Labels**: `enhancement`, `platform-support`, `priority-high`
 
 **Description**:
-Create a factory class that provides the correct platform-specific implementations based on detected platform.
+Create a factory class that provides the correct platform-specific implementations based on detected platforms.
 
 **Acceptance Criteria**:
 - [ ] `PlatformServices` class with lazy-loaded properties
@@ -213,7 +216,7 @@ Create a factory class that provides the correct platform-specific implementatio
 - [ ] Unit tests for factory logic
 
 **Files to create**:
-- `platform/services.py`
+- `platforms/services.py`
 - `tests/unit/test_platform_services.py`
 
 ---
@@ -251,9 +254,9 @@ Update all package installation code to use `PlatformServices.package_manager`.
 **Acceptance Criteria**:
 - [ ] `BaseOptimizer.install_package()` uses `package_manager.install()`
 - [ ] `NvidiaOptimizer._install_nvidia_drivers()` uses abstraction
-- [ ] `GamingToolsOptimizer` uses abstraction
+- [ ] `GamingToolsOptimizer` package installs use abstraction
 - [ ] Remove direct rpm-ostree/dnf subprocess calls
-- [ ] Works on rpm-ostree, dnf, and apt systems
+- [ ] Works on rpm-ostree and dnf systems
 
 **Files to modify**:
 - `bazzite-optimizer.py` (BaseOptimizer, NvidiaOptimizer, GamingToolsOptimizer)
@@ -279,7 +282,7 @@ Update `BazziteOptimizer` to only run ujust commands when on Bazzite, skip grace
 
 ---
 
-### Issue #13: Remove hard-coded hardware references from UI
+### Issue #13: Remove hard-coded hardware references
 
 **Labels**: `enhancement`, `ux`, `priority-medium`
 
@@ -289,11 +292,13 @@ Replace all hard-coded hardware references with dynamic detection.
 **Current hard-coded values**:
 - Banner: "RTX 5080 Blackwell | i9-10850K | 64GB RAM"
 - Optimizer names: "NVIDIA RTX 5080 Blackwell", "Intel i9-10850K CPU", "Intel I225-V"
+- Embedded scripts: NVIDIA_OPTIMIZATION_SCRIPT, CPU_OPTIMIZATION_SCRIPT
 
 **Acceptance Criteria**:
 - [ ] `print_banner()` shows dynamically detected hardware
 - [ ] `initialize_optimizers()` uses generic or dynamic names
 - [ ] No hard-coded GPU/CPU model names in user-visible output
+- [ ] All 30+ RTX 5080/i9-10850K strings replaced in bazzite-optimizer.py
 - [ ] Hardware detection uses existing `system_info` dict
 
 **Files to modify**:
@@ -303,22 +308,24 @@ Replace all hard-coded hardware references with dynamic detection.
 
 ## Phase 4: Cleanup
 
-### Issue #14: Remove dead code and legacy fallbacks
+### Issue #14: Remove dead code and address existing platform support
 
-**Labels**: `cleanup`, `tech-debt`, `priority-low`
+**Labels**: `cleanup`, `tech-debt`, `priority-medium`
 
 **Description**:
-Remove code that is no longer needed after migration to platform abstraction.
+Remove code that is no longer needed and migrate/cleanup existing distribution-specific files.
 
 **Acceptance Criteria**:
 - [ ] Remove `enhanced_rpm_ostree_kargs()` global function
-- [ ] Remove `_ensure_rpm_ostree_ready()` from KernelOptimizer (moved to impl)
+- [ ] Remove `_ensure_rpm_ostree_ready()` from KernelOptimizer
 - [ ] Remove `_wait_for_rpm_ostree_transaction()` from KernelOptimizer
-- [ ] Remove legacy dnf fallback in `install_package()` (now in abstraction)
+- [ ] Remove legacy dnf fallback in `install_package()`
+- [ ] ~~Delete `platform_support/ubuntu_debian.py`~~ (deferred - Debian support in stretch goals)
 - [ ] All tests still pass
 
 **Files to modify**:
 - `bazzite-optimizer.py`
+- ~~`platform_support/ubuntu_debian.py` (delete)~~ (deferred)
 
 ---
 
@@ -488,12 +495,13 @@ Optimize for Intel's hybrid architecture (P-cores + E-cores).
 #1 (detection) ──┬──> #4 (rpm-ostree kernel)
                  ├──> #5 (grub kernel)
                  ├──> #6 (rpm-ostree pkg)
-                 ├──> #7 (dnf pkg)
-                 └──> #8 (apt pkg)
+                 └──> #7 (dnf pkg)
 
-#2 (base classes) ──> #4, #5, #6, #7, #8
+#2 (base classes) ──> #4, #5, #6, #7
 
-#4, #5, #6, #7, #8 ──> #9 (factory)
+#4, #5, #6, #7 ──> #9 (factory)
+
+(#8 apt pkg deferred to stretch goals)
 
 #9 (factory) ──┬──> #10 (migrate kernel)
                ├──> #11 (migrate packages)
@@ -508,13 +516,14 @@ Optimize for Intel's hybrid architecture (P-cores + E-cores).
 
 ## Milestone: v5.1.0 - Multi-Platform Support
 
-**Target Issues**: #1-#14, #16-#17
-**Stretch Goals**: #15, #18-#21
+**Target Issues**: #1-#7, #9-#14, #16-#17
+**Stretch Goals**: #8 (Apt/Debian), #15, #18-#21
 
 **Definition of Done**:
 - [ ] Optimizer works on Bazzite (no regression)
 - [ ] Optimizer works on Fedora Workstation
-- [ ] Optimizer works on Fedora-based distros (Ultramarine, etc.)
-- [ ] Optimizer works on Ubuntu
+- [ ] Optimizer works on Fedora-based distros (Ultramarine, CentOS Stream)
 - [ ] All tests pass
 - [ ] Documentation updated
+
+> **Deferred**: Ubuntu/Debian support (Issue #8) moved to stretch goals

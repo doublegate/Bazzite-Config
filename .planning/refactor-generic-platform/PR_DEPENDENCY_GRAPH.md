@@ -11,7 +11,7 @@
 ┌───────────────────────────────────────────────┼───────────────────────────────────────────────┐
 │                                               │                                               │
 │  ┌─────────────────────────────────────────────────────────────────────────────────────────┐  │
-│  │                           PR #1: Platform Detection                                      │  │
+│  │                           PR #1: Platform Detection                                     │  │
 │  │                           (Foundation - MUST BE FIRST)                                   │  │
 │  └─────────────────────────────────┬───────────────────────────────────────────────────────┘  │
 │                                    │                                                          │
@@ -126,7 +126,7 @@ pytest tests/unit/test_platform_detection.py -v
 
 # Manual verification
 python3 -c "
-from platform.detection import detect_platform
+from platforms.detection import detect_platform
 info = detect_platform()
 print(f'Platform Type: {info.platform_type}')
 print(f'Distro: {info.distro_name} {info.distro_version}')
@@ -163,7 +163,7 @@ pytest tests/unit/test_grub_kernel_params.py -v
 
 # Integration test (read-only, safe)
 python3 -c "
-from platform.traditional.grub import GrubKernelParams
+from platforms.traditional.grub import GrubKernelParams
 grub = GrubKernelParams()
 params = grub.get_current_params()
 print('Current kernel params:')
@@ -176,7 +176,7 @@ for p in params:
 
 # Test backup creation (dry-run)
 python3 -c "
-from platform.traditional.grub import GrubKernelParams
+from platforms.traditional.grub import GrubKernelParams
 grub = GrubKernelParams()
 backup_path = grub._backup_grub_config()
 print(f'Backup would be created at: {backup_path}')
@@ -194,7 +194,7 @@ print(f'Backup would be created at: {backup_path}')
 # Only if you want to test actual writes
 # This will require reboot to take effect
 sudo python3 -c "
-from platform.traditional.grub import GrubKernelParams
+from platforms.traditional.grub import GrubKernelParams
 grub = GrubKernelParams()
 # Add a harmless test param
 grub.append_params(['test_param=1'])
@@ -217,7 +217,7 @@ pytest tests/unit/test_dnf_package_manager.py -v
 
 # Integration test (read-only, safe)
 python3 -c "
-from platform.traditional.rpm import DnfPackageManager
+from platforms.traditional.rpm import DnfPackageManager
 dnf = DnfPackageManager()
 print(f'htop installed: {dnf.is_installed(\"htop\")}')
 print(f'python3 installed: {dnf.is_installed(\"python3\")}')
@@ -238,7 +238,7 @@ print(f'nonexistent-pkg installed: {dnf.is_installed(\"nonexistent-pkg-12345\")}
 ```bash
 # Only if you want to test actual installs
 sudo python3 -c "
-from platform.traditional.rpm import DnfPackageManager
+from platforms.traditional.rpm import DnfPackageManager
 dnf = DnfPackageManager()
 # Install a small harmless package
 result = dnf.install(['cowsay'])
@@ -260,19 +260,19 @@ pytest tests/unit/test_platform_services.py -v
 
 # Integration test
 python3 -c "
-from platform.detection import detect_platform
-from platform.services import PlatformServices
+from platforms.detection import detect_platform
+from platforms.services import PlatformServices
 
 info = detect_platform()
 services = PlatformServices(info)
 
-print(f'Platform: {info.platform_type}')
+print(f'Platforms: {info.platform_type}')
 print(f'Package Manager Type: {type(services.package_manager).__name__}')
 print(f'Kernel Params Type: {type(services.kernel_params).__name__}')
 "
 
 # Expected on Ultramarine:
-# Platform: PlatformType.FEDORA_TRADITIONAL
+# Platforms: PlatformsType.FEDORA_TRADITIONAL
 # Package Manager Type: DnfPackageManager
 # Kernel Params Type: GrubKernelParams
 ```
@@ -377,7 +377,7 @@ print(f'Result: {result}')
 
 ---
 
-### PR #9: Dynamic Hardware UI
+### PR #9: Dynamic Hardware UI & Cleanup
 
 **Test on Ultramarine** ✅
 
@@ -396,6 +396,7 @@ sudo ./bazzite-optimizer.py --validate 2>&1 | head -20
 - [ ] Banner shows "RTX 3060" or "Iris Xe" (your GPUs)
 - [ ] Banner shows "62GB RAM" (your RAM)
 - [ ] No hard-coded "RTX 5080" or "i9-10850K"
+- [ ] Global hardware cleanup complete
 
 ---
 
@@ -408,7 +409,7 @@ sudo ./bazzite-optimizer.py --validate 2>&1 | head -20
 sudo ./bazzite-optimizer.py --validate
 
 # Expected:
-# - Platform detected as Fedora Traditional
+# - Platforms detected as Fedora Traditional
 # - No rpm-ostree errors
 # - No ujust errors
 # - Bazzite features skipped gracefully
@@ -444,6 +445,7 @@ sudo ./bazzite-optimizer.py --validate
 **Pass Criteria**:
 - [ ] All tests pass
 - [ ] No dead code remaining
+- [ ] ubuntu_debian.py removed
 - [ ] Full functionality preserved
 
 ---
@@ -455,7 +457,7 @@ sudo ./bazzite-optimizer.py --validate
 ```bash
 # Intel GPU detection
 python3 -c "
-from platform_support.intel_gpu import IntelGpuOptimizer
+from platforms_support.intel_gpu import IntelGpuOptimizer
 igo = IntelGpuOptimizer()
 print(f'Intel GPU detected: {igo.is_supported()}')
 print(f'GPU info: {igo.get_gpu_info()}')
@@ -463,7 +465,7 @@ print(f'GPU info: {igo.get_gpu_info()}')
 
 # Hybrid GPU detection
 python3 -c "
-from platform_support.hybrid_gpu import HybridGpuManager
+from platforms_support.hybrid_gpu import HybridGpuManager
 hgm = HybridGpuManager()
 print(f'Hybrid config: {hgm.is_hybrid()}')
 print(f'iGPU: {hgm.igpu}')
@@ -484,8 +486,8 @@ print(f'dGPU: {hgm.dgpu}')
 For GitHub Actions, create test jobs:
 
 ```yaml
-# .github/workflows/platform-tests.yml
-name: Platform Tests
+# .github/workflows/platforms-tests.yml
+name: Platforms Tests
 
 on: [push, pull_request]
 
@@ -500,7 +502,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install -e .[dev]
-      - name: Run platform detection tests
+      - name: Run platforms detection tests
         run: pytest tests/unit/test_platform_detection.py -v
 
   test-grub:
@@ -523,9 +525,7 @@ jobs:
       - name: Install dependencies
         run: pip install -e .[dev]
       - name: Run package manager tests
-        run: |
-          pytest tests/unit/test_dnf_package_manager.py -v
-          pytest tests/unit/test_apt_package_manager.py -v
+        run: pytest tests/unit/test_dnf_package_manager.py -v
 ```
 
 ---
@@ -538,25 +538,25 @@ Before each PR merge, run this checklist on your Ultramarine system:
 #!/bin/bash
 # save as: test-on-ultramarine.sh
 
-echo "=== Ultramarine Platform Test Suite ==="
+echo "=== Ultramarine Platforms Test Suite ==="
 
 echo -e "\n[1/6] Running unit tests..."
 pytest -q || exit 1
 
-echo -e "\n[2/6] Checking platform detection..."
+echo -e "\n[2/6] Checking platforms detection..."
 python3 -c "
-from platform.detection import detect_platform
+from platforms.detection import detect_platform
 info = detect_platform()
 assert info.platform_type.name == 'FEDORA_TRADITIONAL', f'Wrong platform: {info.platform_type}'
 assert info.is_immutable == False, 'Should not be immutable'
 assert info.package_manager == 'dnf', f'Wrong pkg mgr: {info.package_manager}'
 assert info.boot_method == 'grub', f'Wrong boot method: {info.boot_method}'
-print('✓ Platform detection correct')
+print('✓ Platforms detection correct')
 "
 
 echo -e "\n[3/6] Checking kernel params (read-only)..."
 python3 -c "
-from platform.traditional.grub import GrubKernelParams
+from platforms.traditional.grub import GrubKernelParams
 grub = GrubKernelParams()
 params = grub.get_current_params()
 assert len(params) > 0, 'No params found'
@@ -565,7 +565,7 @@ print(f'✓ Found {len(params)} kernel parameters')
 
 echo -e "\n[4/6] Checking package manager..."
 python3 -c "
-from platform.traditional.rpm import DnfPackageManager
+from platforms.traditional.rpm import DnfPackageManager
 dnf = DnfPackageManager()
 assert dnf.is_installed('python3'), 'python3 should be installed'
 print('✓ Package manager working')
@@ -573,8 +573,8 @@ print('✓ Package manager working')
 
 echo -e "\n[5/6] Checking PlatformServices factory..."
 python3 -c "
-from platform.detection import detect_platform
-from platform.services import PlatformServices
+from platforms.detection import detect_platform
+from platforms.services import PlatformServices
 info = detect_platform()
 services = PlatformServices(info)
 assert 'Grub' in type(services.kernel_params).__name__, 'Should use GrubKernelParams'
@@ -592,20 +592,22 @@ echo -e "\n=== All tests completed ==="
 
 ## Quick Reference: What Can Be Tested Where
 
-| PR | Ultramarine | Bazzite | Ubuntu | CI (mocked) |
-|----|-------------|---------|--------|-------------|
-| #1 Platform Detection | ✅ | ✅ | ✅ | ✅ |
-| #2 rpm-ostree Kernel | ❌ | ✅ | ❌ | ✅ |
-| #3 GRUB Kernel | ✅ | ❌ | ✅ | ✅ |
-| #4 Package Managers | ✅ dnf | ✅ rpm-ostree | ✅ apt | ✅ |
-| #5 PlatformServices | ✅ | ✅ | ✅ | ✅ |
-| #6 Migrate Kernel | ✅ | ✅ | ✅ | ✅ |
-| #7 Migrate Packages | ✅ | ✅ | ✅ | ✅ |
-| #8 Conditional Bazzite | ✅ | ✅ | ✅ | ✅ |
-| #9 Dynamic HW UI | ✅ | ✅ | ✅ | ❌ |
-| #10 Integration | ✅ | ✅ | ✅ | ⚠️ |
-| #11 Cleanup | ✅ | ✅ | ✅ | ✅ |
-| #13 Intel GPU | ✅ | ⚠️ | ⚠️ | ✅ |
-| #14 Hybrid GPU | ✅ | ⚠️ | ⚠️ | ✅ |
+> **Note**: Ubuntu column removed — Debian support deferred to stretch goals.
+
+| PR | Ultramarine | Bazzite | CI (mocked) |
+|----|-------------|---------|-------------|
+| #1 Platform Detection | ✅ | ✅ | ✅ |
+| #2 rpm-ostree Kernel | ❌ | ✅ | ✅ |
+| #3 GRUB Kernel | ✅ | ❌ | ✅ |
+| #4 Package Managers | ✅ dnf | ✅ rpm-ostree | ✅ |
+| #5 PlatformServices | ✅ | ✅ | ✅ |
+| #6 Migrate Kernel | ✅ | ✅ | ✅ |
+| #7 Migrate Packages | ✅ | ✅ | ✅ |
+| #8 Conditional Bazzite | ✅ | ✅ | ✅ |
+| #9 Dynamic HW UI | ✅ | ✅ | ❌ |
+| #10 Integration | ✅ | ✅ | ⚠️ |
+| #11 Cleanup | ✅ | ✅ | ✅ |
+| #13 Intel GPU | ✅ | ⚠️ | ✅ |
+| #14 Hybrid GPU | ✅ | ⚠️ | ✅ |
 
 Legend: ✅ Full test | ⚠️ Partial/depends on HW | ❌ Cannot test

@@ -1,25 +1,18 @@
-# Pull Request Plan: Generic Platform Support
+## PR #1: Add platforms detection module
 
-Each PR is standalone and can be merged independently.
-PRs are ordered by dependency - later PRs may depend on earlier ones being merged.
-
----
-
-## PR #1: Add platform detection module
-
-**Branch**: `feature/platform-detection`
+**Branch**: `feature/platforms-detection`
 **Issues**: #1, #2
 **Dependencies**: None (can be merged first)
 **Size**: ~400 lines
 
 ### Description
 
-Add a new `platform/` module with OS detection, platform type enumeration, and abstract base classes for platform operations.
+Add a new `platforms/` module with OS detection, platform type enumeration, and abstract base classes for platform operations.
 
 ### Files Added
 
 ```
-platform/
+platforms/
 ├── __init__.py
 ├── detection.py      # PlatformType enum, PlatformInfo dataclass, detect_platform()
 └── base.py           # PackageManager ABC, KernelParamManager ABC
@@ -30,7 +23,7 @@ tests/unit/
 
 ### Key Changes
 
-- `PlatformType` enum: `BAZZITE`, `FEDORA_OSTREE`, `FEDORA_TRADITIONAL`, `DEBIAN_BASED`, `UNKNOWN`
+- `PlatformType` enum: `BAZZITE`, `FEDORA_OSTREE`, `FEDORA_TRADITIONAL`, `UNKNOWN`
 - `PlatformInfo` dataclass with: `platform_type`, `distro_name`, `distro_version`, `is_immutable`, `has_ujust`, `package_manager`, `boot_method`
 - `detect_platform()` function that parses `/etc/os-release` and checks for rpm-ostree
 - Abstract `PackageManager` and `KernelParamManager` base classes
@@ -45,7 +38,7 @@ pytest tests/unit/test_platform_detection.py -v
 
 - [ ] All new tests pass
 - [ ] Existing tests unaffected
-- [ ] Works on Bazzite, Fedora, Ubuntu (manual verification)
+- [ ] Works on Bazzite, Fedora (manual verification)
 
 ---
 
@@ -63,7 +56,7 @@ Extract existing rpm-ostree kargs handling into a dedicated class implementing `
 ### Files Added/Modified
 
 ```
-platform/
+platforms/
 └── immutable/
     ├── __init__.py
     └── rpm_ostree.py   # RpmOstreeKernelParams class
@@ -107,7 +100,7 @@ Add kernel parameter management for traditional systems using GRUB bootloader.
 ### Files Added
 
 ```
-platform/
+platforms/
 └── traditional/
     ├── __init__.py
     └── grub.py         # GrubKernelParams class
@@ -121,7 +114,7 @@ tests/unit/
 - `GrubKernelParams` implementing `KernelParamManager`
 - Parse `GRUB_CMDLINE_LINUX` from `/etc/default/grub`
 - Safe modification with backup (timestamped)
-- Run `grub2-mkconfig` or `update-grub` after changes
+- Run `grub2-mkconfig`, `update-grub`, or `grub-mkconfig` after changes
 - Handle EFI vs BIOS paths
 - Parameter deduplication (match rpm-ostree behavior)
 
@@ -129,7 +122,7 @@ tests/unit/
 
 ```bash
 pytest tests/unit/test_grub_kernel_params.py -v
-# Manual test on traditional Fedora/Ubuntu
+# Manual test on traditional Fedora
 ```
 
 ### Merge Criteria
@@ -140,38 +133,37 @@ pytest tests/unit/test_grub_kernel_params.py -v
 
 ---
 
-## PR #4: Implement package managers (rpm-ostree, dnf, apt)
+## PR #4: Implement package managers (rpm-ostree, dnf)
 
 **Branch**: `feature/package-managers`
-**Issues**: #6, #7, #8
+**Issues**: #6, #7
 **Dependencies**: PR #1 merged
-**Size**: ~400 lines
+**Size**: ~300 lines
+
+> **Note**: AptPackageManager (Issue #8) deferred to stretch goals.
 
 ### Description
 
-Add `PackageManager` implementations for all supported package managers.
+Add `PackageManager` implementations for RPM-based package managers.
 
 ### Files Added/Modified
 
 ```
-platform/
+platforms/
 ├── immutable/
-│   └── rpm_ostree.py   # Add RpmOstreePackageManager
+    └── rpm_ostree.py   # Add RpmOstreePackageManager
 └── traditional/
-    ├── rpm.py          # DnfPackageManager
-    └── deb.py          # AptPackageManager (refactored from ubuntu_debian.py)
+    └── rpm.py          # DnfPackageManager
 
 tests/unit/
 ├── test_rpm_ostree_package_manager.py
-├── test_dnf_package_manager.py
-└── test_apt_package_manager.py
+└── test_dnf_package_manager.py
 ```
 
 ### Key Changes
 
 - `RpmOstreePackageManager`: `rpm-ostree install/uninstall`
 - `DnfPackageManager`: `dnf install/remove`
-- `AptPackageManager`: `apt install/remove` (migrated from `platform_support/ubuntu_debian.py`)
 
 ### Testing
 
@@ -188,19 +180,19 @@ pytest tests/unit/test_*_package_manager.py -v
 
 ## PR #5: Add PlatformServices factory
 
-**Branch**: `feature/platform-services`
+**Branch**: `feature/platforms-services`
 **Issues**: #9
 **Dependencies**: PR #1, #2, #3, #4 merged
 **Size**: ~150 lines
 
 ### Description
 
-Create factory class that provides correct platform-specific implementations based on detected platform.
+Create factory class that provides correct platform-specific implementations based on detected platforms.
 
 ### Files Added
 
 ```
-platform/
+platforms/
 └── services.py         # PlatformServices factory class
 
 tests/unit/
@@ -227,7 +219,7 @@ pytest tests/unit/test_platform_services.py -v
 
 ---
 
-## PR #6: Migrate KernelOptimizer to platform abstraction
+## PR #6: Migrate KernelOptimizer to platforms abstraction
 
 **Branch**: `feature/migrate-kernel-optimizer`
 **Issues**: #10
@@ -269,7 +261,7 @@ pytest tests/unit/test_optimizers.py -v
 
 ---
 
-## PR #7: Migrate package installation to platform abstraction
+## PR #7: Migrate package installation to platforms abstraction
 
 **Branch**: `feature/migrate-package-install`
 **Issues**: #11
@@ -303,7 +295,7 @@ pytest tests/unit/test_optimizers.py -v
 ### Merge Criteria
 
 - [ ] All tests pass
-- [ ] Package installation works on rpm-ostree, dnf, apt systems
+- [ ] Package installation works on rpm-ostree and dnf systems
 
 ---
 
@@ -347,16 +339,16 @@ sudo ./bazzite-optimizer.py --validate
 
 ---
 
-## PR #9: Dynamic hardware display in UI
+## PR #9: Dynamic hardware display in UI & Cleanup
 
 **Branch**: `feature/dynamic-hardware-ui`
 **Issues**: #13
 **Dependencies**: None (can be merged anytime)
-**Size**: ~100 lines changed
+**Size**: ~150 lines changed
 
 ### Description
 
-Replace hard-coded hardware references with dynamic detection.
+Replace hard-coded hardware references with dynamic detection and clean up legacy strings.
 
 ### Files Modified
 
@@ -366,42 +358,29 @@ bazzite-optimizer.py   # BazziteGamingOptimizer.print_banner(), initialize_optim
 
 ### Key Changes
 
-**Before**:
-```python
-print_colored("  Enhanced for RTX 5080 Blackwell | i9-10850K | 64GB RAM", Colors.OKCYAN)
-```
-
-**After**:
-```python
-gpu_name = self.system_info.get('gpus', ['Unknown GPU'])[0].split(':')[-1].strip()
-cpu_name = self.system_info.get('cpu_model', 'Unknown CPU')
-ram_gb = self.system_info.get('ram_gb', '?')
-print_colored(f"  Detected: {gpu_name} | {cpu_name} | {ram_gb}GB RAM", Colors.OKCYAN)
-```
-
-**Optimizer names**:
-```python
-# Before: ("NVIDIA RTX 5080 Blackwell", NvidiaOptimizer(...))
-# After:  ("NVIDIA GPU", NvidiaOptimizer(...))  # or dynamic name
-```
+- Dynamic banner based on `system_info`
+- Generic or dynamic optimizer names
+- Remove all 30+ RTX 5080/i9-10850K hard-coded strings
 
 ### Testing
 
 ```bash
 sudo ./bazzite-optimizer.py --validate
 # Verify banner shows actual hardware
+# Verify no hard-coded models in logs
 ```
 
 ### Merge Criteria
 
 - [ ] No hard-coded GPU/CPU model names in user-visible output
 - [ ] Correct hardware displayed on various systems
+- [ ] Codebase free of hard-coded RTX 5080 references
 
 ---
 
 ## PR #10: Wire up PlatformServices to main optimizer
 
-**Branch**: `feature/integrate-platform-services`
+**Branch**: `feature/integrate-platforms-services`
 **Issues**: Part of #10, #11
 **Dependencies**: PR #6, #7, #8 merged
 **Size**: ~100 lines changed
@@ -437,21 +416,22 @@ sudo ./bazzite-optimizer.py --validate
 
 ---
 
-## PR #11: Remove dead code and legacy fallbacks
+## PR #11: Remove dead code and address distribution support
 
 **Branch**: `feature/cleanup-dead-code`
 **Issues**: #14
 **Dependencies**: PR #10 merged, validated on all platforms
-**Size**: ~200 lines removed
+**Size**: ~250 lines removed
 
 ### Description
 
-Remove code that is no longer needed after migration.
+Remove code that is no longer needed after migration and cleanup distribution-specific files.
 
 ### Files Modified
 
 ```
 bazzite-optimizer.py
+# platform_support/ubuntu_debian.py (DELETE) - DEFERRED
 ```
 
 ### Key Changes
@@ -460,6 +440,7 @@ bazzite-optimizer.py
 - Remove `_ensure_rpm_ostree_ready()` from KernelOptimizer
 - Remove `_wait_for_rpm_ostree_transaction()` from KernelOptimizer
 - Remove legacy dnf fallback in `install_package()`
+- ~~Remove `platform_support/ubuntu_debian.py`~~ (deferred - Debian support in stretch goals)
 
 ### Testing
 
@@ -476,37 +457,38 @@ pytest -q
 
 ---
 
-## PR #12: Update documentation for multi-platform support
+## PR #12: Update documentation for multi-platforms support
 
-**Branch**: `docs/multi-platform-support`
+**Branch**: `docs/multi-platforms-support`
 **Issues**: #17
 **Dependencies**: PR #10 merged (feature complete)
 **Size**: ~500 lines docs
 
 ### Description
 
-Update all documentation to reflect multi-platform support.
+Update all documentation to reflect multi-platforms support.
 
 ### Files Modified/Added
 
 ```
 README.md                           # Update badges, add platform section
-docs/PLATFORM_SUPPORT.md            # NEW: Detailed platform matrix
-docs/INSTALLATION_GUIDE.md          # Update with per-platform instructions
+docs/PLATFORM_SUPPORT.md            # NEW: Detailed platforms matrix
+docs/INSTALLATION_GUIDE.md          # Update with per-platforms instructions
 ```
 
 ### Key Changes
 
-- Update "Platform" badge to show multi-platform
+- Update "Platform" badge to show multi-platforms
 - Add "Supported Platforms" section to README
 - Create `PLATFORM_SUPPORT.md` with detailed matrix
-- Platform-specific installation instructions
-- Troubleshooting section for platform issues
+- Platforms-specific installation instructions
+- Update TODO.md with deferred items (systemd-boot, Arch, etc.)
 
 ### Merge Criteria
 
 - [ ] Documentation accurate for all platforms
 - [ ] Installation instructions tested
+- [ ] Global TODO list updated
 
 ---
 
@@ -632,7 +614,7 @@ This gives you:
 | #1 | Platform detection | None | ~400 |
 | #2 | rpm-ostree kernel params | #1 | ~300 |
 | #3 | GRUB kernel params | #1 | ~350 |
-| #4 | Package managers | #1 | ~400 |
+| #4 | Package managers (rpm-ostree, dnf) | #1 | ~300 |
 | #5 | PlatformServices factory | #1-4 | ~150 |
 | #6 | Migrate KernelOptimizer | #5 | ~200 |
 | #7 | Migrate package install | #5 | ~150 |
