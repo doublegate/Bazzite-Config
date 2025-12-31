@@ -30,17 +30,34 @@ class DnfPackageManager(PackageManager):
         self.logger = logging.getLogger(__name__)
     
     def install(self, packages: List[str], timeout: int = 300) -> bool:
-        """Install packages via dnf."""
+        """Install packages via dnf with idempotent behavior matching rpm-ostree."""
         if not packages:
             return True
         
-        cmd = ["sudo", "dnf", "install", "-y"] + packages
-        self.logger.info(f"Installing packages: {', '.join(packages)}")
+        # Filter out already-installed packages (matches rpm-ostree idempotent behavior)
+        packages_to_install = []
+        for package in packages:
+            if not self.is_installed(package):
+                packages_to_install.append(package)
+            else:
+                self.logger.debug(f"Package {package} already installed")
+        
+        if not packages_to_install:
+            self.logger.debug("All packages already installed")
+            return True
+        
+        cmd = ["sudo", "dnf", "install", "-y"] + packages_to_install
+        self.logger.info(f"Installing packages: {', '.join(packages_to_install)}")
         
         try:
             result = subprocess.run(cmd, capture_output=True, timeout=timeout)
             if result.returncode != 0:
-                self.logger.error(f"dnf install failed: {result.stderr.decode()}")
+                stderr = result.stderr.decode()
+                # Handle "already installed" or "nothing to do" cases gracefully
+                if "already installed" in stderr.lower() or "nothing to do" in stderr.lower():
+                    self.logger.debug(f"Packages already satisfied: {', '.join(packages_to_install)}")
+                    return True
+                self.logger.error(f"dnf install failed: {stderr}")
                 return False
             return True
         except subprocess.TimeoutExpired:
@@ -51,17 +68,34 @@ class DnfPackageManager(PackageManager):
             return False
     
     def remove(self, packages: List[str]) -> bool:
-        """Remove packages via dnf."""
+        """Remove packages via dnf with graceful handling matching rpm-ostree."""
         if not packages:
             return True
         
-        cmd = ["sudo", "dnf", "remove", "-y"] + packages
-        self.logger.info(f"Removing packages: {', '.join(packages)}")
+        # Filter to only installed packages (matches rpm-ostree behavior)
+        packages_to_remove = []
+        for package in packages:
+            if self.is_installed(package):
+                packages_to_remove.append(package)
+            else:
+                self.logger.debug(f"Package {package} not installed, skipping")
+        
+        if not packages_to_remove:
+            self.logger.debug("No packages to remove (none installed)")
+            return True
+        
+        cmd = ["sudo", "dnf", "remove", "-y"] + packages_to_remove
+        self.logger.info(f"Removing packages: {', '.join(packages_to_remove)}")
         
         try:
             result = subprocess.run(cmd, capture_output=True, timeout=120)
             if result.returncode != 0:
-                self.logger.error(f"dnf remove failed: {result.stderr.decode()}")
+                stderr = result.stderr.decode()
+                # Handle "not installed" case gracefully (matches rpm-ostree)
+                if "not installed" in stderr.lower() or "no match" in stderr.lower():
+                    self.logger.debug(f"Packages not installed: {', '.join(packages_to_remove)}")
+                    return True
+                self.logger.error(f"dnf remove failed: {stderr}")
                 return False
             return True
         except Exception as e:
