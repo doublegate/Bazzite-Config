@@ -1,47 +1,7 @@
-#!/usr/bin/env python3
 """
-Bazzite DX Ultimate Gaming Optimization Master Script v4.1.0
-For RTX 5080, Intel i9-10850K, 64GB RAM, Samsung 990 EVO Plus SSDs
-
-Version 4.0 enhancements (incl. all previous features):
-- Stability testing system for overclocking validation
-- Power consumption monitoring and tracking
-- Log rotation for long-term maintenance
-- Security warnings for mitigation disabling
-- Display server auto-detection (X11/Wayland)
-- Automated backup scheduling
-- Steam Deck/handheld detection and optimization
-- Enhanced NVIDIA GPU verification
-- Safer GRUB modification with validation
-- Conservative Intel undervolting with stepping
-- Network isolation mode for competitive gaming
-- Crash recovery and safe mode
-- Performance regression detection
-- Emergency thermal throttling
-
-Includes all v3.0 features:
-- Dynamic thermal management with temperature-based fan curves
-- Performance validation system
-- HDR and VRR configuration for modern displays
-- Profile system (Competitive, Balanced, Streaming, Creative)
-- Resizable BAR validation
-- VKD3D-Proton shader cache optimization
-- Enhanced safety checks and recovery mechanisms
-- Benchmark integration for performance measurement
-- Automatic optimization verification
-
-Includes all v2.0 features:
-- Latest RTX 5080 Blackwell optimizations
-- DLSS 4 Frame Generation bug workarounds
-- Optimized ZRAM configuration for 64GB systems
-- Bazzite ujust command integration
-- System76-scheduler configuration
-- MGLRU and EEVDF scheduler tuning
-- Enhanced PipeWire/WirePlumber configuration
-- Intel I225-V ethernet fixes
-
-Author: System Optimization Framework
-License: MIT
+Professional Gaming Optimization Master Script
+Universal Support for Fedora-based Systems (Bazzite, Silverblue, Workstation)
+Dynamic Hardware-Aware Optimizations
 """
 
 import os
@@ -68,13 +28,13 @@ import statistics
 # CONFIGURATION AND CONSTANTS
 # ============================================================================
 
-SCRIPT_VERSION = "4.1.0"
-LOG_DIR = Path("/var/log/bazzite-optimizer")
-CONFIG_BACKUP_DIR = Path("/var/backups/bazzite-optimizer")
-PROFILE_DIR = Path("/etc/bazzite-optimizer/profiles")
+SCRIPT_VERSION = "5.0.0"
+LOG_DIR = Path("/var/log/gaming-optimizer")
+CONFIG_BACKUP_DIR = Path("/var/backups/gaming-optimizer")
+PROFILE_DIR = Path("/etc/gaming-optimizer/profiles")
 SHADER_CACHE_DIR = Path("/var/cache/gaming-shaders")
-CRASH_RECOVERY_DIR = Path("/var/cache/bazzite-optimizer/recovery")
-PROFILE_STATE_DIR = Path("/var/lib/bazzite-optimizer")  # State persistence for deduplication
+CRASH_RECOVERY_DIR = Path("/var/cache/gaming-optimizer/recovery")
+PROFILE_STATE_DIR = Path("/var/lib/gaming-optimizer")
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Minimum requirements
@@ -136,10 +96,10 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "performance",
             "gpu_power_mode": 1,
-            "gpu_clock_offset": 450,  # Conservative for RTX 5080 stability
-            "gpu_mem_offset": 800,   # Safe limit based on community data
+            "gpu_clock_offset_factor": 0.8,  # 80% of detected safe max
+            "gpu_mem_offset_factor": 0.8,    # 80% of detected safe max
             "network_latency": "ultra-low",
-            "network_isolation": True,  # New v4: isolate gaming traffic
+            "network_isolation": True,
             "audio_quantum": 256,
             "visual_effects": False,
             "compositor_bypass": True,
@@ -147,7 +107,7 @@ GAMING_PROFILES = {
             "disable_mitigations": True,
             "isolate_cores": True,
             "fan_profile": "aggressive",
-            "undervolt_aggressive": False  # v4: Conservative for stability
+            "undervolt_aggressive": False
         }
     },
     "balanced": {
@@ -157,8 +117,8 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "performance",
             "gpu_power_mode": 1,
-            "gpu_clock_offset": 400,
-            "gpu_mem_offset": 800,
+            "gpu_clock_offset_factor": 0.7,  # 70% of detected safe max
+            "gpu_mem_offset_factor": 0.8,    # 80% of detected safe max
             "network_latency": "low",
             "network_isolation": False,
             "audio_quantum": 512,
@@ -178,8 +138,8 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "schedutil",
             "gpu_power_mode": 2,
-            "gpu_clock_offset": 350,
-            "gpu_mem_offset": 600,
+            "gpu_clock_offset_factor": 0.6,  # 60% of detected safe max
+            "gpu_mem_offset_factor": 0.6,    # 60% of detected safe max
             "network_latency": "balanced",
             "network_isolation": False,
             "audio_quantum": 1024,
@@ -199,8 +159,8 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "performance",
             "gpu_power_mode": 1,
-            "gpu_clock_offset": 450,
-            "gpu_mem_offset": 900,
+            "gpu_clock_offset_factor": 0.8,  # 80% of detected safe max
+            "gpu_mem_offset_factor": 0.9,    # 90% of detected safe max
             "network_latency": "normal",
             "network_isolation": False,
             "audio_quantum": 2048,
@@ -213,15 +173,15 @@ GAMING_PROFILES = {
             "undervolt_aggressive": False
         }
     },
-    "safe": {  # v4: New safe mode profile
+    "safe": {
         "name": "Safe Mode",
         "description": "Conservative settings for troubleshooting",
         "security_risk": "NONE",
         "settings": {
             "cpu_governor": "schedutil",
             "gpu_power_mode": 2,
-            "gpu_clock_offset": 0,
-            "gpu_mem_offset": 0,
+            "gpu_clock_offset_factor": 0.0,
+            "gpu_mem_offset_factor": 0.0,
             "network_latency": "normal",
             "network_isolation": False,
             "audio_quantum": 1024,
@@ -234,15 +194,15 @@ GAMING_PROFILES = {
             "undervolt_aggressive": False
         }
     },
-    "handheld": {  # v4: New handheld/Steam Deck profile
+    "handheld": {
         "name": "Handheld/Steam Deck",
         "description": "Optimized for battery life and thermal constraints",
         "security_risk": "LOW",
         "settings": {
             "cpu_governor": "powersave",
             "gpu_power_mode": 0,
-            "gpu_clock_offset": 0,
-            "gpu_mem_offset": 0,
+            "gpu_clock_offset_factor": 0.0,
+            "gpu_mem_offset_factor": 0.0,
             "network_latency": "balanced",
             "network_isolation": False,
             "audio_quantum": 1024,
@@ -284,9 +244,9 @@ FAN_CURVES = {
 # OPTIMIZATION CONFIGURATIONS - All v3 configs with v4 enhancements
 # ============================================================================
 
-# NVIDIA RTX 5080 Configuration - Enhanced with validation and v4 safety
-NVIDIA_MODULE_CONFIG = """# RTX 5080 Blackwell Gaming Optimizations v4
-# Force -open driver variant for RTX 5080
+# NVIDIA Universal Configuration - Enhanced with validation and safety
+NVIDIA_MODULE_CONFIG = """# NVIDIA Gaming Optimizations
+# Force -open driver variant for supported GPUs
 options nvidia NVreg_OpenRmEnableUnsupportedGpus=1
 options nvidia-drm modeset=1 fbdev=1
 options nvidia NVreg_PreserveVideoMemoryAllocations=1
@@ -294,21 +254,20 @@ options nvidia NVreg_RegistryDwords="PowerMizerEnable=0x1;PerfLevelSrc=0x2222"
 options nvidia NVreg_EnableGpuFirmware=1
 options nvidia NVreg_RegistryDwords="PerfLevelSrc=0x2222;PowerMizerDefaultAC=0x1"
 options nvidia NVreg_EnableResizableBar=1
-options nvidia NVreg_EnablePCIeGen3=0
 options nvidia NVreg_UsePageAttributeTable=1
 options nvidia NVreg_EnableHDMI20=1
 options nvidia NVreg_EnableStreamMemOPs=1
 options nvidia NVreg_EnableBacklightHandler=1
-# v4 Safety: Temperature monitoring enabled
+# Safety: Temperature monitoring enabled
 options nvidia NVreg_TemperatureMonitoring=1
 """
 
-NVIDIA_XORG_CONFIG = """# RTX 5080 X11 Configuration with HDR Support
+NVIDIA_XORG_CONFIG = """# NVIDIA X11 Configuration with HDR Support
 Section "Device"
     Identifier     "Nvidia Card"
     Driver         "nvidia"
     VendorName     "NVIDIA Corporation"
-    BoardName      "GeForce RTX 5080"
+    BoardName      "{BOARD_NAME}"
     Option         "Coolbits" "28"
     Option         "TripleBuffer" "true"
     Option         "AllowIndirectGLXProtocol" "off"
@@ -330,11 +289,11 @@ Section "Extensions"
 EndSection
 """
 
-# Dynamic GPU Optimization Script with v4 safety checks
+# Dynamic GPU Optimization Script with safety checks
 NVIDIA_OPTIMIZATION_SCRIPT = """#!/bin/bash
-# RTX 5080 Gaming Optimization Script v4 - With Safety Features
+# NVIDIA Gaming Optimization Script - With Safety Features
 
-# v4 Safety: Check if NVIDIA GPU exists
+# Safety: Check if NVIDIA GPU exists
 if ! command -v nvidia-smi &> /dev/null; then
     echo "WARNING: nvidia-smi not found, skipping GPU optimizations"
     exit 0
@@ -350,12 +309,12 @@ get_gpu_temp() {{
     nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null || echo "0"
 }}
 
-# Function to get GPU power draw (v4)
+# Function to get GPU power draw
 get_gpu_power() {{
     nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits 2>/dev/null | cut -d. -f1 || echo "0"
 }}
 
-# v4 Safety check: Emergency throttle if too hot
+# Safety check: Emergency throttle if too hot
 emergency_check() {{
     local temp=$(get_gpu_temp)
     if [ $temp -gt {MAX_GPU_TEMP_CRITICAL} ]; then
@@ -366,12 +325,12 @@ emergency_check() {{
     fi
 }}
 
-# Function to apply fan curve with v4 safety
+# Function to apply fan curve with safety
 apply_fan_curve() {{
     local temp=$(get_gpu_temp)
     local fan_speed=50
 
-    # v4 Safety override for high temps
+    # Safety override for high temps
     if [ $temp -gt 85 ]; then
         fan_speed=100
     else
@@ -406,30 +365,29 @@ apply_fan_curve() {{
     nvidia-settings -a '[gpu:0]/GPUTargetFanSpeed='$fan_speed 2>/dev/null || true
 }}
 
-# v4: Record baseline power consumption
+# Record baseline power consumption
 BASELINE_POWER=$(get_gpu_power)
 echo "Baseline GPU power: ${{BASELINE_POWER}}W"
 
-# v4: Emergency check before applying optimizations
+# Emergency check before applying optimizations
 emergency_check
 
 # Enable maximum performance mode
 nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=1' 2>/dev/null || true
 
-# RTX 5080 overclocking based on profile (with v4 validation)
-CLOCK_OFFSET=${{GPU_CLOCK_OFFSET:-400}}
-MEM_OFFSET=${{GPU_MEM_OFFSET:-800}}
+# Overclocking based on profile (with validation)
+CLOCK_OFFSET=${{GPU_CLOCK_OFFSET:-0}}
+MEM_OFFSET=${{GPU_MEM_OFFSET:-0}}
 
-# v4: Validate overclock values are within safe ranges
-# RTX 5080 Blackwell-specific safety limits based on community testing
-if [ $CLOCK_OFFSET -gt 500 ]; then
-    echo "WARNING: RTX 5080 core clock offset clamped to 500MHz for stability"
-    CLOCK_OFFSET=500
+# Validate overclock values are within safe ranges
+if [ $CLOCK_OFFSET -gt {MAX_CLOCK_OFFSET} ]; then
+    echo "WARNING: Core clock offset clamped to {MAX_CLOCK_OFFSET}MHz for stability"
+    CLOCK_OFFSET={MAX_CLOCK_OFFSET}
 fi
 
-if [ $MEM_OFFSET -gt 800 ]; then
-    echo "WARNING: RTX 5080 memory offset clamped to 800MHz for stability"
-    MEM_OFFSET=800
+if [ $MEM_OFFSET -gt {MAX_MEM_OFFSET} ]; then
+    echo "WARNING: Memory offset clamped to {MAX_MEM_OFFSET}MHz for stability"
+    MEM_OFFSET={MAX_MEM_OFFSET}
 fi
 
 nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffsetAllPerformanceLevels='$CLOCK_OFFSET 2>/dev/null || true
@@ -1966,42 +1924,64 @@ def get_system_info() -> Dict[str, Any]:
     info = {
         "kernel": platform.release(),
         "kernel_version": tuple(map(int, re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()).groups())) if re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()) else (0, 0, 0),
-        "distribution": "",
-        "cpu_model": "",
-        "cpu_cores": psutil.cpu_count(logical=False),
-        "cpu_threads": psutil.cpu_count(logical=True),
-        "ram_gb": round(psutil.virtual_memory().total / (1024**3)),
         "gpus": [],
         "network_interfaces": [],
         "nvme_devices": [],
-        "free_disk_gb": get_smart_disk_space(),
-        "form_factor": detect_form_factor(),  # v4
-        "display_server": detect_display_server()  # v4
+        "free_disk_gb": 0,
+        "is_immutable": False,
+        "display_server": os.environ.get("XDG_SESSION_TYPE", "unknown")
     }
 
     # Get distribution info
     try:
-        with open("/etc/os-release") as f:
-            for line in f:
-                if line.startswith("PRETTY_NAME="):
-                    info["distribution"] = line.split("=")[1].strip().strip('"')
-    except BaseException:
+        if Path("/etc/os-release").exists():
+            with open("/etc/os-release") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith("ID="):
+                        info["distribution"] = line.split("=")[1].strip().strip('"')
+                    if line.startswith("VARIANT_ID="):
+                        variant = line.split("=")[1].strip().strip('"')
+                        if variant in ["silverblue", "kinoite", "sericea", "bazzite"]:
+                            info["is_immutable"] = True
+    except Exception:
         pass
 
-    # Get CPU model
+    # Get kernel version
+    kernel_str = platform.release().split("-")[0]
     try:
-        with open("/proc/cpuinfo") as f:
-            for line in f:
-                if "model name" in line:
-                    info["cpu_model"] = line.split(":")[1].strip()
-                    break
-    except BaseException:
+        info["kernel_version"] = tuple(map(int, kernel_str.split(".")[:3]))
+    except ValueError:
+        pass
+
+    # Get CPU info
+    info["cpu_model"] = platform.processor() or "unknown"
+    if "intel" in info["cpu_model"].lower():
+        info["cpu_vendor"] = "intel"
+    elif "amd" in info["cpu_model"].lower():
+        info["cpu_vendor"] = "amd"
+
+    # Get RAM info
+    info["ram_gb"] = round(psutil.virtual_memory().total / (1024**3))
+
+    # Get Disk info
+    try:
+        usage = psutil.disk_usage("/")
+        info["free_disk_gb"] = round(usage.free / (1024**3))
+    except Exception:
         pass
 
     # Get GPU info
     returncode, stdout, _ = run_command("lspci | grep -E 'VGA|3D|Display'", check=False)
     if returncode == 0:
         info["gpus"] = stdout.strip().split("\n")
+        gpu_str = stdout.lower()
+        if "nvidia" in gpu_str:
+            info["gpu_vendor"] = "nvidia"
+        elif "amd" in gpu_str or "ati" in gpu_str:
+            info["gpu_vendor"] = "amd"
+        elif "intel" in gpu_str:
+            info["gpu_vendor"] = "intel"
 
     # Get network interfaces
     for interface in psutil.net_if_addrs().keys():
@@ -2017,61 +1997,39 @@ def get_system_info() -> Dict[str, Any]:
     return info
 
 
-def check_hardware_compatibility() -> Dict[str, bool]:
-    """Check if hardware matches expected configuration - v4 enhanced"""
-    checks = {
-        "nvidia_rtx5080": False,
-        "intel_i9_10850k": False,
-        "ram_64gb": False,
-        "nvme_storage": False,
-        "creative_audio": False,
-        "intel_i225v": False,
-        "bazzite_os": False,
-        "resizable_bar": False,
-        "nvidia_gpu_present": check_nvidia_gpu_exists()  # v4
-    }
-
+def check_hardware_capabilities() -> Dict[str, Any]:
+    """Detect system hardware capabilities for dynamic profiles"""
     system_info = get_system_info()
-
-    # Check NVIDIA RTX 5080
-    for gpu in system_info["gpus"]:
-        if "5080" in gpu or "RTX 50" in gpu or "GB203" in gpu:
-            checks["nvidia_rtx5080"] = True
-            break
-
-    # Check Intel i9-10850K
-    if "10850K" in system_info["cpu_model"] or "i9-10850" in system_info["cpu_model"]:
-        checks["intel_i9_10850k"] = True
-
-    # Check 64GB RAM
-    if system_info["ram_gb"] >= 60:
-        checks["ram_64gb"] = True
-
-    # Check NVMe storage
-    if system_info["nvme_devices"]:
-        checks["nvme_storage"] = True
+    caps = {
+        "has_nvidia": system_info["gpu_vendor"] == "nvidia",
+        "has_amd_gpu": system_info["gpu_vendor"] == "amd",
+        "has_intel_gpu": system_info["gpu_vendor"] == "intel",
+        "has_nvme": len(system_info["nvme_devices"]) > 0,
+        "has_creative_audio": False,
+        "has_intel_nic": False,
+        "is_immutable": system_info["is_immutable"],
+        "resizable_bar": False,
+        "ram_gb": system_info["ram_gb"],
+        "cpu_vendor": system_info["cpu_vendor"]
+    }
 
     # Check Creative audio
     returncode, stdout, _ = run_command("lspci | grep -i creative", check=False)
-    if returncode == 0:
-        checks["creative_audio"] = True
+    if returncode == 0 and stdout:
+        caps["has_creative_audio"] = True
 
-    # Check Intel I225-V
-    returncode, stdout, _ = run_command("lspci | grep -i 'I225-V\\|Ethernet.*I225'", check=False)
-    if returncode == 0:
-        checks["intel_i225v"] = True
-
-    # Check Bazzite OS
-    if "bazzite" in system_info["distribution"].lower():
-        checks["bazzite_os"] = True
+    # Check Intel NIC (I225-V etc)
+    returncode, stdout, _ = run_command("lspci | grep -i 'I225-V\\|Ethernet.*I225\\|I226'", check=False)
+    if returncode == 0 and stdout:
+        caps["has_intel_nic"] = True
 
     # Check Resizable BAR
     returncode, stdout, _ = run_command(
         "lspci -vv 2>/dev/null | grep -i 'resizable bar'", check=False)
     if returncode == 0 and stdout and "disabled" not in stdout.lower():
-        checks["resizable_bar"] = True
+        caps["resizable_bar"] = True
 
-    return checks
+    return caps
 
 
 def check_nvidia_driver_version() -> Optional[str]:
@@ -3014,10 +2972,10 @@ ExecStart=/usr/local/bin/auto-backup.sh
 
 
 class NvidiaOptimizer(BaseOptimizer):
-    """NVIDIA RTX 5080 Blackwell optimization module - Enhanced v4"""
+    """Universal NVIDIA GPU optimization module"""
 
     def check_driver_compatibility(self) -> bool:
-        """Verify driver compatibility with RTX 5080"""
+        """Verify driver compatibility"""
         if not check_nvidia_gpu_exists():
             self.logger.warning("No NVIDIA GPU detected - skipping GPU optimizations")
             return False
@@ -3031,20 +2989,6 @@ class NvidiaOptimizer(BaseOptimizer):
         version_match = re.match(r"(\d+)\.(\d+)", driver_version)
         if version_match:
             major = int(version_match.group(1))
-            minor = int(version_match.group(2))
-
-            # RTX 5080 requires 570.86.16+ or 580.xx
-            if major < 570 or (major == 570 and minor < 86):
-                self.logger.warning(f"Driver version {driver_version} too old for RTX 5080")
-                self.logger.warning("Please update to 570.86.16+ or 580.xx series")
-                return False
-
-            if "Open" not in driver_version and major >= 570:
-                self.logger.warning("RTX 5080 requires -open driver variant")
-                self.logger.info("Consider switching to nvidia-open drivers")
-
-        return True
-
     def check_resizable_bar(self) -> bool:
         """Check if Resizable BAR is enabled with RTX 5080 Blackwell-specific detection"""
         self.logger.info("Checking RTX 5080 Resizable BAR status...")
