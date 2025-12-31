@@ -50,6 +50,66 @@ class GPUInfo:
     driver: Optional[str]       # "nvidia", "nouveau", "amdgpu", "i915"
 
 
+# TEAM_013: GPU capability profiles by generation
+@dataclass
+class NvidiaGPUCapabilities:
+    """TEAM_013: NVIDIA GPU capabilities for dynamic optimization."""
+    generation: str             # "ampere", "ada", "blackwell", "turing", "pascal", "unknown"
+    architecture_code: str      # "GA106", "AD102", "GB203", etc.
+    vram_mb: int                # VRAM in MB (detected or estimated)
+    safe_core_offset_max: int   # Max safe core clock offset in MHz
+    safe_mem_offset_max: int    # Max safe memory clock offset in MHz
+    safe_power_limit_max: int   # Max power limit as percentage (e.g., 115)
+    supports_resizable_bar: bool
+    supports_nvenc: bool
+    tdp_watts: int              # Typical TDP
+
+
+# TEAM_013: NVIDIA GPU generation detection patterns
+NVIDIA_GENERATIONS = {
+    # Blackwell (RTX 50 series) - GB1xx, GB2xx
+    "blackwell": {
+        "prefixes": ["GB1", "GB2"],
+        "name_patterns": ["RTX 50", "RTX 5"],
+        "safe_core_offset": 200,
+        "safe_mem_offset": 500,
+        "safe_power_limit": 110,
+    },
+    # Ada Lovelace (RTX 40 series) - AD1xx, AD2xx
+    "ada": {
+        "prefixes": ["AD1", "AD2"],
+        "name_patterns": ["RTX 40", "RTX 4"],
+        "safe_core_offset": 250,
+        "safe_mem_offset": 600,
+        "safe_power_limit": 115,
+    },
+    # Ampere (RTX 30 series) - GA1xx, GA2xx
+    "ampere": {
+        "prefixes": ["GA1", "GA2"],
+        "name_patterns": ["RTX 30", "RTX 3", "A2000", "A4000", "A5000", "A6000"],
+        "safe_core_offset": 150,
+        "safe_mem_offset": 500,
+        "safe_power_limit": 110,
+    },
+    # Turing (RTX 20 series, GTX 16 series) - TU1xx, TU2xx
+    "turing": {
+        "prefixes": ["TU1", "TU2"],
+        "name_patterns": ["RTX 20", "RTX 2", "GTX 16"],
+        "safe_core_offset": 150,
+        "safe_mem_offset": 400,
+        "safe_power_limit": 110,
+    },
+    # Pascal (GTX 10 series) - GP1xx, GP2xx
+    "pascal": {
+        "prefixes": ["GP1", "GP2"],
+        "name_patterns": ["GTX 10", "GTX 1"],
+        "safe_core_offset": 100,
+        "safe_mem_offset": 300,
+        "safe_power_limit": 105,
+    },
+}
+
+
 @dataclass
 class CPUTopology:
     """TEAM_012: CPU topology information for hybrid CPU support."""
@@ -413,6 +473,143 @@ def get_primary_gpu() -> Optional[GPUInfo]:
         if gpu.is_primary:
             return gpu
     return gpus[0] if gpus else None
+
+
+def detect_nvidia_capabilities(gpu: GPUInfo = None) -> Optional[NvidiaGPUCapabilities]:
+    """
+    TEAM_013: Detect NVIDIA GPU capabilities for dynamic optimization.
+    
+    Determines GPU generation from architecture code (GA106, AD102, etc.) or name,
+    then returns appropriate safe overclock limits and capabilities.
+    
+    Args:
+        gpu: Optional GPUInfo. If None, detects primary GPU.
+        
+    Returns:
+        NvidiaGPUCapabilities with generation-appropriate limits, or None if not NVIDIA.
+    """
+    logger = logging.getLogger(__name__)
+    
+    if gpu is None:
+        gpu = get_primary_gpu()
+    
+    if gpu is None or gpu.vendor != "nvidia":
+        return None
+    
+    # Extract architecture code from name (e.g., "GA106" from "GA106 [GeForce RTX 3060]")
+    arch_code = ""
+    name_upper = gpu.name.upper()
+    
+    # Look for architecture patterns like GA106, AD102, GB203, TU116, GP104
+    import re
+    arch_match = re.search(r'\b(G[ABP]\d{3}|TU\d{3}|AD\d{3})\b', name_upper)
+    if arch_match:
+        arch_code = arch_match.group(1)
+    
+    # Detect generation from architecture code or name
+    detected_gen = "unknown"
+    gen_info = None
+    
+    for gen_name, gen_data in NVIDIA_GENERATIONS.items():
+        # Check architecture prefix
+        for prefix in gen_data["prefixes"]:
+            if arch_code.startswith(prefix):
+                detected_gen = gen_name
+                gen_info = gen_data
+                break
+        if gen_info:
+            break
+        
+        # Check name patterns
+        for pattern in gen_data["name_patterns"]:
+            if pattern.upper() in name_upper:
+                detected_gen = gen_name
+                gen_info = gen_data
+                break
+        if gen_info:
+            break
+    
+    # Get VRAM from nvidia-smi
+    vram_mb = 0
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, timeout=5
+        )
+        if result.returncode == 0:
+            vram_mb = int(result.stdout.decode().strip().split('\n')[0])
+    except Exception:
+        # Estimate from GPU name
+        if "3060" in gpu.name:
+            vram_mb = 12288
+        elif "3070" in gpu.name:
+            vram_mb = 8192
+        elif "3080" in gpu.name:
+            vram_mb = 10240 if "10" in gpu.name else 12288
+        elif "3090" in gpu.name:
+            vram_mb = 24576
+        elif "4060" in gpu.name:
+            vram_mb = 8192
+        elif "4070" in gpu.name:
+            vram_mb = 12288
+        elif "4080" in gpu.name:
+            vram_mb = 16384
+        elif "4090" in gpu.name:
+            vram_mb = 24576
+        else:
+            vram_mb = 8192  # Conservative default
+    
+    # Use generation-specific limits or conservative defaults
+    if gen_info:
+        safe_core = gen_info["safe_core_offset"]
+        safe_mem = gen_info["safe_mem_offset"]
+        safe_power = gen_info["safe_power_limit"]
+    else:
+        # Conservative defaults for unknown GPUs
+        safe_core = 100
+        safe_mem = 300
+        safe_power = 105
+        logger.warning(f"Unknown NVIDIA generation for {gpu.name}, using conservative limits")
+    
+    # Estimate TDP from GPU class
+    tdp = 170  # Default
+    if "3060" in gpu.name:
+        tdp = 170
+    elif "3070" in gpu.name:
+        tdp = 220
+    elif "3080" in gpu.name:
+        tdp = 320
+    elif "3090" in gpu.name:
+        tdp = 350
+    elif "4060" in gpu.name:
+        tdp = 115
+    elif "4070" in gpu.name:
+        tdp = 200
+    elif "4080" in gpu.name:
+        tdp = 320
+    elif "4090" in gpu.name:
+        tdp = 450
+    elif "5080" in gpu.name:
+        tdp = 360
+    elif "5090" in gpu.name:
+        tdp = 575
+    
+    caps = NvidiaGPUCapabilities(
+        generation=detected_gen,
+        architecture_code=arch_code or "unknown",
+        vram_mb=vram_mb,
+        safe_core_offset_max=safe_core,
+        safe_mem_offset_max=safe_mem,
+        safe_power_limit_max=safe_power,
+        supports_resizable_bar=detected_gen in ("ampere", "ada", "blackwell"),
+        supports_nvenc=True,  # All modern NVIDIA GPUs support NVENC
+        tdp_watts=tdp
+    )
+    
+    logger.info(f"Detected NVIDIA {detected_gen.upper()} GPU: {gpu.name} ({arch_code}), "
+                f"VRAM: {vram_mb}MB, safe OC: +{safe_core}MHz core, +{safe_mem}MHz mem")
+    
+    return caps
 
 
 def detect_platform() -> PlatformInfo:

@@ -33,6 +33,9 @@ SCRIPT_VERSION = "5.0.0"
 LOG_DIR = Path("/var/log/gaming-optimizer")
 CONFIG_BACKUP_DIR = Path("/var/backups/gaming-optimizer")
 PROFILE_DIR = Path("/etc/gaming-optimizer/profiles")
+
+# TEAM_013: Dry-run mode flag
+DRY_RUN = False
 SHADER_CACHE_DIR = Path("/var/cache/gaming-shaders")
 CRASH_RECOVERY_DIR = Path("/var/cache/gaming-optimizer/recovery")
 PROFILE_STATE_DIR = Path("/var/lib/gaming-optimizer")
@@ -1808,8 +1811,30 @@ def print_colored(message: str, color: str = Colors.ENDC, end: str = "\n") -> No
 
 
 def run_command(command: str, shell: bool = True, check: bool = True,
-                timeout: int = 30) -> Tuple[int, str, str]:
-    """Execute shell command with timeout and error handling"""
+                timeout: int = 30, dry_run_skip: bool = True) -> Tuple[int, str, str]:
+    """Execute shell command with timeout and error handling
+    
+    Args:
+        dry_run_skip: If True and DRY_RUN is active, skip execution and narrate.
+                     Set to False for read-only commands that should still run.
+    """
+    global DRY_RUN
+    
+    # TEAM_013: Dry-run mode - narrate destructive commands
+    if DRY_RUN and dry_run_skip:
+        # Identify read-only commands that should still execute
+        read_only_patterns = ['--query', '-q', 'grep', 'cat ', 'head ', 'tail ', 
+                             'lspci', 'lsmod', 'uname', 'which', 'test ', '[ ',
+                             'nvidia-smi', 'echo', 'printf']
+        cmd_lower = command.lower()
+        is_read_only = any(p in cmd_lower for p in read_only_patterns)
+        
+        if not is_read_only:
+            # Truncate long commands for display
+            display_cmd = command[:80] + ('...' if len(command) > 80 else '')
+            print_colored(f"  [DRY-RUN] Would execute: {display_cmd}", Colors.OKCYAN)
+            return 0, "", ""  # Simulate success
+    
     try:
         result = subprocess.run(
             command,
@@ -1881,6 +1906,20 @@ def backup_file(filepath: Path) -> Optional[Path]:
 
 def write_config_file(filepath: Path, content: str, executable: bool = False) -> bool:
     """Write configuration file with proper permissions and backup"""
+    global DRY_RUN
+    
+    # TEAM_013: Dry-run mode - narrate without writing
+    if DRY_RUN:
+        mode = "executable" if executable else "config"
+        print_colored(f"  [DRY-RUN] Would write {mode} file: {filepath}", Colors.OKCYAN)
+        # Show first few lines of content
+        preview = content.strip().split('\n')[:3]
+        for line in preview:
+            print(f"            {line[:70]}{'...' if len(line) > 70 else ''}")
+        if len(content.strip().split('\n')) > 3:
+            print(f"            ... ({len(content.strip().split(chr(10)))} total lines)")
+        return True
+    
     try:
         backup_file(filepath)
 
@@ -3010,7 +3049,39 @@ ExecStart=/usr/local/bin/auto-backup.sh
 
 
 class NvidiaOptimizer(BaseOptimizer):
-    """Universal NVIDIA GPU optimization module"""
+    """Universal NVIDIA GPU optimization module - TEAM_013: Now uses dynamic GPU detection"""
+
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
+        # TEAM_013: Detect GPU capabilities dynamically
+        self._gpu_caps = None
+        self._gpu_info = None
+    
+    @property
+    def gpu_caps(self):
+        """TEAM_013: Lazy-load GPU capabilities."""
+        if self._gpu_caps is None:
+            try:
+                from platforms.detection import detect_nvidia_capabilities, get_primary_gpu
+                self._gpu_info = get_primary_gpu()
+                self._gpu_caps = detect_nvidia_capabilities(self._gpu_info)
+            except Exception as e:
+                self.logger.debug(f"Could not detect GPU capabilities: {e}")
+        return self._gpu_caps
+    
+    @property
+    def gpu_name(self):
+        """TEAM_013: Get GPU name for logging."""
+        if self._gpu_info:
+            return self._gpu_info.name
+        return "NVIDIA GPU"
+    
+    @property
+    def gpu_generation(self):
+        """TEAM_013: Get GPU generation for logging."""
+        if self.gpu_caps:
+            return self.gpu_caps.generation.upper()
+        return "NVIDIA"
 
     def check_driver_compatibility(self) -> bool:
         """Verify driver compatibility"""
@@ -3028,18 +3099,19 @@ class NvidiaOptimizer(BaseOptimizer):
         if version_match:
             major = int(version_match.group(1))
     def check_resizable_bar(self) -> bool:
-        """Check if Resizable BAR is enabled with RTX 5080 Blackwell-specific detection"""
-        self.logger.info("Checking RTX 5080 Resizable BAR status...")
+        """TEAM_013: Check if Resizable BAR is enabled - generic for all NVIDIA GPUs"""
+        gpu_name = self.gpu_name
+        self.logger.info(f"Checking Resizable BAR status for {gpu_name}...")
         
-        # RTX 5080 Blackwell-specific methods with enhanced detection
+        # Generic methods for all NVIDIA GPUs
         methods = [
             # Method 1: nvidia-smi direct query
             ("nvidia-smi -q | grep -i 'resizable bar'", "enabled"),
-            # Method 2: PCIe configuration space check for RTX 5080
-            ("nvidia-smi --query-gpu=pcie.link.gen.max --format=csv,noheader,nounits", "4"),
-            # Method 3: lspci detailed check for Blackwell architecture
-            ("lspci -vv | grep -A 10 -B 5 'NVIDIA.*RTX.*5080' | grep -i 'resizable bar'", "enabled"),
-            # Method 4: Alternative nvidia-smi format for Blackwell
+            # Method 2: PCIe gen check (ReBAR requires PCIe 3.0+)
+            ("nvidia-smi --query-gpu=pcie.link.gen.max --format=csv,noheader,nounits", "3"),
+            # Method 3: lspci check for any NVIDIA GPU
+            ("lspci -vv | grep -A 20 'NVIDIA' | grep -i 'resizable bar'", "enabled"),
+            # Method 4: BAR1 memory info
             ("nvidia-smi -q -d MEMORY | grep -i 'bar1\\|resizable'", "")
         ]
         
@@ -3047,35 +3119,24 @@ class NvidiaOptimizer(BaseOptimizer):
         for i, (command, expected_pattern) in enumerate(methods, 1):
             returncode, stdout, _ = run_command(command, check=False)
             if returncode == 0 and stdout.strip():
-                self.logger.debug(f"RTX 5080 Resizable BAR method {i} output: {stdout.strip()[:100]}")
+                self.logger.debug(f"Resizable BAR method {i} output: {stdout.strip()[:100]}")
                 if expected_pattern and expected_pattern.lower() in stdout.lower():
-                    self.logger.info("RTX 5080 Resizable BAR is enabled")
+                    self.logger.info(f"Resizable BAR is enabled for {gpu_name}")
                     return True
-                elif i == 4 and stdout.strip():  # Method 4 checks for any BAR info
+                elif i == 4 and stdout.strip():
                     resizable_bar_found = True
         
-        # RTX 5080 specific: Check if GPU supports Resizable BAR at all
-        returncode, stdout, _ = run_command("lspci -vv | grep -A 20 'NVIDIA.*GeForce.*RTX.*5080' | grep -i 'resizable bar'", check=False)
-        if returncode == 0 and stdout.strip():
-            if "disabled" in stdout.lower():
-                self.logger.warning("RTX 5080 Resizable BAR is supported but disabled - enable in BIOS for optimal gaming performance")
-                return False
-            else:
-                self.logger.info("RTX 5080 Resizable BAR detected via lspci")
-                return True
-        
-        # Final check: RTX 5080 Blackwell should support Resizable BAR
-        returncode, stdout, _ = run_command("nvidia-smi --query-gpu=name --format=csv,noheader,nounits", check=False)
-        if returncode == 0 and "RTX 5080" in stdout:
+        # Check if GPU generation supports ReBAR
+        if self.gpu_caps and self.gpu_caps.supports_resizable_bar:
             if resizable_bar_found:
-                self.logger.info("RTX 5080 detected with Resizable BAR capability")
+                self.logger.info(f"{gpu_name} detected with Resizable BAR capability")
                 return True
             else:
-                self.logger.debug("RTX 5080 detected but Resizable BAR status unclear - treating as acceptable for gaming")
-                return True  # RTX 5080 should work well even without explicit confirmation
-            
-        self.logger.debug("RTX 5080 Resizable BAR status could not be determined - assuming functional")
-        return True
+                self.logger.warning(f"{gpu_name} supports Resizable BAR but it may be disabled - enable in BIOS for better performance")
+                return False
+        
+        self.logger.debug(f"Resizable BAR status could not be determined for {gpu_name}")
+        return resizable_bar_found
 
     def install_drivers(self) -> bool:
         """Ensure proper NVIDIA drivers are installed"""
@@ -3119,12 +3180,15 @@ class NvidiaOptimizer(BaseOptimizer):
         return True
 
     def apply_optimizations(self) -> bool:
-        """Apply NVIDIA RTX 5080 optimizations with v4 safety checks"""
+        """TEAM_013: Apply NVIDIA GPU optimizations with dynamic capability detection"""
         if not check_nvidia_gpu_exists():
             self.logger.warning("No NVIDIA GPU detected - skipping GPU optimizations")
             return True  # Not a failure, just skip
 
-        self.logger.info("Applying NVIDIA RTX 5080 Blackwell optimizations...")
+        # TEAM_013: Use detected GPU info for logging
+        gpu_gen = self.gpu_generation
+        gpu_name = self.gpu_name
+        self.logger.info(f"Applying NVIDIA {gpu_gen} optimizations for {gpu_name}...")
 
         success = True
 
@@ -3139,25 +3203,25 @@ class NvidiaOptimizer(BaseOptimizer):
         profile_settings = GAMING_PROFILES.get(
             self.profile, GAMING_PROFILES["balanced"])["settings"]
 
-        # Write module configuration
+        # Write module configuration - TEAM_013: Use generic filename
         if not write_config_file(
-                Path("/etc/modprobe.d/nvidia-blackwell.conf"),
+                Path("/etc/modprobe.d/nvidia-gaming.conf"),
                 NVIDIA_MODULE_CONFIG):
             success = False
         else:
             self.track_change(
                 "NVIDIA module configuration",
-                Path("/etc/modprobe.d/nvidia-blackwell.conf"))
+                Path("/etc/modprobe.d/nvidia-gaming.conf"))
 
-        # Write X11 configuration (if X11 is used)
+        # Write X11 configuration (if X11 is used) - TEAM_013: Use generic filename
         if Path("/etc/X11").exists():
             if not write_config_file(
-                    Path("/etc/X11/xorg.conf.d/90-nvidia-rtx5080.conf"),
+                    Path("/etc/X11/xorg.conf.d/90-nvidia-gaming.conf"),
                     NVIDIA_XORG_CONFIG):
                 success = False
             else:
                 self.track_change("NVIDIA X11 configuration", Path(
-                    "/etc/X11/xorg.conf.d/90-nvidia-rtx5080.conf"))
+                    "/etc/X11/xorg.conf.d/90-nvidia-gaming.conf"))
 
         # Write optimization script with profile settings and v4 safety features
         script_content = NVIDIA_OPTIMIZATION_SCRIPT.format(
@@ -3190,51 +3254,62 @@ class NvidiaOptimizer(BaseOptimizer):
         self.logger.info("Regenerating initramfs...")
         run_command("dracut -f --regenerate-all", check=False, timeout=180)
 
-        # Apply immediate optimizations - RTX 5080 Blackwell specific
+        # Apply immediate optimizations
         run_command("/usr/local/bin/nvidia-gaming-optimize.sh", check=False)
         
         # Check DISPLAY environment for GUI operations
         display_env = os.environ.get('DISPLAY', '')
         
-        # v4.1: Progressive overclocking for competitive profile (safer than immediate application)
+        # TEAM_013: Use detected GPU limits for progressive overclocking
         if self.profile == "competitive" and display_env:
-            self.logger.info("Competitive profile detected - using progressive RTX 5080 overclocking for safety")
+            self.logger.info(f"Competitive profile detected - using progressive {gpu_gen} overclocking for safety")
             target_core = profile_settings.get("gpu_clock_offset", 450)
-            target_memory = profile_settings.get("gpu_mem_offset", 800) 
+            target_memory = profile_settings.get("gpu_mem_offset", 800)
+            
+            # TEAM_013: Clamp to detected GPU limits
+            if self.gpu_caps:
+                target_core = min(target_core, self.gpu_caps.safe_core_offset_max)
+                target_memory = min(target_memory, self.gpu_caps.safe_mem_offset_max)
             
             progressive_success = self.apply_gpu_overclock_progressively(target_core, target_memory)
             if not progressive_success:
-                self.logger.warning("Progressive overclocking failed - RTX 5080 running at conservative settings")
+                self.logger.warning(f"Progressive overclocking failed - {gpu_name} running at conservative settings")
         
-        # For RTX 5080 Blackwell, also apply PowerMizer mode directly if possible
+        # Apply PowerMizer mode if display available
         if display_env:
-            # Apply PowerMizer mode immediately for validation
             power_mode = profile_settings.get("gpu_power_mode", 1)
-            self.logger.debug(f"Applying RTX 5080 PowerMizer mode {power_mode} directly")
+            self.logger.debug(f"Applying PowerMizer mode {power_mode} for {gpu_name}")
             run_command(f"nvidia-settings -a '[gpu:0]/GPUPowerMizerMode={power_mode}'", check=False)
         else:
-            # In headless environments, ensure nvidia-persistenced is running for RTX 5080
-            self.logger.debug("Ensuring nvidia-persistenced is running for RTX 5080 Blackwell")
+            # In headless environments, ensure nvidia-persistenced is running
+            self.logger.debug("Ensuring nvidia-persistenced is running")
             run_command("systemctl enable --now nvidia-persistenced", check=False)
 
-        self.logger.info("NVIDIA RTX 5080 optimizations applied")
+        self.logger.info(f"NVIDIA {gpu_gen} optimizations applied for {gpu_name}")
         return success
 
     def apply_gpu_overclock_progressively(self, target_core: int, target_memory: int) -> bool:
-        """Apply GPU overclocking progressively with stability validation for RTX 5080"""
+        """TEAM_013: Apply GPU overclocking progressively with dynamic limits"""
         if not check_nvidia_gpu_exists():
             self.logger.error("No NVIDIA GPU detected for progressive overclocking")
             return False
-            
-        self.logger.info(f"Starting progressive RTX 5080 overclock to +{target_core}MHz core, +{target_memory}MHz memory")
         
-        # Safety check - ensure targets don't exceed RTX 5080 limits
-        if target_core > 500:
-            self.logger.warning(f"Target core clock {target_core}MHz exceeds RTX 5080 safe limit, clamping to 500MHz")
-            target_core = 500
-        if target_memory > 800:
-            self.logger.warning(f"Target memory clock {target_memory}MHz exceeds RTX 5080 safe limit, clamping to 800MHz")
-            target_memory = 800
+        gpu_name = self.gpu_name
+        self.logger.info(f"Starting progressive overclock for {gpu_name} to +{target_core}MHz core, +{target_memory}MHz memory")
+        
+        # TEAM_013: Use detected GPU limits instead of hard-coded values
+        max_core = 500  # Conservative default
+        max_mem = 800   # Conservative default
+        if self.gpu_caps:
+            max_core = self.gpu_caps.safe_core_offset_max
+            max_mem = self.gpu_caps.safe_mem_offset_max
+        
+        if target_core > max_core:
+            self.logger.warning(f"Target core clock {target_core}MHz exceeds {gpu_name} safe limit, clamping to {max_core}MHz")
+            target_core = max_core
+        if target_memory > max_mem:
+            self.logger.warning(f"Target memory clock {target_memory}MHz exceeds {gpu_name} safe limit, clamping to {max_mem}MHz")
+            target_memory = max_mem
             
         # Progressive steps: start conservative, increment gradually
         core_steps = [200, 300, 350, 400, target_core] if target_core > 400 else [200, 300, target_core]
@@ -3254,7 +3329,7 @@ class NvidiaOptimizer(BaseOptimizer):
             if core_offset > target_core:
                 continue
                 
-            self.logger.info(f"Testing RTX 5080 core overclock: +{core_offset}MHz")
+            self.logger.info(f"Testing {gpu_name} core overclock: +{core_offset}MHz")
             
             # Apply core overclock
             returncode, _, stderr = run_command(
@@ -3279,13 +3354,13 @@ class NvidiaOptimizer(BaseOptimizer):
                 break
             else:
                 current_core = core_offset
-                self.logger.info(f"RTX 5080 core overclock +{core_offset}MHz stable (score: {score}%)")
+                self.logger.info(f"{gpu_name} core overclock +{core_offset}MHz stable (score: {score}%)")
                 
         for memory_offset in memory_steps:
             if memory_offset > target_memory:
                 continue
                 
-            self.logger.info(f"Testing RTX 5080 memory overclock: +{memory_offset}MHz")
+            self.logger.info(f"Testing {gpu_name} memory overclock: +{memory_offset}MHz")
             
             # Apply memory overclock
             returncode, _, stderr = run_command(
@@ -3310,13 +3385,13 @@ class NvidiaOptimizer(BaseOptimizer):
                 break
             else:
                 current_memory = memory_offset
-                self.logger.info(f"RTX 5080 memory overclock +{memory_offset}MHz stable (score: {score}%)")
+                self.logger.info(f"{gpu_name} memory overclock +{memory_offset}MHz stable (score: {score}%)")
                 
         final_stable = current_core > 0 or current_memory > 0
         if final_stable:
-            self.logger.info(f"Progressive RTX 5080 overclock complete: +{current_core}MHz core, +{current_memory}MHz memory")
+            self.logger.info(f"Progressive {gpu_name} overclock complete: +{current_core}MHz core, +{current_memory}MHz memory")
         else:
-            self.logger.warning("No stable overclock achieved, RTX 5080 running at stock clocks")
+            self.logger.warning(f"No stable overclock achieved, {gpu_name} running at stock clocks")
             
         return final_stable
 
@@ -3342,14 +3417,15 @@ class NvidiaOptimizer(BaseOptimizer):
         return validations
 
     def _validate_gpu_power_mode(self) -> bool:
-        """Validate GPU power mode with RTX 5080 Blackwell-specific support"""
+        """TEAM_013: Validate GPU power mode - generic for all NVIDIA GPUs"""
         expected_mode = str(GAMING_PROFILES.get(self.profile, GAMING_PROFILES["balanced"])["settings"]["gpu_power_mode"])
+        gpu_name = self.gpu_name
         
         # Check if running in headless environment or if DISPLAY is not available
         display_env = os.environ.get('DISPLAY', '')
         if not display_env:
-            # RTX 5080 Blackwell headless validation via nvidia-smi
-            self.logger.debug("No DISPLAY available, using nvidia-smi for RTX 5080 power mode validation")
+            # Headless validation via nvidia-smi
+            self.logger.debug(f"No DISPLAY available, using nvidia-smi for {gpu_name} power mode validation")
             
             # Check current power management state via nvidia-smi
             returncode, stdout, stderr = run_command("nvidia-smi -q -d PERFORMANCE", check=False)
@@ -3358,17 +3434,17 @@ class NvidiaOptimizer(BaseOptimizer):
                 if expected_mode == "1":
                     # Mode 1 = maximum performance, look for P0 state
                     if "P0" in stdout or "Max" in stdout:
-                        self.logger.debug("RTX 5080 in maximum performance state - validation passed")
+                        self.logger.debug(f"{gpu_name} in maximum performance state - validation passed")
                         return True
                 elif expected_mode == "2":
                     # Mode 2 = auto/adaptive, look for adaptive state
                     if "P2" in stdout or "Auto" in stdout or "Adaptive" in stdout:
-                        self.logger.debug("RTX 5080 in adaptive performance state - validation passed")
+                        self.logger.debug(f"{gpu_name} in adaptive performance state - validation passed")
                         return True
                 elif expected_mode == "0":
                     # Mode 0 = prefer consistent performance
                     if "P1" in stdout or "Consistent" in stdout:
-                        self.logger.debug("RTX 5080 in consistent performance state - validation passed")
+                        self.logger.debug(f"{gpu_name} in consistent performance state - validation passed")
                         return True
                         
             # Alternative validation via GPU clock frequencies
@@ -3376,17 +3452,17 @@ class NvidiaOptimizer(BaseOptimizer):
             if returncode2 == 0 and stdout2:
                 try:
                     current_clock = int(stdout2.strip())
-                    # RTX 5080 base clock is around 2200MHz, boost around 2600MHz
-                    if expected_mode == "1" and current_clock >= 2400:  # High performance
-                        self.logger.debug(f"RTX 5080 running at high performance clock: {current_clock}MHz")
+                    # TEAM_013: Use reasonable thresholds for any GPU
+                    if expected_mode == "1" and current_clock >= 1800:  # High performance
+                        self.logger.debug(f"{gpu_name} running at high performance clock: {current_clock}MHz")
                         return True
-                    elif expected_mode == "2" and current_clock >= 1800:  # Adaptive performance
-                        self.logger.debug(f"RTX 5080 running at adaptive clock: {current_clock}MHz")
+                    elif expected_mode == "2" and current_clock >= 1200:  # Adaptive performance
+                        self.logger.debug(f"{gpu_name} running at adaptive clock: {current_clock}MHz")
                         return True
                 except ValueError:
                     pass
                         
-            self.logger.debug("Cannot determine RTX 5080 power mode in headless environment - assuming applied")
+            self.logger.debug(f"Cannot determine {gpu_name} power mode in headless environment - assuming applied")
             return True  # Don't fail validation due to environment limitations
         
         # Try nvidia-settings with display for desktop environments
@@ -6945,17 +7021,30 @@ class ProfileManager:
 
     def export_profile_env(self, profile_name: str):
         """Export profile settings as environment variables"""
+        global DRY_RUN
         settings = self.load_profile(profile_name)
+        
+        # TEAM_013: Handle dry-run and missing profile_dir
+        if self.profile_dir is None:
+            self.logger.debug("Profile export skipped - no writable profile directory")
+            return
+            
         env_file = self.profile_dir / f"{profile_name}.env"
+        
+        if DRY_RUN:
+            print_colored(f"  [DRY-RUN] Would export profile env to: {env_file}", Colors.OKCYAN)
+            return
 
-        with open(env_file, "w") as f:
-            for key, value in settings.items():
-                env_key = key.upper()
-                if isinstance(value, bool):
-                    value = str(value).lower()
-                f.write(f"export {env_key}={value}\n")
-
-        self.logger.info(f"Profile environment exported to {env_file}")
+        try:
+            with open(env_file, "w") as f:
+                for key, value in settings.items():
+                    env_key = key.upper()
+                    if isinstance(value, bool):
+                        value = str(value).lower()
+                    f.write(f"export {env_key}={value}\n")
+            self.logger.info(f"Profile environment exported to {env_file}")
+        except (PermissionError, OSError) as e:
+            self.logger.debug(f"Could not export profile env: {e}")
 
 
 # ============================================================================
@@ -7038,12 +7127,16 @@ class BazziteGamingOptimizer:
 
     def check_prerequisites(self) -> bool:
         """Check system prerequisites including new v3 requirements"""
+        global DRY_RUN
         print_colored("Checking system prerequisites...", Colors.OKBLUE)
 
-        # Check if running as root
+        # Check if running as root (skip in dry-run mode)
         if os.geteuid() != 0:
-            print_colored("ERROR: This script must be run as root (use sudo)", Colors.FAIL)
-            return False
+            if DRY_RUN:
+                print_colored("  [DRY-RUN] Would require root - continuing anyway for simulation", Colors.OKCYAN)
+            else:
+                print_colored("ERROR: This script must be run as root (use sudo)", Colors.FAIL)
+                return False
 
         # Check kernel version
         if not check_kernel_version():
@@ -7572,8 +7665,22 @@ Examples:
                             help='List available kernel profiles')
         parser.add_argument('--kernel-diff', type=str, metavar='NAME',
                             help='Show difference between current kernel params and a profile')
+        # TEAM_013: Dry-run mode for full narration without changes
+        parser.add_argument('--dry-run', action='store_true',
+                            help='Show what would be done without making any changes')
 
         args = parser.parse_args()
+
+        # TEAM_013: Set global dry-run flag
+        global DRY_RUN
+        if args.dry_run:
+            DRY_RUN = True
+            # Also set in builtins for submodules to access
+            import builtins
+            builtins.BAZZITE_DRY_RUN = True
+            print_colored("\n" + "="*60, Colors.WARNING)
+            print_colored("  DRY-RUN MODE - No changes will be made", Colors.WARNING)
+            print_colored("="*60 + "\n", Colors.WARNING)
 
         # Handle list profiles
         if args.list_profiles:

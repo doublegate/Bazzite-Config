@@ -23,6 +23,10 @@ from .detection import (
     # TEAM_012: CPU topology support
     CPUTopology,
     detect_cpu_topology,
+    # TEAM_013: GPU capability detection
+    NvidiaGPUCapabilities,
+    detect_nvidia_capabilities,
+    NVIDIA_GENERATIONS,
 )
 from .base import PackageManager, KernelParamManager
 from .services import PlatformServices, UnsupportedPlatformError
@@ -39,6 +43,10 @@ __all__ = [
     # TEAM_012: CPU topology support
     "CPUTopology",
     "detect_cpu_topology",
+    # TEAM_013: GPU capability detection
+    "NvidiaGPUCapabilities",
+    "detect_nvidia_capabilities",
+    "NVIDIA_GENERATIONS",
     "PackageManager",
     "KernelParamManager",
     "PlatformServices",

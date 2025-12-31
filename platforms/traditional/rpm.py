@@ -34,20 +34,26 @@ class DnfPackageManager(PackageManager):
         if not packages:
             return True
         
+        # TEAM_013: Check for dry-run mode via environment or builtins
+        import builtins
+        if getattr(builtins, 'BAZZITE_DRY_RUN', False):
+            self.logger.info(f"[DRY-RUN] Would install packages: {', '.join(packages)}")
+            return True
+        
         # Filter out already-installed packages (matches rpm-ostree idempotent behavior)
         packages_to_install = []
         for package in packages:
             if not self.is_installed(package):
                 packages_to_install.append(package)
             else:
-                self.logger.debug(f"Package {package} already installed")
+                self.logger.debug(f"Package {package} already installed (rpm)")
         
         if not packages_to_install:
             self.logger.debug("All packages already installed")
             return True
         
         cmd = ["sudo", "dnf", "install", "-y"] + packages_to_install
-        self.logger.info(f"Installing packages: {', '.join(packages_to_install)}")
+        self.logger.debug(f"Installing {', '.join(packages_to_install)} via DnfPackageManager")
         
         try:
             result = subprocess.run(cmd, capture_output=True, timeout=timeout)
