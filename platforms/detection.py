@@ -121,6 +121,82 @@ class CPUTopology:
     recommended_isolate: List[int]  # Cores safe to isolate for gaming
 
 
+# TEAM_015: CPU capabilities for dynamic optimization
+@dataclass
+class CPUCapabilities:
+    """TEAM_015: CPU capabilities for safe optimization settings."""
+    vendor: str                 # "intel", "amd", "other"
+    model_name: str             # Full model name from /proc/cpuinfo
+    family: str                 # "comet_lake", "alder_lake", "zen3", etc.
+    generation: int             # Numeric generation (10, 12, 13 for Intel; 3, 4 for Zen)
+    core_count: int             # Physical cores
+    thread_count: int           # Logical CPUs
+    supports_undervolt: bool    # Whether undervolt is safe/supported
+    safe_undervolt_mv: int      # Safe undervolt in mV (0 if not supported)
+    base_clock_mhz: int         # Base clock frequency
+    supports_turbo: bool        # Whether CPU has turbo/boost
+
+
+# TEAM_015: Intel CPU family patterns for undervolt safety
+INTEL_CPU_FAMILIES = {
+    "coffee_lake": {
+        "patterns": [r"i[3579]-9\d{3}", r"i[3579]-8\d{3}"],
+        "generation": 9,
+        "safe_undervolt_mv": 100,
+        "supports_undervolt": True,
+    },
+    "comet_lake": {
+        "patterns": [r"i[3579]-10\d{3}"],
+        "generation": 10,
+        "safe_undervolt_mv": 80,
+        "supports_undervolt": True,
+    },
+    "rocket_lake": {
+        "patterns": [r"i[3579]-11\d{3}"],
+        "generation": 11,
+        "safe_undervolt_mv": 50,
+        "supports_undervolt": True,
+    },
+    "alder_lake": {
+        "patterns": [r"i[3579]-12\d{3}", r"i[3579]-1[23]\d{2}P"],
+        "generation": 12,
+        "safe_undervolt_mv": 0,  # Alder Lake+ has locked undervolt on most systems
+        "supports_undervolt": False,
+    },
+    "raptor_lake": {
+        "patterns": [r"i[3579]-13\d{3}", r"i[3579]-14\d{3}"],
+        "generation": 13,
+        "safe_undervolt_mv": 0,
+        "supports_undervolt": False,
+    },
+}
+
+
+# TEAM_015: NIC capabilities for conditional network optimization
+@dataclass
+class NICCapabilities:
+    """TEAM_015: Network interface capabilities for conditional optimization."""
+    interface: str              # "eth0", "enp3s0", etc.
+    driver: str                 # "igc", "e1000e", "r8169", etc.
+    vendor: str                 # "intel", "realtek", "broadcom", etc.
+    is_intel: bool              # Shorthand for Intel NICs
+    is_i225_family: bool        # True for I225-V, I225-LM, I226, etc.
+    supports_eee_disable: bool  # Whether EEE can be safely disabled
+    pci_id: Optional[str]       # PCI device ID if available
+
+
+# TEAM_015: Intel NIC device IDs for I225/I226 family
+INTEL_I225_DEVICE_IDS = [
+    "15f2",  # I225-LM
+    "15f3",  # I225-V
+    "15f4",  # I225-I
+    "15f5",  # I225-K
+    "125b",  # I226-LM
+    "125c",  # I226-V
+    "125d",  # I226-IT
+]
+
+
 @dataclass
 class PlatformInfo:
     """Platform metadata collected during detection."""
@@ -610,6 +686,204 @@ def detect_nvidia_capabilities(gpu: GPUInfo = None) -> Optional[NvidiaGPUCapabil
                 f"VRAM: {vram_mb}MB, safe OC: +{safe_core}MHz core, +{safe_mem}MHz mem")
     
     return caps
+
+
+def detect_cpu_capabilities() -> CPUCapabilities:
+    """
+    TEAM_015: Detect CPU capabilities for safe optimization settings.
+    
+    Parses /proc/cpuinfo to determine:
+    - CPU vendor (Intel/AMD/other)
+    - CPU model and generation
+    - Whether undervolt is safe for this CPU
+    - Safe undervolt values if supported
+    
+    Returns:
+        CPUCapabilities with detected values and safe optimization limits.
+    """
+    logger = logging.getLogger(__name__)
+    
+    # Parse /proc/cpuinfo
+    vendor = "other"
+    model_name = "Unknown CPU"
+    core_count = 1
+    thread_count = 1
+    base_clock_mhz = 0
+    
+    cpuinfo_path = Path("/proc/cpuinfo")
+    if cpuinfo_path.exists():
+        try:
+            content = cpuinfo_path.read_text()
+            
+            # Extract vendor
+            if "GenuineIntel" in content:
+                vendor = "intel"
+            elif "AuthenticAMD" in content:
+                vendor = "amd"
+            
+            # Extract model name
+            for line in content.split('\n'):
+                if line.startswith("model name"):
+                    model_name = line.split(':')[1].strip()
+                    break
+            
+            # Count processors (threads)
+            thread_count = content.count("processor\t:")
+            
+            # Count physical cores
+            core_ids = set()
+            for line in content.split('\n'):
+                if line.startswith("core id"):
+                    core_ids.add(line.split(':')[1].strip())
+            core_count = len(core_ids) if core_ids else thread_count
+            
+            # Extract base frequency
+            for line in content.split('\n'):
+                if "cpu MHz" in line:
+                    try:
+                        base_clock_mhz = int(float(line.split(':')[1].strip()))
+                    except (ValueError, IndexError):
+                        pass
+                    break
+                    
+        except Exception as e:
+            logger.debug(f"Error parsing /proc/cpuinfo: {e}")
+    
+    # Detect CPU family and undervolt safety
+    family = "unknown"
+    generation = 0
+    supports_undervolt = False
+    safe_undervolt_mv = 0
+    
+    if vendor == "intel":
+        import re
+        for family_name, family_data in INTEL_CPU_FAMILIES.items():
+            for pattern in family_data["patterns"]:
+                if re.search(pattern, model_name, re.IGNORECASE):
+                    family = family_name
+                    generation = family_data["generation"]
+                    supports_undervolt = family_data["supports_undervolt"]
+                    safe_undervolt_mv = family_data["safe_undervolt_mv"]
+                    break
+            if family != "unknown":
+                break
+    elif vendor == "amd":
+        # AMD CPUs generally don't support traditional undervolt via intel-undervolt
+        family = "zen"  # Simplified - could be expanded
+        supports_undervolt = False
+        safe_undervolt_mv = 0
+    
+    # Check for turbo support
+    supports_turbo = False
+    turbo_path = Path("/sys/devices/system/cpu/intel_pstate/no_turbo")
+    if turbo_path.exists():
+        supports_turbo = True
+    elif Path("/sys/devices/system/cpu/cpufreq/boost").exists():
+        supports_turbo = True
+    
+    caps = CPUCapabilities(
+        vendor=vendor,
+        model_name=model_name,
+        family=family,
+        generation=generation,
+        core_count=core_count,
+        thread_count=thread_count,
+        supports_undervolt=supports_undervolt,
+        safe_undervolt_mv=safe_undervolt_mv,
+        base_clock_mhz=base_clock_mhz,
+        supports_turbo=supports_turbo
+    )
+    
+    logger.info(f"Detected {vendor.upper()} CPU: {model_name} ({family}), "
+                f"cores: {core_count}, undervolt: {'yes' if supports_undervolt else 'no'}"
+                f"{f' ({safe_undervolt_mv}mV safe)' if supports_undervolt else ''}")
+    
+    return caps
+
+
+def detect_nic_capabilities() -> Optional[NICCapabilities]:
+    """
+    TEAM_015: Detect primary NIC capabilities for conditional network optimization.
+    
+    Scans /sys/class/net for ethernet interfaces and determines:
+    - Driver in use (igc, e1000e, r8169, etc.)
+    - Whether it's an Intel I225/I226 family NIC
+    - Whether EEE (Energy Efficient Ethernet) can be safely disabled
+    
+    Returns:
+        NICCapabilities if ethernet found, None otherwise.
+    """
+    logger = logging.getLogger(__name__)
+    
+    net_path = Path("/sys/class/net")
+    if not net_path.exists():
+        return None
+    
+    # Find primary ethernet interface (prefer physical over virtual)
+    for iface_dir in sorted(net_path.iterdir()):
+        iface_name = iface_dir.name
+        
+        # Skip virtual/loopback interfaces
+        if iface_name in ("lo", "docker0", "virbr0") or iface_name.startswith(("veth", "br-", "vnet")):
+            continue
+        
+        # Check if it's a physical ethernet interface
+        device_path = iface_dir / "device"
+        if not device_path.exists():
+            continue
+        
+        # Get driver
+        driver_link = device_path / "driver"
+        driver = "unknown"
+        if driver_link.exists():
+            try:
+                driver = driver_link.resolve().name
+            except Exception:
+                pass
+        
+        # Get PCI device ID
+        pci_id = None
+        device_id_path = device_path / "device"
+        if device_id_path.exists():
+            try:
+                pci_id = device_id_path.read_text().strip().replace("0x", "")
+            except Exception:
+                pass
+        
+        # Determine vendor and capabilities
+        is_intel = driver in ("igc", "e1000e", "igb", "ixgbe", "i40e")
+        is_i225_family = driver == "igc" and pci_id in INTEL_I225_DEVICE_IDS
+        
+        # I225/I226 have known EEE bugs that cause latency issues
+        supports_eee_disable = is_i225_family
+        
+        # Determine vendor from driver
+        if is_intel:
+            vendor = "intel"
+        elif driver in ("r8169", "r8168", "r8125"):
+            vendor = "realtek"
+        elif driver in ("tg3", "bnxt_en"):
+            vendor = "broadcom"
+        else:
+            vendor = "other"
+        
+        caps = NICCapabilities(
+            interface=iface_name,
+            driver=driver,
+            vendor=vendor,
+            is_intel=is_intel,
+            is_i225_family=is_i225_family,
+            supports_eee_disable=supports_eee_disable,
+            pci_id=pci_id
+        )
+        
+        logger.info(f"Detected NIC: {iface_name} (driver: {driver}, vendor: {vendor}"
+                    f"{', I225 family' if is_i225_family else ''})")
+        
+        return caps
+    
+    logger.debug("No physical ethernet interface found")
+    return None
 
 
 def detect_platform() -> PlatformInfo:

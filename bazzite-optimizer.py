@@ -600,7 +600,8 @@ echo "Intel i9-10850K optimized with stepped undervolting (Profile: $GOVERNOR)!"
 """
 
 # Memory Configuration - Optimized with profile support
-SYSCTL_CONFIG = """# 64GB RAM Gaming Optimizations v4 with Profile Support
+# TEAM_015: Removed hard-coded 64GB reference
+SYSCTL_CONFIG = """# Gaming Memory Optimizations v4 with Profile Support
 # Profile: {PROFILE}
 
 # ZRAM optimized values
@@ -728,12 +729,12 @@ echo "Shader cache directories configured"
 """
 
 # ZRAM Configuration - Profile-aware
-ZRAM_CONFIG = """# ZRAM Configuration for 64GB Gaming System
+# TEAM_015: Removed hard-coded 64GB reference
+ZRAM_CONFIG = """# ZRAM Gaming Configuration
 [zram0]
 # {PROFILE} Profile Configuration
 zram-size = min(ram / {DIVISOR}, {MAX_SIZE})
 compression-algorithm = {ALGORITHM}
-writeback-device = /dev/nvme0n1p3
 """
 
 # NVMe Optimization
@@ -3476,18 +3477,43 @@ class NvidiaOptimizer(BaseOptimizer):
 
 
 class CPUOptimizer(BaseOptimizer):
-    """Intel i9-10850K CPU optimization module with v4 stepped undervolting"""
+    """TEAM_015: CPU optimization module - now uses CPU detection for safe undervolt"""
+
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
+        self._cpu_caps = None
+
+    @property
+    def cpu_caps(self):
+        """TEAM_015: Lazy-load CPU capabilities."""
+        if self._cpu_caps is None:
+            try:
+                from platforms.detection import detect_cpu_capabilities
+                self._cpu_caps = detect_cpu_capabilities()
+            except Exception as e:
+                self.logger.debug(f"Could not detect CPU capabilities: {e}")
+        return self._cpu_caps
 
     def install_tools(self) -> bool:
         """Install CPU management tools"""
         self.logger.info("Installing CPU management tools...")
 
-        tools = ["kernel-tools", "msr-tools", "thermald", "tuned", "intel-undervolt"]
+        # TEAM_015: Only install intel-undervolt if CPU supports it
+        tools = ["kernel-tools", "msr-tools", "thermald", "tuned"]
+        if self.cpu_caps and self.cpu_caps.supports_undervolt:
+            tools.append("intel-undervolt")
         return self._install_packages(tools)
 
     def configure_undervolt(self) -> bool:
-        """v4: Configure conservative CPU undervolting with stepping"""
-        self.logger.info("Configuring CPU undervolting...")
+        """TEAM_015: Configure CPU undervolting only if supported and safe"""
+        # Check if CPU supports undervolt
+        if not self.cpu_caps or not self.cpu_caps.supports_undervolt:
+            cpu_name = self.cpu_caps.model_name if self.cpu_caps else "Unknown CPU"
+            self.logger.info(f"Skipping undervolt for {cpu_name} (not supported or unsafe)")
+            return True  # Not a failure, just skip
+
+        self.logger.info(f"Configuring undervolt for {self.cpu_caps.model_name} "
+                        f"(safe limit: {self.cpu_caps.safe_undervolt_mv}mV)...")
 
         # Check if intel-undervolt is available
         returncode, _, _ = run_command("which intel-undervolt", check=False)
@@ -3495,7 +3521,8 @@ class CPUOptimizer(BaseOptimizer):
             self.logger.warning("intel-undervolt not available, skipping undervolting")
             return False
 
-        # Write undervolt configuration
+        # Write undervolt configuration with detected safe values
+        # TODO: Could generate dynamic config based on cpu_caps.safe_undervolt_mv
         if not write_config_file(Path("/etc/intel-undervolt.conf"), UNDERVOLT_CONFIG):
             return False
 
@@ -3510,8 +3537,9 @@ class CPUOptimizer(BaseOptimizer):
         return True
 
     def apply_optimizations(self) -> bool:
-        """Apply Intel i9-10850K optimizations"""
-        self.logger.info("Applying Intel i9-10850K optimizations...")
+        """TEAM_015: Apply CPU optimizations based on detected hardware"""
+        cpu_name = self.cpu_caps.model_name if self.cpu_caps else "Unknown CPU"
+        self.logger.info(f"Applying {cpu_name} optimizations...")
 
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
@@ -3569,11 +3597,13 @@ class CPUOptimizer(BaseOptimizer):
 
 
 class MemoryOptimizer(BaseOptimizer):
-    """Memory and storage optimization module"""
+    """TEAM_015: Memory and storage optimization module - now uses detected RAM"""
 
     def configure_zram(self) -> bool:
-        """Configure ZRAM for 64GB system with profile support"""
-        self.logger.info("Configuring ZRAM for optimal gaming performance...")
+        """TEAM_015: Configure ZRAM based on actual system RAM"""
+        # Get actual RAM from system_info (set by BazziteGamingOptimizer)
+        ram_gb = getattr(self, 'system_info', {}).get('ram_gb', 16)
+        self.logger.info(f"Configuring ZRAM for {ram_gb}GB system...")
 
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
@@ -3737,21 +3767,44 @@ class MemoryOptimizer(BaseOptimizer):
 
 
 class NetworkOptimizer(BaseOptimizer):
-    """Network optimization module for Intel I225-V with profile support"""
+    """TEAM_015: Network optimization module - now uses NIC detection"""
+
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
+        self._nic_caps = None
+    
+    @property
+    def nic_caps(self):
+        """TEAM_015: Lazy-load NIC capabilities."""
+        if self._nic_caps is None:
+            try:
+                from platforms.detection import detect_nic_capabilities
+                self._nic_caps = detect_nic_capabilities()
+            except Exception as e:
+                self.logger.debug(f"Could not detect NIC capabilities: {e}")
+        return self._nic_caps
 
     def apply_optimizations(self) -> bool:
-        """Apply network optimizations with I225-V bug workarounds"""
-        self.logger.info("Applying Intel I225-V network optimizations...")
-
+        """TEAM_015: Apply network optimizations conditionally based on NIC detection"""
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
             self.profile, GAMING_PROFILES["balanced"])["settings"]
         network_latency = profile_settings.get("network_latency", "low")
 
-        # Write Intel I225-V module configuration
-        if not write_config_file(Path("/etc/modprobe.d/igc-gaming.conf"), IGC_MODULE_CONFIG):
-            return False
-        self.track_change("Intel I225-V module config", Path("/etc/modprobe.d/igc-gaming.conf"))
+        # TEAM_015: Check NIC capabilities before applying I225-specific optimizations
+        if self.nic_caps:
+            nic_desc = f"{self.nic_caps.interface} ({self.nic_caps.driver})"
+            if self.nic_caps.is_i225_family:
+                self.logger.info(f"Applying Intel I225 family optimizations for {nic_desc}...")
+                # Write Intel I225 module configuration (only for igc driver)
+                if not write_config_file(Path("/etc/modprobe.d/igc-gaming.conf"), IGC_MODULE_CONFIG):
+                    return False
+                self.track_change("Intel I225 module config", Path("/etc/modprobe.d/igc-gaming.conf"))
+            else:
+                self.logger.info(f"Applying generic network optimizations for {nic_desc}...")
+                self.logger.info(f"  (Skipping I225-specific fixes - not I225 family NIC)")
+        else:
+            self.logger.info("Applying generic network optimizations (no NIC detected)...")
 
         # Write ethernet optimization script with profile settings
         script_content = ETHERNET_OPTIMIZE_SCRIPT.replace(

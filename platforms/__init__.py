@@ -27,6 +27,13 @@ from .detection import (
     NvidiaGPUCapabilities,
     detect_nvidia_capabilities,
     NVIDIA_GENERATIONS,
+    # TEAM_015: CPU and NIC capability detection
+    CPUCapabilities,
+    detect_cpu_capabilities,
+    INTEL_CPU_FAMILIES,
+    NICCapabilities,
+    detect_nic_capabilities,
+    INTEL_I225_DEVICE_IDS,
 )
 from .base import PackageManager, KernelParamManager
 from .services import PlatformServices, UnsupportedPlatformError
@@ -47,6 +54,13 @@ __all__ = [
     "NvidiaGPUCapabilities",
     "detect_nvidia_capabilities",
     "NVIDIA_GENERATIONS",
+    # TEAM_015: CPU and NIC capability detection
+    "CPUCapabilities",
+    "detect_cpu_capabilities",
+    "INTEL_CPU_FAMILIES",
+    "NICCapabilities",
+    "detect_nic_capabilities",
+    "INTEL_I225_DEVICE_IDS",
     "PackageManager",
     "KernelParamManager",
     "PlatformServices",
