@@ -204,3 +204,132 @@ class GrubKernelParams(KernelParamManager):
     def get_pending_params(self) -> Optional[List[str]]:
         """For GRUB, pending params are same as config (returns None)."""
         return None
+    
+    # TEAM_011: Kernel Profile Management
+    
+    PROFILE_DIR = Path("/var/lib/bazzite-optimizer/kernel-profiles")
+    
+    def _ensure_profile_dir(self) -> bool:
+        """Ensure kernel profile directory exists."""
+        try:
+            self.PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to create profile dir: {e}")
+            return False
+    
+    def save_baseline(self) -> bool:
+        """
+        TEAM_011: Save current kernel params as baseline before any optimization.
+        Call this BEFORE first optimization to preserve stock params.
+        """
+        if not self._ensure_profile_dir():
+            return False
+        
+        baseline_path = self.PROFILE_DIR / "baseline.conf"
+        if baseline_path.exists():
+            self.logger.info("Baseline already exists, skipping")
+            return True
+        
+        current = self.get_current_params()
+        try:
+            baseline_path.write_text("\n".join(current) + "\n")
+            self.logger.info(f"Saved baseline kernel params to {baseline_path}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to save baseline: {e}")
+            return False
+    
+    def save_profile(self, name: str, params: List[str] = None) -> bool:
+        """
+        TEAM_011: Save current or specified kernel params as a named profile.
+        """
+        if not self._ensure_profile_dir():
+            return False
+        
+        if params is None:
+            params = self.get_current_params()
+        
+        profile_path = self.PROFILE_DIR / f"{name}.conf"
+        try:
+            profile_path.write_text("\n".join(params) + "\n")
+            self.logger.info(f"Saved kernel profile '{name}' to {profile_path}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to save profile '{name}': {e}")
+            return False
+    
+    def load_profile(self, name: str) -> Optional[List[str]]:
+        """
+        TEAM_011: Load kernel params from a named profile.
+        """
+        profile_path = self.PROFILE_DIR / f"{name}.conf"
+        if not profile_path.exists():
+            self.logger.error(f"Profile '{name}' not found")
+            return None
+        
+        try:
+            content = profile_path.read_text().strip()
+            params = [p.strip() for p in content.split("\n") if p.strip()]
+            return params
+        except Exception as e:
+            self.logger.error(f"Failed to load profile '{name}': {e}")
+            return None
+    
+    def apply_profile(self, name: str) -> bool:
+        """
+        TEAM_011: Apply a named kernel profile (replaces all current params).
+        """
+        params = self.load_profile(name)
+        if params is None:
+            return False
+        
+        self._backup_grub_config()
+        
+        # Save current as 'previous' for easy rollback
+        self.save_profile("previous", self.get_current_params())
+        
+        if not self._write_grub_config(params):
+            return False
+        
+        if not self._run_grub_mkconfig():
+            return False
+        
+        self.logger.info(f"Applied kernel profile '{name}'. Reboot required.")
+        return True
+    
+    def list_profiles(self) -> List[str]:
+        """
+        TEAM_011: List available kernel profiles.
+        """
+        if not self.PROFILE_DIR.exists():
+            return []
+        
+        profiles = []
+        for f in self.PROFILE_DIR.glob("*.conf"):
+            profiles.append(f.stem)
+        return sorted(profiles)
+    
+    def diff_profile(self, name: str) -> dict:
+        """
+        TEAM_011: Compare current params with a profile.
+        Returns dict with 'add', 'remove', 'same' lists.
+        """
+        target = self.load_profile(name)
+        if target is None:
+            return {"error": f"Profile '{name}' not found"}
+        
+        current = set(self.get_current_params())
+        target_set = set(target)
+        
+        return {
+            "add": sorted(target_set - current),
+            "remove": sorted(current - target_set),
+            "same": sorted(current & target_set)
+        }
+    
+    def restore_baseline(self) -> bool:
+        """
+        TEAM_011: Restore kernel params to baseline (stock) state.
+        """
+        return self.apply_profile("baseline")
