@@ -466,7 +466,8 @@ CURRENT_POWER=$(get_gpu_power)
 POWER_INCREASE=$((CURRENT_POWER - BASELINE_POWER))
 echo "Power consumption increased by ${{POWER_INCREASE}}W"
 
-echo "RTX 5080 Blackwell optimizations v4 applied with safety checks!"
+# TEAM_006: Generic message instead of hard-coded GPU name
+echo "GPU optimizations applied with safety checks!"
 """
 
 # Intel i9-10850K CPU Optimization - Enhanced with v4 stepped undervolting
@@ -476,9 +477,15 @@ CPU_OPTIMIZATION_SCRIPT = """#!/bin/bash
 # Enable MSR module for advanced CPU control
 modprobe msr 2>/dev/null || true
 
-# Install cpupower if not present
+# TEAM_006: Install cpupower if not present (platform-aware)
 if ! command -v cpupower &> /dev/null; then
-    rpm-ostree install kernel-tools 2>/dev/null || dnf install -y kernel-tools 2>/dev/null || true
+    if command -v rpm-ostree &> /dev/null && rpm-ostree status &>/dev/null; then
+        rpm-ostree install kernel-tools 2>/dev/null || true
+    elif command -v dnf &> /dev/null; then
+        dnf install -y kernel-tools 2>/dev/null || true
+    elif command -v apt-get &> /dev/null; then
+        apt-get install -y linux-tools-common 2>/dev/null || true
+    fi
 fi
 
 # Function to get CPU package temperature
@@ -2222,12 +2229,27 @@ def enhanced_rpm_ostree_kargs() -> str:
 class BaseOptimizer:
     """Base class for all optimizer modules"""
 
-    def __init__(self, logger: logging.Logger):
+    # TEAM_006: Added platform_services parameter for cross-platform support
+    def __init__(self, logger: logging.Logger, platform_services=None):
         self.logger = logger
         self.applied_changes = []
         self.profile = "balanced"  # Default profile
         self.user = os.environ.get('SUDO_USER', os.environ.get('USER', 'root'))
         self.skip_packages = False  # Flag to skip package installation
+        self._platform_services = platform_services
+        self._package_manager = None
+
+    @property
+    def package_manager(self):
+        """TEAM_006: Lazy-load package manager from platform services"""
+        if self._package_manager is None:
+            if self._platform_services:
+                self._package_manager = self._platform_services.package_manager
+            else:
+                # Fallback for backward compatibility
+                from platforms.traditional.rpm import DnfPackageManager
+                self._package_manager = DnfPackageManager()
+        return self._package_manager
 
     def set_profile(self, profile: str):
         """Set optimization profile"""
@@ -2333,21 +2355,18 @@ class BaseOptimizer:
                 self.logger.debug(f"Package {package_name} already installed (dnf)")
                 return True
             
-            # Install via rpm-ostree first for Bazzite immutable system
-            self.logger.debug(f"Installing {package_name} via rpm-ostree")
-            returncode, _, _ = run_command(f"rpm-ostree install {package_name}", check=False, timeout=timeout)
-            if returncode != 0:
-                # For System76 scheduler, try enabling Copr repo
-                if package_name == "system76-scheduler":
-                    self.logger.info("Enabling kylegospo/system76-scheduler Copr repo")
-                    run_command("dnf copr enable -y kylegospo/system76-scheduler", check=False)
-                    returncode, _, _ = run_command(f"dnf install -y {package_name}", check=False, timeout=timeout)
-                    return returncode == 0
-                else:
-                    self.logger.debug(f"rpm-ostree failed, trying dnf for {package_name}")
-                    returncode, _, _ = run_command(f"dnf install -y {package_name}", check=False, timeout=timeout)
-                    return returncode == 0
-            return True
+            # TEAM_006: Use platform abstraction for package installation
+            self.logger.debug(f"Installing {package_name} via {type(self.package_manager).__name__}")
+            if self.package_manager.install([package_name], timeout=timeout):
+                return True
+            
+            # For System76 scheduler, try enabling Copr repo as fallback
+            if package_name == "system76-scheduler":
+                self.logger.info("Enabling kylegospo/system76-scheduler Copr repo")
+                run_command("dnf copr enable -y kylegospo/system76-scheduler", check=False)
+                returncode, _, _ = run_command(f"dnf install -y {package_name}", check=False, timeout=timeout)
+                return returncode == 0
+            return False
         elif package_manager == "flatpak":
             # Check if flatpak is already installed
             returncode, stdout, _ = run_command(f"flatpak list --app | grep {package_name}", check=False)
@@ -3047,19 +3066,19 @@ class NvidiaOptimizer(BaseOptimizer):
         if not self.check_driver_compatibility():
             self.logger.info("Installing/updating NVIDIA drivers...")
 
-            # For Bazzite, use rpm-ostree
-            commands = [
-                "rpm-ostree install akmod-nvidia-open xorg-x11-drv-nvidia-open",
-                "rpm-ostree install nvidia-vaapi-driver nvidia-settings"
+            # TEAM_006: Use platform abstraction for driver installation
+            nvidia_packages = [
+                "akmod-nvidia-open",
+                "xorg-x11-drv-nvidia-open",
+                "nvidia-vaapi-driver",
+                "nvidia-settings"
             ]
 
-            for cmd in commands:
-                returncode, stdout, stderr = run_command(cmd, check=False, timeout=120)
-                if returncode != 0:
-                    self.logger.warning(f"Failed to install via rpm-ostree: {stderr}")
-                    # Try regular package manager as fallback
-                    alt_cmd = cmd.replace("rpm-ostree install", "dnf install -y")
-                    run_command(alt_cmd, check=False, timeout=120)
+            for package in nvidia_packages:
+                if not self.package_manager.is_installed(package):
+                    self.logger.info(f"Installing {package}...")
+                    if not self.package_manager.install([package], timeout=120):
+                        self.logger.warning(f"Failed to install {package}")
 
             return True  # Needs reboot
 
@@ -4912,9 +4931,23 @@ class GamingToolsOptimizer(BaseOptimizer):
 class KernelOptimizer(BaseOptimizer):
     """Kernel and boot parameter optimization with profile support"""
 
-    def apply_bazzite_kernel_params(self) -> bool:
-        """Apply kernel parameters using rpm-ostree kargs for Bazzite immutable system with improved transaction handling"""
-        self.logger.info("Applying kernel parameters via rpm-ostree kargs (batch mode)...")
+    # TEAM_006: Added kernel_params property for cross-platform support
+    @property
+    def kernel_params(self):
+        """Lazy-load kernel param manager from platform services"""
+        if not hasattr(self, '_kernel_params') or self._kernel_params is None:
+            if self._platform_services:
+                self._kernel_params = self._platform_services.kernel_params
+            else:
+                # Fallback for backward compatibility (immutable systems)
+                from platforms.immutable.rpm_ostree import RpmOstreeKernelParams
+                self._kernel_params = RpmOstreeKernelParams()
+        return self._kernel_params
+
+    def apply_kernel_params(self) -> bool:
+        """TEAM_006: Apply kernel parameters using platform abstraction"""
+        manager_name = type(self.kernel_params).__name__
+        self.logger.info(f"Applying kernel parameters via {manager_name}...")
 
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
@@ -4954,11 +4987,27 @@ class KernelOptimizer(BaseOptimizer):
         if isolcpus:
             kernel_params.extend(isolcpus.split())
 
-        # Apply kernel parameters with improved transaction handling
-        return self._apply_kernel_params_batch(kernel_params)
+        # TEAM_006: Apply kernel parameters using platform abstraction
+        return self._apply_kernel_params_via_abstraction(kernel_params)
 
-    def _apply_kernel_params_batch(self, kernel_params: list) -> bool:
-        """Apply kernel parameters in batches with proper transaction handling and deduplication"""
+    def _apply_kernel_params_via_abstraction(self, kernel_params: list) -> bool:
+        """TEAM_006: Apply kernel parameters using platform abstraction layer"""
+        try:
+            self.logger.info(f"Applying {len(kernel_params)} kernel parameters...")
+            if self.kernel_params.append_params(kernel_params):
+                self.logger.info("Kernel parameters applied successfully")
+                if self.kernel_params.requires_reboot():
+                    self.logger.info("Changes will take effect after reboot")
+                return True
+            else:
+                self.logger.error("Failed to apply kernel parameters")
+                return False
+        except Exception as e:
+            self.logger.error(f"Error applying kernel parameters: {e}")
+            return False
+
+    def _apply_kernel_params_batch_legacy(self, kernel_params: list) -> bool:
+        """DEPRECATED: Legacy method for rpm-ostree direct calls. Use _apply_kernel_params_via_abstraction instead."""
         # Step 1: Check and clear any stuck transactions
         if not self._ensure_rpm_ostree_ready():
             self.logger.error("Failed to prepare rpm-ostree for kernel parameter application")
@@ -6497,8 +6546,26 @@ parallel="yes"
 class BazziteOptimizer(BaseOptimizer):
     """Bazzite-specific optimizations using ujust commands"""
 
+    # TEAM_006: Added platform_info for conditional Bazzite features
+    def __init__(self, logger: logging.Logger, platform_services=None, platform_info=None):
+        super().__init__(logger, platform_services)
+        self._platform_info = platform_info
+
+    @property
+    def is_bazzite(self) -> bool:
+        """TEAM_006: Check if running on Bazzite"""
+        if self._platform_info:
+            return self._platform_info.has_ujust
+        import shutil
+        return shutil.which("ujust") is not None
+
     def apply_ujust_commands(self) -> bool:
-        """Execute Bazzite ujust commands"""
+        """Execute Bazzite ujust commands (only on Bazzite)"""
+        # TEAM_006: Skip ujust commands if not on Bazzite
+        if not self.is_bazzite:
+            self.logger.info("Skipping Bazzite-specific optimizations (ujust not available)")
+            return True  # Return success, not failure
+
         self.logger.info("Applying Bazzite-specific optimizations...")
 
         for command in BAZZITE_UJUST_COMMANDS:
@@ -6519,9 +6586,12 @@ class BazziteOptimizer(BaseOptimizer):
 
     def validate(self) -> Dict[str, bool]:
         """Validate Bazzite optimizations"""
-        validations = {}
+        # TEAM_006: Return empty validation on non-Bazzite systems
+        if not self.is_bazzite:
+            self.logger.debug("Skipping Bazzite validation (not on Bazzite)")
+            return {}
 
-        # Basic validation - check if ujust is available
+        validations = {}
         returncode, _, _ = run_command("which ujust", check=False)
         validations["ujust_available"] = returncode == 0
 
@@ -6841,6 +6911,15 @@ class BazziteGamingOptimizer:
 
     def __init__(self):
         self.logger = setup_logging()
+        
+        # TEAM_006: Platform detection and services initialization
+        from platforms import detect_platform, PlatformServices
+        self.platform_info = detect_platform()
+        self.platform_services = PlatformServices(self.platform_info)
+        self.logger.info(f"Detected platform: {self.platform_info.platform_type.name}")
+        self.logger.info(f"Package manager: {self.platform_info.package_manager}")
+        self.logger.info(f"Boot method: {self.platform_info.boot_method}")
+        
         self.optimizers = []
         self.needs_reboot = False
         self.system_info = get_system_info()
@@ -6854,10 +6933,20 @@ class BazziteGamingOptimizer:
     def print_banner(self):
         """Display welcome banner"""
         print_colored("=" * 62, Colors.HEADER)
-        print_colored("    BAZZITE DX ULTIMATE GAMING OPTIMIZER v" +
+        print_colored("    LINUX GAMING OPTIMIZER v" +
                       SCRIPT_VERSION, Colors.HEADER + Colors.BOLD)
-        print_colored("  Enhanced for RTX 5080 Blackwell | i9-10850K | 64GB RAM", Colors.OKCYAN)
-        print_colored("  Now with: Thermal Management | HDR | Profiles | Validation", Colors.OKBLUE)
+        
+        # TEAM_006: Dynamic hardware display instead of hard-coded values
+        gpu_name = "Unknown GPU"
+        if self.system_info.get('gpus'):
+            gpu_name = self.system_info['gpus'][0].split(':')[-1].strip()[:30]
+        cpu_name = self.system_info.get('cpu_model', 'Unknown CPU')
+        if len(cpu_name) > 25:
+            cpu_name = cpu_name[:22] + "..."
+        ram_gb = self.system_info.get('ram_gb', '?')
+        
+        print_colored(f"  Detected: {gpu_name} | {cpu_name} | {ram_gb}GB RAM", Colors.OKCYAN)
+        print_colored(f"  Platform: {self.platform_info.distro_name} ({self.platform_info.platform_type.name})", Colors.OKBLUE)
         print_colored("=" * 62, Colors.HEADER)
         print()
 
@@ -6936,14 +7025,17 @@ class BazziteGamingOptimizer:
             if not detected and component != "bazzite_os":
                 optimal_config = False
 
-        # Warn if not on Bazzite
-        if not self.hardware_checks["bazzite_os"]:
-            print_colored(
-                "\nWARNING: Bazzite not detected. Some optimizations may not work correctly.",
-                Colors.WARNING)
+        # TEAM_006: Platform-aware warnings using platform_info
+        from platforms import PlatformType
+        if self.platform_info.platform_type == PlatformType.UNKNOWN:
+            print_colored("\nWARNING: Unknown platform detected.", Colors.WARNING)
+            print_colored("Some optimizations may not work correctly.", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
             if input().lower() != 'y':
                 return False
+        elif not self.platform_info.is_immutable:
+            print_colored(f"\nINFO: Running on {self.platform_info.distro_name}", Colors.OKBLUE)
+            print_colored("Using GRUB for kernel parameters.", Colors.OKBLUE)
 
         # Warn if hardware doesn't match optimal config
         if not optimal_config:
@@ -6968,18 +7060,39 @@ class BazziteGamingOptimizer:
 
     def initialize_optimizers(self):
         """Initialize all optimizer modules with selected profile"""
+        # TEAM_006: Pass platform_services to all optimizers for cross-platform support
+        ps = self.platform_services
+        
+        # Dynamic optimizer names based on detected hardware
+        gpu_name = "GPU"
+        if self.system_info.get('gpus'):
+            gpu_info = self.system_info['gpus'][0].lower()
+            if "nvidia" in gpu_info:
+                gpu_name = "NVIDIA GPU"
+            elif "amd" in gpu_info:
+                gpu_name = "AMD GPU"
+            elif "intel" in gpu_info:
+                gpu_name = "Intel GPU"
+        
+        cpu_name = "CPU"
+        cpu_model = self.system_info.get('cpu_model', '').lower()
+        if "intel" in cpu_model:
+            cpu_name = "Intel CPU"
+        elif "amd" in cpu_model:
+            cpu_name = "AMD CPU"
+        
         self.optimizers = [
-            ("Boot Infrastructure", BootInfrastructureOptimizer(self.logger)),
-            ("NVIDIA RTX 5080 Blackwell", NvidiaOptimizer(self.logger)),
-            ("Intel i9-10850K CPU", CPUOptimizer(self.logger)),
-            ("Memory & Storage", MemoryOptimizer(self.logger)),
-            ("Audio System", AudioOptimizer(self.logger)),
-            ("Network (Intel I225-V)", NetworkOptimizer(self.logger)),
-            ("Gaming Tools", GamingToolsOptimizer(self.logger)),
-            ("Kernel & Boot", KernelOptimizer(self.logger)),
-            ("Systemd Services", SystemdServiceOptimizer(self.logger)),
-            ("KDE Plasma 6 Wayland", PlasmaOptimizer(self.logger)),
-            ("Bazzite Specific", BazziteOptimizer(self.logger))
+            ("Boot Infrastructure", BootInfrastructureOptimizer(self.logger, ps)),
+            (gpu_name, NvidiaOptimizer(self.logger, ps)),
+            (cpu_name, CPUOptimizer(self.logger, ps)),
+            ("Memory & Storage", MemoryOptimizer(self.logger, ps)),
+            ("Audio System", AudioOptimizer(self.logger, ps)),
+            ("Network", NetworkOptimizer(self.logger, ps)),
+            ("Gaming Tools", GamingToolsOptimizer(self.logger, ps)),
+            ("Kernel & Boot", KernelOptimizer(self.logger, ps)),
+            ("Systemd Services", SystemdServiceOptimizer(self.logger, ps)),
+            ("Desktop Environment", PlasmaOptimizer(self.logger, ps)),
+            ("Distribution Specific", BazziteOptimizer(self.logger, ps, self.platform_info))
         ]
 
         # Set profile for all optimizers
