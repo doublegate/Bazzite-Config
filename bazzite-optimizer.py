@@ -7612,8 +7612,9 @@ USAGE INSTRUCTIONS
         self.print_system_info()
 
         # Parse command line arguments first to handle non-root commands
+        # TEAM_014: Fixed description to match banner and version
         parser = argparse.ArgumentParser(
-            description='Bazzite DX Ultimate Gaming Optimizer v4',
+            description=f'Linux Gaming Optimizer v{SCRIPT_VERSION}',
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 Profiles:
@@ -7625,11 +7626,13 @@ Profiles:
 Examples:
   sudo python3 bazzite-optimizer.py                      # Full optimization (balanced)
   sudo python3 bazzite-optimizer.py --profile competitive # Competitive gaming profile
-  sudo python3 bazzite-optimizer.py --benchmark          # Run with benchmarks
-  sudo python3 bazzite-optimizer.py --skip-packages      # Skip package installation
-  sudo python3 bazzite-optimizer.py --validate           # Validate optimizations
+  sudo python3 bazzite-optimizer.py --validate           # Validate current optimizations
   sudo python3 bazzite-optimizer.py --rollback           # Rollback all changes
-  sudo python3 bazzite-optimizer.py --verify             # Show verification commands only
+
+Kernel Management:
+  python3 bazzite-optimizer.py --list-kernel-profiles    # List saved kernel profiles
+  python3 bazzite-optimizer.py --kernel-diff baseline    # Compare current vs baseline
+  sudo python3 bazzite-optimizer.py --kernel-profile baseline  # Restore stock kernel
             """
         )
 
@@ -7722,7 +7725,11 @@ Examples:
             if kpm and hasattr(kpm, 'diff_profile'):
                 diff = kpm.diff_profile(args.kernel_diff)
                 if "error" in diff:
+                    # TEAM_014: Show available profiles on error
                     print_colored(diff["error"], Colors.FAIL)
+                    available = kpm.list_profiles() if hasattr(kpm, 'list_profiles') else []
+                    if available:
+                        print_colored(f"Available profiles: {', '.join(available)}", Colors.OKBLUE)
                 else:
                     print_colored(f"\nDiff vs '{args.kernel_diff}':", Colors.HEADER)
                     if diff["add"]:
@@ -7742,10 +7749,14 @@ Examples:
         if args.save_baseline:
             kpm = _get_kernel_profile_manager()
             if kpm and hasattr(kpm, 'save_baseline'):
-                if kpm.save_baseline():
+                # TEAM_014: Check if baseline already exists before saving
+                baseline_exists = kpm.PROFILE_DIR.exists() and (kpm.PROFILE_DIR / "baseline.conf").exists()
+                if baseline_exists:
+                    print_colored("Baseline already exists. Use --kernel-diff baseline to compare.", Colors.OKBLUE)
+                elif kpm.save_baseline():
                     print_colored("Baseline kernel params saved successfully", Colors.OKGREEN)
                 else:
-                    print_colored("Failed to save baseline (may already exist)", Colors.WARNING)
+                    print_colored("Failed to save baseline (permission denied or disk error)", Colors.FAIL)
             else:
                 print_colored("Kernel profile management not available on this platform", Colors.WARNING)
             return 0
@@ -7753,10 +7764,18 @@ Examples:
         if args.kernel_profile:
             kpm = _get_kernel_profile_manager()
             if kpm and hasattr(kpm, 'apply_profile'):
-                if kpm.apply_profile(args.kernel_profile):
-                    print_colored(f"Applied kernel profile '{args.kernel_profile}'. Reboot required.", Colors.OKGREEN)
+                # TEAM_014: Check if profile exists before applying, show helpful error
+                available = kpm.list_profiles() if hasattr(kpm, 'list_profiles') else []
+                if args.kernel_profile not in available:
+                    print_colored(f"Profile '{args.kernel_profile}' not found.", Colors.FAIL)
+                    if available:
+                        print_colored(f"Available profiles: {', '.join(available)}", Colors.OKBLUE)
+                    else:
+                        print_colored("No profiles saved. Run optimizer first to create baseline.", Colors.OKBLUE)
+                elif kpm.apply_profile(args.kernel_profile):
+                    print_colored(f"✓ Applied kernel profile '{args.kernel_profile}'. Reboot required.", Colors.OKGREEN)
                 else:
-                    print_colored(f"Failed to apply profile '{args.kernel_profile}'", Colors.FAIL)
+                    print_colored(f"Failed to apply profile '{args.kernel_profile}' (permission error?)", Colors.FAIL)
             else:
                 print_colored("Kernel profile management not available on this platform", Colors.WARNING)
             return 0
@@ -7811,6 +7830,18 @@ Examples:
         print_colored(f"\nSelected Profile: {self.profile.upper()}", Colors.HEADER)
         profile_info = GAMING_PROFILES[self.profile]
         print(f"  {profile_info['description']}")
+
+        # TEAM_013/014: Automatic kernel baseline backup before any optimization
+        kpm = _get_kernel_profile_manager()
+        if kpm and hasattr(kpm, 'save_baseline'):
+            # Check if baseline already exists before attempting save
+            baseline_exists = kpm.PROFILE_DIR.exists() and (kpm.PROFILE_DIR / "baseline.conf").exists()
+            if baseline_exists:
+                print_colored("\n  Kernel baseline already saved (use --kernel-profile baseline to restore)", Colors.OKBLUE)
+            elif kpm.save_baseline():
+                print_colored("\n✓ Kernel baseline saved (use --kernel-profile baseline to restore)", Colors.OKGREEN)
+            else:
+                print_colored("\n⚠ Could not save kernel baseline (permission error?)", Colors.WARNING)
 
         # Save profile settings as environment
         self.profile_manager.export_profile_env(self.profile)
