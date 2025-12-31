@@ -12,7 +12,8 @@
 
 **Task**:
 ```bash
-pytest -q 2>&1 | tee .planning/refactor-generic-platform/audit/test-baseline.txt
+# Note: --override-ini needed if pytest.ini has coverage options without pytest-cov installed
+pytest -q --override-ini="addopts=" 2>&1 | tee .planning/refactor-generic-platform/audit/test-baseline.txt
 ```
 
 **Expected Output**: Test summary saved to file.
