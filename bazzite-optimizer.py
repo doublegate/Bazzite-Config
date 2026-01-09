@@ -3099,6 +3099,7 @@ class NvidiaOptimizer(BaseOptimizer):
         version_match = re.match(r"(\d+)\.(\d+)", driver_version)
         if version_match:
             major = int(version_match.group(1))
+        return True
     def check_resizable_bar(self) -> bool:
         """TEAM_013: Check if Resizable BAR is enabled - generic for all NVIDIA GPUs"""
         gpu_name = self.gpu_name
