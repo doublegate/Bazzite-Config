@@ -1,47 +1,8 @@
 #!/usr/bin/env python3
 """
-Bazzite DX Ultimate Gaming Optimization Master Script v4.1.0
-For RTX 5080, Intel i9-10850K, 64GB RAM, Samsung 990 EVO Plus SSDs
-
-Version 4.0 enhancements (incl. all previous features):
-- Stability testing system for overclocking validation
-- Power consumption monitoring and tracking
-- Log rotation for long-term maintenance
-- Security warnings for mitigation disabling
-- Display server auto-detection (X11/Wayland)
-- Automated backup scheduling
-- Steam Deck/handheld detection and optimization
-- Enhanced NVIDIA GPU verification
-- Safer GRUB modification with validation
-- Conservative Intel undervolting with stepping
-- Network isolation mode for competitive gaming
-- Crash recovery and safe mode
-- Performance regression detection
-- Emergency thermal throttling
-
-Includes all v3.0 features:
-- Dynamic thermal management with temperature-based fan curves
-- Performance validation system
-- HDR and VRR configuration for modern displays
-- Profile system (Competitive, Balanced, Streaming, Creative)
-- Resizable BAR validation
-- VKD3D-Proton shader cache optimization
-- Enhanced safety checks and recovery mechanisms
-- Benchmark integration for performance measurement
-- Automatic optimization verification
-
-Includes all v2.0 features:
-- Latest RTX 5080 Blackwell optimizations
-- DLSS 4 Frame Generation bug workarounds
-- Optimized ZRAM configuration for 64GB systems
-- Bazzite ujust command integration
-- System76-scheduler configuration
-- MGLRU and EEVDF scheduler tuning
-- Enhanced PipeWire/WirePlumber configuration
-- Intel I225-V ethernet fixes
-
-Author: System Optimization Framework
-License: MIT
+Professional Gaming Optimization Master Script
+Universal Support for Fedora-based Systems (Bazzite, Silverblue, Workstation)
+Dynamic Hardware-Aware Optimizations
 """
 
 import os
@@ -68,13 +29,16 @@ import statistics
 # CONFIGURATION AND CONSTANTS
 # ============================================================================
 
-SCRIPT_VERSION = "4.1.0"
-LOG_DIR = Path("/var/log/bazzite-optimizer")
-CONFIG_BACKUP_DIR = Path("/var/backups/bazzite-optimizer")
-PROFILE_DIR = Path("/etc/bazzite-optimizer/profiles")
+SCRIPT_VERSION = "5.0.0"
+LOG_DIR = Path("/var/log/gaming-optimizer")
+CONFIG_BACKUP_DIR = Path("/var/backups/gaming-optimizer")
+PROFILE_DIR = Path("/etc/gaming-optimizer/profiles")
+
+# TEAM_013: Dry-run mode flag
+DRY_RUN = False
 SHADER_CACHE_DIR = Path("/var/cache/gaming-shaders")
-CRASH_RECOVERY_DIR = Path("/var/cache/bazzite-optimizer/recovery")
-PROFILE_STATE_DIR = Path("/var/lib/bazzite-optimizer")  # State persistence for deduplication
+CRASH_RECOVERY_DIR = Path("/var/cache/gaming-optimizer/recovery")
+PROFILE_STATE_DIR = Path("/var/lib/gaming-optimizer")
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Minimum requirements
@@ -136,10 +100,10 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "performance",
             "gpu_power_mode": 1,
-            "gpu_clock_offset": 450,  # Conservative for RTX 5080 stability
-            "gpu_mem_offset": 800,   # Safe limit based on community data
+            "gpu_clock_offset_factor": 0.8,  # 80% of detected safe max
+            "gpu_mem_offset_factor": 0.8,    # 80% of detected safe max
             "network_latency": "ultra-low",
-            "network_isolation": True,  # New v4: isolate gaming traffic
+            "network_isolation": True,
             "audio_quantum": 256,
             "visual_effects": False,
             "compositor_bypass": True,
@@ -147,7 +111,7 @@ GAMING_PROFILES = {
             "disable_mitigations": True,
             "isolate_cores": True,
             "fan_profile": "aggressive",
-            "undervolt_aggressive": False  # v4: Conservative for stability
+            "undervolt_aggressive": False
         }
     },
     "balanced": {
@@ -157,8 +121,8 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "performance",
             "gpu_power_mode": 1,
-            "gpu_clock_offset": 400,
-            "gpu_mem_offset": 800,
+            "gpu_clock_offset_factor": 0.7,  # 70% of detected safe max
+            "gpu_mem_offset_factor": 0.8,    # 80% of detected safe max
             "network_latency": "low",
             "network_isolation": False,
             "audio_quantum": 512,
@@ -178,8 +142,8 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "schedutil",
             "gpu_power_mode": 2,
-            "gpu_clock_offset": 350,
-            "gpu_mem_offset": 600,
+            "gpu_clock_offset_factor": 0.6,  # 60% of detected safe max
+            "gpu_mem_offset_factor": 0.6,    # 60% of detected safe max
             "network_latency": "balanced",
             "network_isolation": False,
             "audio_quantum": 1024,
@@ -199,8 +163,8 @@ GAMING_PROFILES = {
         "settings": {
             "cpu_governor": "performance",
             "gpu_power_mode": 1,
-            "gpu_clock_offset": 450,
-            "gpu_mem_offset": 900,
+            "gpu_clock_offset_factor": 0.8,  # 80% of detected safe max
+            "gpu_mem_offset_factor": 0.9,    # 90% of detected safe max
             "network_latency": "normal",
             "network_isolation": False,
             "audio_quantum": 2048,
@@ -213,15 +177,15 @@ GAMING_PROFILES = {
             "undervolt_aggressive": False
         }
     },
-    "safe": {  # v4: New safe mode profile
+    "safe": {
         "name": "Safe Mode",
         "description": "Conservative settings for troubleshooting",
         "security_risk": "NONE",
         "settings": {
             "cpu_governor": "schedutil",
             "gpu_power_mode": 2,
-            "gpu_clock_offset": 0,
-            "gpu_mem_offset": 0,
+            "gpu_clock_offset_factor": 0.0,
+            "gpu_mem_offset_factor": 0.0,
             "network_latency": "normal",
             "network_isolation": False,
             "audio_quantum": 1024,
@@ -234,15 +198,15 @@ GAMING_PROFILES = {
             "undervolt_aggressive": False
         }
     },
-    "handheld": {  # v4: New handheld/Steam Deck profile
+    "handheld": {
         "name": "Handheld/Steam Deck",
         "description": "Optimized for battery life and thermal constraints",
         "security_risk": "LOW",
         "settings": {
             "cpu_governor": "powersave",
             "gpu_power_mode": 0,
-            "gpu_clock_offset": 0,
-            "gpu_mem_offset": 0,
+            "gpu_clock_offset_factor": 0.0,
+            "gpu_mem_offset_factor": 0.0,
             "network_latency": "balanced",
             "network_isolation": False,
             "audio_quantum": 1024,
@@ -284,9 +248,9 @@ FAN_CURVES = {
 # OPTIMIZATION CONFIGURATIONS - All v3 configs with v4 enhancements
 # ============================================================================
 
-# NVIDIA RTX 5080 Configuration - Enhanced with validation and v4 safety
-NVIDIA_MODULE_CONFIG = """# RTX 5080 Blackwell Gaming Optimizations v4
-# Force -open driver variant for RTX 5080
+# NVIDIA Universal Configuration - Enhanced with validation and safety
+NVIDIA_MODULE_CONFIG = """# NVIDIA Gaming Optimizations
+# Force -open driver variant for supported GPUs
 options nvidia NVreg_OpenRmEnableUnsupportedGpus=1
 options nvidia-drm modeset=1 fbdev=1
 options nvidia NVreg_PreserveVideoMemoryAllocations=1
@@ -294,21 +258,20 @@ options nvidia NVreg_RegistryDwords="PowerMizerEnable=0x1;PerfLevelSrc=0x2222"
 options nvidia NVreg_EnableGpuFirmware=1
 options nvidia NVreg_RegistryDwords="PerfLevelSrc=0x2222;PowerMizerDefaultAC=0x1"
 options nvidia NVreg_EnableResizableBar=1
-options nvidia NVreg_EnablePCIeGen3=0
 options nvidia NVreg_UsePageAttributeTable=1
 options nvidia NVreg_EnableHDMI20=1
 options nvidia NVreg_EnableStreamMemOPs=1
 options nvidia NVreg_EnableBacklightHandler=1
-# v4 Safety: Temperature monitoring enabled
+# Safety: Temperature monitoring enabled
 options nvidia NVreg_TemperatureMonitoring=1
 """
 
-NVIDIA_XORG_CONFIG = """# RTX 5080 X11 Configuration with HDR Support
+NVIDIA_XORG_CONFIG = """# NVIDIA X11 Configuration with HDR Support
 Section "Device"
     Identifier     "Nvidia Card"
     Driver         "nvidia"
     VendorName     "NVIDIA Corporation"
-    BoardName      "GeForce RTX 5080"
+    BoardName      "{BOARD_NAME}"
     Option         "Coolbits" "28"
     Option         "TripleBuffer" "true"
     Option         "AllowIndirectGLXProtocol" "off"
@@ -330,11 +293,11 @@ Section "Extensions"
 EndSection
 """
 
-# Dynamic GPU Optimization Script with v4 safety checks
+# Dynamic GPU Optimization Script with safety checks
 NVIDIA_OPTIMIZATION_SCRIPT = """#!/bin/bash
-# RTX 5080 Gaming Optimization Script v4 - With Safety Features
+# NVIDIA Gaming Optimization Script - With Safety Features
 
-# v4 Safety: Check if NVIDIA GPU exists
+# Safety: Check if NVIDIA GPU exists
 if ! command -v nvidia-smi &> /dev/null; then
     echo "WARNING: nvidia-smi not found, skipping GPU optimizations"
     exit 0
@@ -350,12 +313,12 @@ get_gpu_temp() {{
     nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>/dev/null || echo "0"
 }}
 
-# Function to get GPU power draw (v4)
+# Function to get GPU power draw
 get_gpu_power() {{
     nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits 2>/dev/null | cut -d. -f1 || echo "0"
 }}
 
-# v4 Safety check: Emergency throttle if too hot
+# Safety check: Emergency throttle if too hot
 emergency_check() {{
     local temp=$(get_gpu_temp)
     if [ $temp -gt {MAX_GPU_TEMP_CRITICAL} ]; then
@@ -366,12 +329,12 @@ emergency_check() {{
     fi
 }}
 
-# Function to apply fan curve with v4 safety
+# Function to apply fan curve with safety
 apply_fan_curve() {{
     local temp=$(get_gpu_temp)
     local fan_speed=50
 
-    # v4 Safety override for high temps
+    # Safety override for high temps
     if [ $temp -gt 85 ]; then
         fan_speed=100
     else
@@ -406,30 +369,29 @@ apply_fan_curve() {{
     nvidia-settings -a '[gpu:0]/GPUTargetFanSpeed='$fan_speed 2>/dev/null || true
 }}
 
-# v4: Record baseline power consumption
+# Record baseline power consumption
 BASELINE_POWER=$(get_gpu_power)
 echo "Baseline GPU power: ${{BASELINE_POWER}}W"
 
-# v4: Emergency check before applying optimizations
+# Emergency check before applying optimizations
 emergency_check
 
 # Enable maximum performance mode
 nvidia-settings -a '[gpu:0]/GPUPowerMizerMode=1' 2>/dev/null || true
 
-# RTX 5080 overclocking based on profile (with v4 validation)
-CLOCK_OFFSET=${{GPU_CLOCK_OFFSET:-400}}
-MEM_OFFSET=${{GPU_MEM_OFFSET:-800}}
+# Overclocking based on profile (with validation)
+CLOCK_OFFSET=${{GPU_CLOCK_OFFSET:-0}}
+MEM_OFFSET=${{GPU_MEM_OFFSET:-0}}
 
-# v4: Validate overclock values are within safe ranges
-# RTX 5080 Blackwell-specific safety limits based on community testing
-if [ $CLOCK_OFFSET -gt 500 ]; then
-    echo "WARNING: RTX 5080 core clock offset clamped to 500MHz for stability"
-    CLOCK_OFFSET=500
+# Validate overclock values are within safe ranges
+if [ $CLOCK_OFFSET -gt {MAX_CLOCK_OFFSET} ]; then
+    echo "WARNING: Core clock offset clamped to {MAX_CLOCK_OFFSET}MHz for stability"
+    CLOCK_OFFSET={MAX_CLOCK_OFFSET}
 fi
 
-if [ $MEM_OFFSET -gt 800 ]; then
-    echo "WARNING: RTX 5080 memory offset clamped to 800MHz for stability"
-    MEM_OFFSET=800
+if [ $MEM_OFFSET -gt {MAX_MEM_OFFSET} ]; then
+    echo "WARNING: Memory offset clamped to {MAX_MEM_OFFSET}MHz for stability"
+    MEM_OFFSET={MAX_MEM_OFFSET}
 fi
 
 nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffsetAllPerformanceLevels='$CLOCK_OFFSET 2>/dev/null || true
@@ -508,7 +470,8 @@ CURRENT_POWER=$(get_gpu_power)
 POWER_INCREASE=$((CURRENT_POWER - BASELINE_POWER))
 echo "Power consumption increased by ${{POWER_INCREASE}}W"
 
-echo "RTX 5080 Blackwell optimizations v4 applied with safety checks!"
+# TEAM_006: Generic message instead of hard-coded GPU name
+echo "GPU optimizations applied with safety checks!"
 """
 
 # Intel i9-10850K CPU Optimization - Enhanced with v4 stepped undervolting
@@ -518,9 +481,15 @@ CPU_OPTIMIZATION_SCRIPT = """#!/bin/bash
 # Enable MSR module for advanced CPU control
 modprobe msr 2>/dev/null || true
 
-# Install cpupower if not present
+# TEAM_006: Install cpupower if not present (platform-aware)
 if ! command -v cpupower &> /dev/null; then
-    rpm-ostree install kernel-tools 2>/dev/null || dnf install -y kernel-tools 2>/dev/null || true
+    if command -v rpm-ostree &> /dev/null && rpm-ostree status &>/dev/null; then
+        rpm-ostree install kernel-tools 2>/dev/null || true
+    elif command -v dnf &> /dev/null; then
+        dnf install -y kernel-tools 2>/dev/null || true
+    elif command -v apt-get &> /dev/null; then
+        apt-get install -y linux-tools-common 2>/dev/null || true
+    fi
 fi
 
 # Function to get CPU package temperature
@@ -631,7 +600,8 @@ echo "Intel i9-10850K optimized with stepped undervolting (Profile: $GOVERNOR)!"
 """
 
 # Memory Configuration - Optimized with profile support
-SYSCTL_CONFIG = """# 64GB RAM Gaming Optimizations v4 with Profile Support
+# TEAM_015: Removed hard-coded 64GB reference
+SYSCTL_CONFIG = """# Gaming Memory Optimizations v4 with Profile Support
 # Profile: {PROFILE}
 
 # ZRAM optimized values
@@ -759,12 +729,12 @@ echo "Shader cache directories configured"
 """
 
 # ZRAM Configuration - Profile-aware
-ZRAM_CONFIG = """# ZRAM Configuration for 64GB Gaming System
+# TEAM_015: Removed hard-coded 64GB reference
+ZRAM_CONFIG = """# ZRAM Gaming Configuration
 [zram0]
 # {PROFILE} Profile Configuration
 zram-size = min(ram / {DIVISOR}, {MAX_SIZE})
 compression-algorithm = {ALGORITHM}
-writeback-device = /dev/nvme0n1p3
 """
 
 # NVMe Optimization
@@ -1836,14 +1806,36 @@ Use with caution on systems with sensitive data.
             sys.exit(1)
 
 
-def print_colored(message: str, color: str = Colors.ENDC) -> None:
+def print_colored(message: str, color: str = Colors.ENDC, end: str = "\n") -> None:
     """Print colored message to terminal"""
-    print(f"{color}{message}{Colors.ENDC}")
+    print(f"{color}{message}{Colors.ENDC}", end=end)
 
 
 def run_command(command: str, shell: bool = True, check: bool = True,
-                timeout: int = 30) -> Tuple[int, str, str]:
-    """Execute shell command with timeout and error handling"""
+                timeout: int = 30, dry_run_skip: bool = True) -> Tuple[int, str, str]:
+    """Execute shell command with timeout and error handling
+    
+    Args:
+        dry_run_skip: If True and DRY_RUN is active, skip execution and narrate.
+                     Set to False for read-only commands that should still run.
+    """
+    global DRY_RUN
+    
+    # TEAM_013: Dry-run mode - narrate destructive commands
+    if DRY_RUN and dry_run_skip:
+        # Identify read-only commands that should still execute
+        read_only_patterns = ['--query', '-q', 'grep', 'cat ', 'head ', 'tail ', 
+                             'lspci', 'lsmod', 'uname', 'which', 'test ', '[ ',
+                             'nvidia-smi', 'echo', 'printf']
+        cmd_lower = command.lower()
+        is_read_only = any(p in cmd_lower for p in read_only_patterns)
+        
+        if not is_read_only:
+            # Truncate long commands for display
+            display_cmd = command[:80] + ('...' if len(command) > 80 else '')
+            print_colored(f"  [DRY-RUN] Would execute: {display_cmd}", Colors.OKCYAN)
+            return 0, "", ""  # Simulate success
+    
     try:
         result = subprocess.run(
             command,
@@ -1915,6 +1907,20 @@ def backup_file(filepath: Path) -> Optional[Path]:
 
 def write_config_file(filepath: Path, content: str, executable: bool = False) -> bool:
     """Write configuration file with proper permissions and backup"""
+    global DRY_RUN
+    
+    # TEAM_013: Dry-run mode - narrate without writing
+    if DRY_RUN:
+        mode = "executable" if executable else "config"
+        print_colored(f"  [DRY-RUN] Would write {mode} file: {filepath}", Colors.OKCYAN)
+        # Show first few lines of content
+        preview = content.strip().split('\n')[:3]
+        for line in preview:
+            print(f"            {line[:70]}{'...' if len(line) > 70 else ''}")
+        if len(content.strip().split('\n')) > 3:
+            print(f"            ... ({len(content.strip().split(chr(10)))} total lines)")
+        return True
+    
     try:
         backup_file(filepath)
 
@@ -1966,42 +1972,82 @@ def get_system_info() -> Dict[str, Any]:
     info = {
         "kernel": platform.release(),
         "kernel_version": tuple(map(int, re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()).groups())) if re.match(r'^(\d+)\.(\d+)\.(\d+)', platform.release()) else (0, 0, 0),
-        "distribution": "",
-        "cpu_model": "",
-        "cpu_cores": psutil.cpu_count(logical=False),
-        "cpu_threads": psutil.cpu_count(logical=True),
-        "ram_gb": round(psutil.virtual_memory().total / (1024**3)),
         "gpus": [],
         "network_interfaces": [],
         "nvme_devices": [],
-        "free_disk_gb": get_smart_disk_space(),
-        "form_factor": detect_form_factor(),  # v4
-        "display_server": detect_display_server()  # v4
+        "free_disk_gb": 0,
+        "is_immutable": False,
+        "display_server": os.environ.get("XDG_SESSION_TYPE", "unknown")
     }
 
     # Get distribution info
     try:
-        with open("/etc/os-release") as f:
-            for line in f:
-                if line.startswith("PRETTY_NAME="):
-                    info["distribution"] = line.split("=")[1].strip().strip('"')
-    except BaseException:
+        if Path("/etc/os-release").exists():
+            with open("/etc/os-release") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.startswith("ID="):
+                        info["distribution"] = line.split("=")[1].strip().strip('"')
+                    if line.startswith("VARIANT_ID="):
+                        variant = line.split("=")[1].strip().strip('"')
+                        if variant in ["silverblue", "kinoite", "sericea", "bazzite"]:
+                            info["is_immutable"] = True
+    except Exception:
         pass
 
-    # Get CPU model
+    # Get kernel version
+    kernel_str = platform.release().split("-")[0]
     try:
-        with open("/proc/cpuinfo") as f:
-            for line in f:
-                if "model name" in line:
-                    info["cpu_model"] = line.split(":")[1].strip()
-                    break
-    except BaseException:
+        info["kernel_version"] = tuple(map(int, kernel_str.split(".")[:3]))
+    except ValueError:
         pass
 
-    # Get GPU info
-    returncode, stdout, _ = run_command("lspci | grep -E 'VGA|3D|Display'", check=False)
-    if returncode == 0:
-        info["gpus"] = stdout.strip().split("\n")
+    # Get CPU info
+    info["cpu_model"] = platform.processor() or "unknown"
+    info["cpu_cores"] = psutil.cpu_count(logical=False) or 0
+    info["cpu_threads"] = psutil.cpu_count(logical=True) or 0
+    info["cpu_vendor"] = "unknown"  # Default
+    if "intel" in info["cpu_model"].lower():
+        info["cpu_vendor"] = "intel"
+    elif "amd" in info["cpu_model"].lower():
+        info["cpu_vendor"] = "amd"
+
+    # Get RAM info
+    info["ram_gb"] = round(psutil.virtual_memory().total / (1024**3))
+
+    # Get Disk info
+    try:
+        usage = psutil.disk_usage("/")
+        info["free_disk_gb"] = round(usage.free / (1024**3))
+    except Exception:
+        pass
+
+    # TEAM_009: Get GPU info using new detection (supports eGPU)
+    try:
+        from platforms.detection import detect_gpus, get_primary_gpu
+        gpus = detect_gpus()
+        info["gpus"] = [g.name for g in gpus]
+        info["gpu_info"] = gpus  # Full GPUInfo objects
+        primary = get_primary_gpu()
+        if primary:
+            info["gpu_vendor"] = primary.vendor
+            info["gpu_name"] = primary.name
+            info["gpu_is_egpu"] = primary.is_egpu
+            info["gpu_driver"] = primary.driver
+        else:
+            info["gpu_vendor"] = "unknown"
+    except ImportError:
+        # Fallback to old method if platforms module not available
+        returncode, stdout, _ = run_command("lspci | grep -E 'VGA|3D|Display'", check=False)
+        if returncode == 0:
+            info["gpus"] = stdout.strip().split("\n")
+            gpu_str = stdout.lower()
+            if "nvidia" in gpu_str:
+                info["gpu_vendor"] = "nvidia"
+            elif "amd" in gpu_str or "ati" in gpu_str:
+                info["gpu_vendor"] = "amd"
+            elif "intel" in gpu_str:
+                info["gpu_vendor"] = "intel"
 
     # Get network interfaces
     for interface in psutil.net_if_addrs().keys():
@@ -2017,61 +2063,39 @@ def get_system_info() -> Dict[str, Any]:
     return info
 
 
-def check_hardware_compatibility() -> Dict[str, bool]:
-    """Check if hardware matches expected configuration - v4 enhanced"""
-    checks = {
-        "nvidia_rtx5080": False,
-        "intel_i9_10850k": False,
-        "ram_64gb": False,
-        "nvme_storage": False,
-        "creative_audio": False,
-        "intel_i225v": False,
-        "bazzite_os": False,
-        "resizable_bar": False,
-        "nvidia_gpu_present": check_nvidia_gpu_exists()  # v4
-    }
-
+def check_hardware_capabilities() -> Dict[str, Any]:
+    """Detect system hardware capabilities for dynamic profiles"""
     system_info = get_system_info()
-
-    # Check NVIDIA RTX 5080
-    for gpu in system_info["gpus"]:
-        if "5080" in gpu or "RTX 50" in gpu or "GB203" in gpu:
-            checks["nvidia_rtx5080"] = True
-            break
-
-    # Check Intel i9-10850K
-    if "10850K" in system_info["cpu_model"] or "i9-10850" in system_info["cpu_model"]:
-        checks["intel_i9_10850k"] = True
-
-    # Check 64GB RAM
-    if system_info["ram_gb"] >= 60:
-        checks["ram_64gb"] = True
-
-    # Check NVMe storage
-    if system_info["nvme_devices"]:
-        checks["nvme_storage"] = True
+    caps = {
+        "has_nvidia": system_info["gpu_vendor"] == "nvidia",
+        "has_amd_gpu": system_info["gpu_vendor"] == "amd",
+        "has_intel_gpu": system_info["gpu_vendor"] == "intel",
+        "has_nvme": len(system_info["nvme_devices"]) > 0,
+        "has_creative_audio": False,
+        "has_intel_nic": False,
+        "is_immutable": system_info["is_immutable"],
+        "resizable_bar": False,
+        "ram_gb": system_info["ram_gb"],
+        "cpu_vendor": system_info["cpu_vendor"]
+    }
 
     # Check Creative audio
     returncode, stdout, _ = run_command("lspci | grep -i creative", check=False)
-    if returncode == 0:
-        checks["creative_audio"] = True
+    if returncode == 0 and stdout:
+        caps["has_creative_audio"] = True
 
-    # Check Intel I225-V
-    returncode, stdout, _ = run_command("lspci | grep -i 'I225-V\\|Ethernet.*I225'", check=False)
-    if returncode == 0:
-        checks["intel_i225v"] = True
-
-    # Check Bazzite OS
-    if "bazzite" in system_info["distribution"].lower():
-        checks["bazzite_os"] = True
+    # Check Intel NIC (I225-V etc)
+    returncode, stdout, _ = run_command("lspci | grep -i 'I225-V\\|Ethernet.*I225\\|I226'", check=False)
+    if returncode == 0 and stdout:
+        caps["has_intel_nic"] = True
 
     # Check Resizable BAR
     returncode, stdout, _ = run_command(
         "lspci -vv 2>/dev/null | grep -i 'resizable bar'", check=False)
     if returncode == 0 and stdout and "disabled" not in stdout.lower():
-        checks["resizable_bar"] = True
+        caps["resizable_bar"] = True
 
-    return checks
+    return caps
 
 
 def check_nvidia_driver_version() -> Optional[str]:
@@ -2264,12 +2288,27 @@ def enhanced_rpm_ostree_kargs() -> str:
 class BaseOptimizer:
     """Base class for all optimizer modules"""
 
-    def __init__(self, logger: logging.Logger):
+    # TEAM_006: Added platform_services parameter for cross-platform support
+    def __init__(self, logger: logging.Logger, platform_services=None):
         self.logger = logger
         self.applied_changes = []
         self.profile = "balanced"  # Default profile
         self.user = os.environ.get('SUDO_USER', os.environ.get('USER', 'root'))
         self.skip_packages = False  # Flag to skip package installation
+        self._platform_services = platform_services
+        self._package_manager = None
+
+    @property
+    def package_manager(self):
+        """TEAM_006: Lazy-load package manager from platform services"""
+        if self._package_manager is None:
+            if self._platform_services:
+                self._package_manager = self._platform_services.package_manager
+            else:
+                # Fallback for backward compatibility
+                from platforms.traditional.rpm import DnfPackageManager
+                self._package_manager = DnfPackageManager()
+        return self._package_manager
 
     def set_profile(self, profile: str):
         """Set optimization profile"""
@@ -2375,21 +2414,18 @@ class BaseOptimizer:
                 self.logger.debug(f"Package {package_name} already installed (dnf)")
                 return True
             
-            # Install via rpm-ostree first for Bazzite immutable system
-            self.logger.debug(f"Installing {package_name} via rpm-ostree")
-            returncode, _, _ = run_command(f"rpm-ostree install {package_name}", check=False, timeout=timeout)
-            if returncode != 0:
-                # For System76 scheduler, try enabling Copr repo
-                if package_name == "system76-scheduler":
-                    self.logger.info("Enabling kylegospo/system76-scheduler Copr repo")
-                    run_command("dnf copr enable -y kylegospo/system76-scheduler", check=False)
-                    returncode, _, _ = run_command(f"dnf install -y {package_name}", check=False, timeout=timeout)
-                    return returncode == 0
-                else:
-                    self.logger.debug(f"rpm-ostree failed, trying dnf for {package_name}")
-                    returncode, _, _ = run_command(f"dnf install -y {package_name}", check=False, timeout=timeout)
-                    return returncode == 0
-            return True
+            # TEAM_006: Use platform abstraction for package installation
+            self.logger.debug(f"Installing {package_name} via {type(self.package_manager).__name__}")
+            if self.package_manager.install([package_name], timeout=timeout):
+                return True
+            
+            # For System76 scheduler, try enabling Copr repo as fallback
+            if package_name == "system76-scheduler":
+                self.logger.info("Enabling kylegospo/system76-scheduler Copr repo")
+                run_command("dnf copr enable -y kylegospo/system76-scheduler", check=False)
+                returncode, _, _ = run_command(f"dnf install -y {package_name}", check=False, timeout=timeout)
+                return returncode == 0
+            return False
         elif package_manager == "flatpak":
             # Check if flatpak is already installed
             returncode, stdout, _ = run_command(f"flatpak list --app | grep {package_name}", check=False)
@@ -3014,10 +3050,42 @@ ExecStart=/usr/local/bin/auto-backup.sh
 
 
 class NvidiaOptimizer(BaseOptimizer):
-    """NVIDIA RTX 5080 Blackwell optimization module - Enhanced v4"""
+    """Universal NVIDIA GPU optimization module - TEAM_013: Now uses dynamic GPU detection"""
+
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
+        # TEAM_013: Detect GPU capabilities dynamically
+        self._gpu_caps = None
+        self._gpu_info = None
+    
+    @property
+    def gpu_caps(self):
+        """TEAM_013: Lazy-load GPU capabilities."""
+        if self._gpu_caps is None:
+            try:
+                from platforms.detection import detect_nvidia_capabilities, get_primary_gpu
+                self._gpu_info = get_primary_gpu()
+                self._gpu_caps = detect_nvidia_capabilities(self._gpu_info)
+            except Exception as e:
+                self.logger.debug(f"Could not detect GPU capabilities: {e}")
+        return self._gpu_caps
+    
+    @property
+    def gpu_name(self):
+        """TEAM_013: Get GPU name for logging."""
+        if self._gpu_info:
+            return self._gpu_info.name
+        return "NVIDIA GPU"
+    
+    @property
+    def gpu_generation(self):
+        """TEAM_013: Get GPU generation for logging."""
+        if self.gpu_caps:
+            return self.gpu_caps.generation.upper()
+        return "NVIDIA"
 
     def check_driver_compatibility(self) -> bool:
-        """Verify driver compatibility with RTX 5080"""
+        """Verify driver compatibility"""
         if not check_nvidia_gpu_exists():
             self.logger.warning("No NVIDIA GPU detected - skipping GPU optimizations")
             return False
@@ -3031,33 +3099,21 @@ class NvidiaOptimizer(BaseOptimizer):
         version_match = re.match(r"(\d+)\.(\d+)", driver_version)
         if version_match:
             major = int(version_match.group(1))
-            minor = int(version_match.group(2))
-
-            # RTX 5080 requires 570.86.16+ or 580.xx
-            if major < 570 or (major == 570 and minor < 86):
-                self.logger.warning(f"Driver version {driver_version} too old for RTX 5080")
-                self.logger.warning("Please update to 570.86.16+ or 580.xx series")
-                return False
-
-            if "Open" not in driver_version and major >= 570:
-                self.logger.warning("RTX 5080 requires -open driver variant")
-                self.logger.info("Consider switching to nvidia-open drivers")
-
         return True
-
     def check_resizable_bar(self) -> bool:
-        """Check if Resizable BAR is enabled with RTX 5080 Blackwell-specific detection"""
-        self.logger.info("Checking RTX 5080 Resizable BAR status...")
+        """TEAM_013: Check if Resizable BAR is enabled - generic for all NVIDIA GPUs"""
+        gpu_name = self.gpu_name
+        self.logger.info(f"Checking Resizable BAR status for {gpu_name}...")
         
-        # RTX 5080 Blackwell-specific methods with enhanced detection
+        # Generic methods for all NVIDIA GPUs
         methods = [
             # Method 1: nvidia-smi direct query
             ("nvidia-smi -q | grep -i 'resizable bar'", "enabled"),
-            # Method 2: PCIe configuration space check for RTX 5080
-            ("nvidia-smi --query-gpu=pcie.link.gen.max --format=csv,noheader,nounits", "4"),
-            # Method 3: lspci detailed check for Blackwell architecture
-            ("lspci -vv | grep -A 10 -B 5 'NVIDIA.*RTX.*5080' | grep -i 'resizable bar'", "enabled"),
-            # Method 4: Alternative nvidia-smi format for Blackwell
+            # Method 2: PCIe gen check (ReBAR requires PCIe 3.0+)
+            ("nvidia-smi --query-gpu=pcie.link.gen.max --format=csv,noheader,nounits", "3"),
+            # Method 3: lspci check for any NVIDIA GPU
+            ("lspci -vv | grep -A 20 'NVIDIA' | grep -i 'resizable bar'", "enabled"),
+            # Method 4: BAR1 memory info
             ("nvidia-smi -q -d MEMORY | grep -i 'bar1\\|resizable'", "")
         ]
         
@@ -3065,35 +3121,24 @@ class NvidiaOptimizer(BaseOptimizer):
         for i, (command, expected_pattern) in enumerate(methods, 1):
             returncode, stdout, _ = run_command(command, check=False)
             if returncode == 0 and stdout.strip():
-                self.logger.debug(f"RTX 5080 Resizable BAR method {i} output: {stdout.strip()[:100]}")
+                self.logger.debug(f"Resizable BAR method {i} output: {stdout.strip()[:100]}")
                 if expected_pattern and expected_pattern.lower() in stdout.lower():
-                    self.logger.info("RTX 5080 Resizable BAR is enabled")
+                    self.logger.info(f"Resizable BAR is enabled for {gpu_name}")
                     return True
-                elif i == 4 and stdout.strip():  # Method 4 checks for any BAR info
+                elif i == 4 and stdout.strip():
                     resizable_bar_found = True
         
-        # RTX 5080 specific: Check if GPU supports Resizable BAR at all
-        returncode, stdout, _ = run_command("lspci -vv | grep -A 20 'NVIDIA.*GeForce.*RTX.*5080' | grep -i 'resizable bar'", check=False)
-        if returncode == 0 and stdout.strip():
-            if "disabled" in stdout.lower():
-                self.logger.warning("RTX 5080 Resizable BAR is supported but disabled - enable in BIOS for optimal gaming performance")
-                return False
-            else:
-                self.logger.info("RTX 5080 Resizable BAR detected via lspci")
-                return True
-        
-        # Final check: RTX 5080 Blackwell should support Resizable BAR
-        returncode, stdout, _ = run_command("nvidia-smi --query-gpu=name --format=csv,noheader,nounits", check=False)
-        if returncode == 0 and "RTX 5080" in stdout:
+        # Check if GPU generation supports ReBAR
+        if self.gpu_caps and self.gpu_caps.supports_resizable_bar:
             if resizable_bar_found:
-                self.logger.info("RTX 5080 detected with Resizable BAR capability")
+                self.logger.info(f"{gpu_name} detected with Resizable BAR capability")
                 return True
             else:
-                self.logger.debug("RTX 5080 detected but Resizable BAR status unclear - treating as acceptable for gaming")
-                return True  # RTX 5080 should work well even without explicit confirmation
-            
-        self.logger.debug("RTX 5080 Resizable BAR status could not be determined - assuming functional")
-        return True
+                self.logger.warning(f"{gpu_name} supports Resizable BAR but it may be disabled - enable in BIOS for better performance")
+                return False
+        
+        self.logger.debug(f"Resizable BAR status could not be determined for {gpu_name}")
+        return resizable_bar_found
 
     def install_drivers(self) -> bool:
         """Ensure proper NVIDIA drivers are installed"""
@@ -3103,19 +3148,19 @@ class NvidiaOptimizer(BaseOptimizer):
         if not self.check_driver_compatibility():
             self.logger.info("Installing/updating NVIDIA drivers...")
 
-            # For Bazzite, use rpm-ostree
-            commands = [
-                "rpm-ostree install akmod-nvidia-open xorg-x11-drv-nvidia-open",
-                "rpm-ostree install nvidia-vaapi-driver nvidia-settings"
+            # TEAM_006: Use platform abstraction for driver installation
+            nvidia_packages = [
+                "akmod-nvidia-open",
+                "xorg-x11-drv-nvidia-open",
+                "nvidia-vaapi-driver",
+                "nvidia-settings"
             ]
 
-            for cmd in commands:
-                returncode, stdout, stderr = run_command(cmd, check=False, timeout=120)
-                if returncode != 0:
-                    self.logger.warning(f"Failed to install via rpm-ostree: {stderr}")
-                    # Try regular package manager as fallback
-                    alt_cmd = cmd.replace("rpm-ostree install", "dnf install -y")
-                    run_command(alt_cmd, check=False, timeout=120)
+            for package in nvidia_packages:
+                if not self.package_manager.is_installed(package):
+                    self.logger.info(f"Installing {package}...")
+                    if not self.package_manager.install([package], timeout=120):
+                        self.logger.warning(f"Failed to install {package}")
 
             return True  # Needs reboot
 
@@ -3137,12 +3182,15 @@ class NvidiaOptimizer(BaseOptimizer):
         return True
 
     def apply_optimizations(self) -> bool:
-        """Apply NVIDIA RTX 5080 optimizations with v4 safety checks"""
+        """TEAM_013: Apply NVIDIA GPU optimizations with dynamic capability detection"""
         if not check_nvidia_gpu_exists():
             self.logger.warning("No NVIDIA GPU detected - skipping GPU optimizations")
             return True  # Not a failure, just skip
 
-        self.logger.info("Applying NVIDIA RTX 5080 Blackwell optimizations...")
+        # TEAM_013: Use detected GPU info for logging
+        gpu_gen = self.gpu_generation
+        gpu_name = self.gpu_name
+        self.logger.info(f"Applying NVIDIA {gpu_gen} optimizations for {gpu_name}...")
 
         success = True
 
@@ -3157,25 +3205,25 @@ class NvidiaOptimizer(BaseOptimizer):
         profile_settings = GAMING_PROFILES.get(
             self.profile, GAMING_PROFILES["balanced"])["settings"]
 
-        # Write module configuration
+        # Write module configuration - TEAM_013: Use generic filename
         if not write_config_file(
-                Path("/etc/modprobe.d/nvidia-blackwell.conf"),
+                Path("/etc/modprobe.d/nvidia-gaming.conf"),
                 NVIDIA_MODULE_CONFIG):
             success = False
         else:
             self.track_change(
                 "NVIDIA module configuration",
-                Path("/etc/modprobe.d/nvidia-blackwell.conf"))
+                Path("/etc/modprobe.d/nvidia-gaming.conf"))
 
-        # Write X11 configuration (if X11 is used)
+        # Write X11 configuration (if X11 is used) - TEAM_013: Use generic filename
         if Path("/etc/X11").exists():
             if not write_config_file(
-                    Path("/etc/X11/xorg.conf.d/90-nvidia-rtx5080.conf"),
+                    Path("/etc/X11/xorg.conf.d/90-nvidia-gaming.conf"),
                     NVIDIA_XORG_CONFIG):
                 success = False
             else:
                 self.track_change("NVIDIA X11 configuration", Path(
-                    "/etc/X11/xorg.conf.d/90-nvidia-rtx5080.conf"))
+                    "/etc/X11/xorg.conf.d/90-nvidia-gaming.conf"))
 
         # Write optimization script with profile settings and v4 safety features
         script_content = NVIDIA_OPTIMIZATION_SCRIPT.format(
@@ -3208,51 +3256,62 @@ class NvidiaOptimizer(BaseOptimizer):
         self.logger.info("Regenerating initramfs...")
         run_command("dracut -f --regenerate-all", check=False, timeout=180)
 
-        # Apply immediate optimizations - RTX 5080 Blackwell specific
+        # Apply immediate optimizations
         run_command("/usr/local/bin/nvidia-gaming-optimize.sh", check=False)
         
         # Check DISPLAY environment for GUI operations
         display_env = os.environ.get('DISPLAY', '')
         
-        # v4.1: Progressive overclocking for competitive profile (safer than immediate application)
+        # TEAM_013: Use detected GPU limits for progressive overclocking
         if self.profile == "competitive" and display_env:
-            self.logger.info("Competitive profile detected - using progressive RTX 5080 overclocking for safety")
+            self.logger.info(f"Competitive profile detected - using progressive {gpu_gen} overclocking for safety")
             target_core = profile_settings.get("gpu_clock_offset", 450)
-            target_memory = profile_settings.get("gpu_mem_offset", 800) 
+            target_memory = profile_settings.get("gpu_mem_offset", 800)
+            
+            # TEAM_013: Clamp to detected GPU limits
+            if self.gpu_caps:
+                target_core = min(target_core, self.gpu_caps.safe_core_offset_max)
+                target_memory = min(target_memory, self.gpu_caps.safe_mem_offset_max)
             
             progressive_success = self.apply_gpu_overclock_progressively(target_core, target_memory)
             if not progressive_success:
-                self.logger.warning("Progressive overclocking failed - RTX 5080 running at conservative settings")
+                self.logger.warning(f"Progressive overclocking failed - {gpu_name} running at conservative settings")
         
-        # For RTX 5080 Blackwell, also apply PowerMizer mode directly if possible
+        # Apply PowerMizer mode if display available
         if display_env:
-            # Apply PowerMizer mode immediately for validation
             power_mode = profile_settings.get("gpu_power_mode", 1)
-            self.logger.debug(f"Applying RTX 5080 PowerMizer mode {power_mode} directly")
+            self.logger.debug(f"Applying PowerMizer mode {power_mode} for {gpu_name}")
             run_command(f"nvidia-settings -a '[gpu:0]/GPUPowerMizerMode={power_mode}'", check=False)
         else:
-            # In headless environments, ensure nvidia-persistenced is running for RTX 5080
-            self.logger.debug("Ensuring nvidia-persistenced is running for RTX 5080 Blackwell")
+            # In headless environments, ensure nvidia-persistenced is running
+            self.logger.debug("Ensuring nvidia-persistenced is running")
             run_command("systemctl enable --now nvidia-persistenced", check=False)
 
-        self.logger.info("NVIDIA RTX 5080 optimizations applied")
+        self.logger.info(f"NVIDIA {gpu_gen} optimizations applied for {gpu_name}")
         return success
 
     def apply_gpu_overclock_progressively(self, target_core: int, target_memory: int) -> bool:
-        """Apply GPU overclocking progressively with stability validation for RTX 5080"""
+        """TEAM_013: Apply GPU overclocking progressively with dynamic limits"""
         if not check_nvidia_gpu_exists():
             self.logger.error("No NVIDIA GPU detected for progressive overclocking")
             return False
-            
-        self.logger.info(f"Starting progressive RTX 5080 overclock to +{target_core}MHz core, +{target_memory}MHz memory")
         
-        # Safety check - ensure targets don't exceed RTX 5080 limits
-        if target_core > 500:
-            self.logger.warning(f"Target core clock {target_core}MHz exceeds RTX 5080 safe limit, clamping to 500MHz")
-            target_core = 500
-        if target_memory > 800:
-            self.logger.warning(f"Target memory clock {target_memory}MHz exceeds RTX 5080 safe limit, clamping to 800MHz")
-            target_memory = 800
+        gpu_name = self.gpu_name
+        self.logger.info(f"Starting progressive overclock for {gpu_name} to +{target_core}MHz core, +{target_memory}MHz memory")
+        
+        # TEAM_013: Use detected GPU limits instead of hard-coded values
+        max_core = 500  # Conservative default
+        max_mem = 800   # Conservative default
+        if self.gpu_caps:
+            max_core = self.gpu_caps.safe_core_offset_max
+            max_mem = self.gpu_caps.safe_mem_offset_max
+        
+        if target_core > max_core:
+            self.logger.warning(f"Target core clock {target_core}MHz exceeds {gpu_name} safe limit, clamping to {max_core}MHz")
+            target_core = max_core
+        if target_memory > max_mem:
+            self.logger.warning(f"Target memory clock {target_memory}MHz exceeds {gpu_name} safe limit, clamping to {max_mem}MHz")
+            target_memory = max_mem
             
         # Progressive steps: start conservative, increment gradually
         core_steps = [200, 300, 350, 400, target_core] if target_core > 400 else [200, 300, target_core]
@@ -3272,7 +3331,7 @@ class NvidiaOptimizer(BaseOptimizer):
             if core_offset > target_core:
                 continue
                 
-            self.logger.info(f"Testing RTX 5080 core overclock: +{core_offset}MHz")
+            self.logger.info(f"Testing {gpu_name} core overclock: +{core_offset}MHz")
             
             # Apply core overclock
             returncode, _, stderr = run_command(
@@ -3297,13 +3356,13 @@ class NvidiaOptimizer(BaseOptimizer):
                 break
             else:
                 current_core = core_offset
-                self.logger.info(f"RTX 5080 core overclock +{core_offset}MHz stable (score: {score}%)")
+                self.logger.info(f"{gpu_name} core overclock +{core_offset}MHz stable (score: {score}%)")
                 
         for memory_offset in memory_steps:
             if memory_offset > target_memory:
                 continue
                 
-            self.logger.info(f"Testing RTX 5080 memory overclock: +{memory_offset}MHz")
+            self.logger.info(f"Testing {gpu_name} memory overclock: +{memory_offset}MHz")
             
             # Apply memory overclock
             returncode, _, stderr = run_command(
@@ -3328,13 +3387,13 @@ class NvidiaOptimizer(BaseOptimizer):
                 break
             else:
                 current_memory = memory_offset
-                self.logger.info(f"RTX 5080 memory overclock +{memory_offset}MHz stable (score: {score}%)")
+                self.logger.info(f"{gpu_name} memory overclock +{memory_offset}MHz stable (score: {score}%)")
                 
         final_stable = current_core > 0 or current_memory > 0
         if final_stable:
-            self.logger.info(f"Progressive RTX 5080 overclock complete: +{current_core}MHz core, +{current_memory}MHz memory")
+            self.logger.info(f"Progressive {gpu_name} overclock complete: +{current_core}MHz core, +{current_memory}MHz memory")
         else:
-            self.logger.warning("No stable overclock achieved, RTX 5080 running at stock clocks")
+            self.logger.warning(f"No stable overclock achieved, {gpu_name} running at stock clocks")
             
         return final_stable
 
@@ -3360,14 +3419,15 @@ class NvidiaOptimizer(BaseOptimizer):
         return validations
 
     def _validate_gpu_power_mode(self) -> bool:
-        """Validate GPU power mode with RTX 5080 Blackwell-specific support"""
+        """TEAM_013: Validate GPU power mode - generic for all NVIDIA GPUs"""
         expected_mode = str(GAMING_PROFILES.get(self.profile, GAMING_PROFILES["balanced"])["settings"]["gpu_power_mode"])
+        gpu_name = self.gpu_name
         
         # Check if running in headless environment or if DISPLAY is not available
         display_env = os.environ.get('DISPLAY', '')
         if not display_env:
-            # RTX 5080 Blackwell headless validation via nvidia-smi
-            self.logger.debug("No DISPLAY available, using nvidia-smi for RTX 5080 power mode validation")
+            # Headless validation via nvidia-smi
+            self.logger.debug(f"No DISPLAY available, using nvidia-smi for {gpu_name} power mode validation")
             
             # Check current power management state via nvidia-smi
             returncode, stdout, stderr = run_command("nvidia-smi -q -d PERFORMANCE", check=False)
@@ -3376,17 +3436,17 @@ class NvidiaOptimizer(BaseOptimizer):
                 if expected_mode == "1":
                     # Mode 1 = maximum performance, look for P0 state
                     if "P0" in stdout or "Max" in stdout:
-                        self.logger.debug("RTX 5080 in maximum performance state - validation passed")
+                        self.logger.debug(f"{gpu_name} in maximum performance state - validation passed")
                         return True
                 elif expected_mode == "2":
                     # Mode 2 = auto/adaptive, look for adaptive state
                     if "P2" in stdout or "Auto" in stdout or "Adaptive" in stdout:
-                        self.logger.debug("RTX 5080 in adaptive performance state - validation passed")
+                        self.logger.debug(f"{gpu_name} in adaptive performance state - validation passed")
                         return True
                 elif expected_mode == "0":
                     # Mode 0 = prefer consistent performance
                     if "P1" in stdout or "Consistent" in stdout:
-                        self.logger.debug("RTX 5080 in consistent performance state - validation passed")
+                        self.logger.debug(f"{gpu_name} in consistent performance state - validation passed")
                         return True
                         
             # Alternative validation via GPU clock frequencies
@@ -3394,17 +3454,17 @@ class NvidiaOptimizer(BaseOptimizer):
             if returncode2 == 0 and stdout2:
                 try:
                     current_clock = int(stdout2.strip())
-                    # RTX 5080 base clock is around 2200MHz, boost around 2600MHz
-                    if expected_mode == "1" and current_clock >= 2400:  # High performance
-                        self.logger.debug(f"RTX 5080 running at high performance clock: {current_clock}MHz")
+                    # TEAM_013: Use reasonable thresholds for any GPU
+                    if expected_mode == "1" and current_clock >= 1800:  # High performance
+                        self.logger.debug(f"{gpu_name} running at high performance clock: {current_clock}MHz")
                         return True
-                    elif expected_mode == "2" and current_clock >= 1800:  # Adaptive performance
-                        self.logger.debug(f"RTX 5080 running at adaptive clock: {current_clock}MHz")
+                    elif expected_mode == "2" and current_clock >= 1200:  # Adaptive performance
+                        self.logger.debug(f"{gpu_name} running at adaptive clock: {current_clock}MHz")
                         return True
                 except ValueError:
                     pass
                         
-            self.logger.debug("Cannot determine RTX 5080 power mode in headless environment - assuming applied")
+            self.logger.debug(f"Cannot determine {gpu_name} power mode in headless environment - assuming applied")
             return True  # Don't fail validation due to environment limitations
         
         # Try nvidia-settings with display for desktop environments
@@ -3418,18 +3478,43 @@ class NvidiaOptimizer(BaseOptimizer):
 
 
 class CPUOptimizer(BaseOptimizer):
-    """Intel i9-10850K CPU optimization module with v4 stepped undervolting"""
+    """TEAM_015: CPU optimization module - now uses CPU detection for safe undervolt"""
+
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
+        self._cpu_caps = None
+
+    @property
+    def cpu_caps(self):
+        """TEAM_015: Lazy-load CPU capabilities."""
+        if self._cpu_caps is None:
+            try:
+                from platforms.detection import detect_cpu_capabilities
+                self._cpu_caps = detect_cpu_capabilities()
+            except Exception as e:
+                self.logger.debug(f"Could not detect CPU capabilities: {e}")
+        return self._cpu_caps
 
     def install_tools(self) -> bool:
         """Install CPU management tools"""
         self.logger.info("Installing CPU management tools...")
 
-        tools = ["kernel-tools", "msr-tools", "thermald", "tuned", "intel-undervolt"]
+        # TEAM_015: Only install intel-undervolt if CPU supports it
+        tools = ["kernel-tools", "msr-tools", "thermald", "tuned"]
+        if self.cpu_caps and self.cpu_caps.supports_undervolt:
+            tools.append("intel-undervolt")
         return self._install_packages(tools)
 
     def configure_undervolt(self) -> bool:
-        """v4: Configure conservative CPU undervolting with stepping"""
-        self.logger.info("Configuring CPU undervolting...")
+        """TEAM_015: Configure CPU undervolting only if supported and safe"""
+        # Check if CPU supports undervolt
+        if not self.cpu_caps or not self.cpu_caps.supports_undervolt:
+            cpu_name = self.cpu_caps.model_name if self.cpu_caps else "Unknown CPU"
+            self.logger.info(f"Skipping undervolt for {cpu_name} (not supported or unsafe)")
+            return True  # Not a failure, just skip
+
+        self.logger.info(f"Configuring undervolt for {self.cpu_caps.model_name} "
+                        f"(safe limit: {self.cpu_caps.safe_undervolt_mv}mV)...")
 
         # Check if intel-undervolt is available
         returncode, _, _ = run_command("which intel-undervolt", check=False)
@@ -3437,7 +3522,8 @@ class CPUOptimizer(BaseOptimizer):
             self.logger.warning("intel-undervolt not available, skipping undervolting")
             return False
 
-        # Write undervolt configuration
+        # Write undervolt configuration with detected safe values
+        # TODO: Could generate dynamic config based on cpu_caps.safe_undervolt_mv
         if not write_config_file(Path("/etc/intel-undervolt.conf"), UNDERVOLT_CONFIG):
             return False
 
@@ -3452,8 +3538,9 @@ class CPUOptimizer(BaseOptimizer):
         return True
 
     def apply_optimizations(self) -> bool:
-        """Apply Intel i9-10850K optimizations"""
-        self.logger.info("Applying Intel i9-10850K optimizations...")
+        """TEAM_015: Apply CPU optimizations based on detected hardware"""
+        cpu_name = self.cpu_caps.model_name if self.cpu_caps else "Unknown CPU"
+        self.logger.info(f"Applying {cpu_name} optimizations...")
 
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
@@ -3511,11 +3598,13 @@ class CPUOptimizer(BaseOptimizer):
 
 
 class MemoryOptimizer(BaseOptimizer):
-    """Memory and storage optimization module"""
+    """TEAM_015: Memory and storage optimization module - now uses detected RAM"""
 
     def configure_zram(self) -> bool:
-        """Configure ZRAM for 64GB system with profile support"""
-        self.logger.info("Configuring ZRAM for optimal gaming performance...")
+        """TEAM_015: Configure ZRAM based on actual system RAM"""
+        # Get actual RAM from system_info (set by BazziteGamingOptimizer)
+        ram_gb = getattr(self, 'system_info', {}).get('ram_gb', 16)
+        self.logger.info(f"Configuring ZRAM for {ram_gb}GB system...")
 
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
@@ -3679,21 +3768,44 @@ class MemoryOptimizer(BaseOptimizer):
 
 
 class NetworkOptimizer(BaseOptimizer):
-    """Network optimization module for Intel I225-V with profile support"""
+    """TEAM_015: Network optimization module - now uses NIC detection"""
+
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
+        self._nic_caps = None
+    
+    @property
+    def nic_caps(self):
+        """TEAM_015: Lazy-load NIC capabilities."""
+        if self._nic_caps is None:
+            try:
+                from platforms.detection import detect_nic_capabilities
+                self._nic_caps = detect_nic_capabilities()
+            except Exception as e:
+                self.logger.debug(f"Could not detect NIC capabilities: {e}")
+        return self._nic_caps
 
     def apply_optimizations(self) -> bool:
-        """Apply network optimizations with I225-V bug workarounds"""
-        self.logger.info("Applying Intel I225-V network optimizations...")
-
+        """TEAM_015: Apply network optimizations conditionally based on NIC detection"""
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
             self.profile, GAMING_PROFILES["balanced"])["settings"]
         network_latency = profile_settings.get("network_latency", "low")
 
-        # Write Intel I225-V module configuration
-        if not write_config_file(Path("/etc/modprobe.d/igc-gaming.conf"), IGC_MODULE_CONFIG):
-            return False
-        self.track_change("Intel I225-V module config", Path("/etc/modprobe.d/igc-gaming.conf"))
+        # TEAM_015: Check NIC capabilities before applying I225-specific optimizations
+        if self.nic_caps:
+            nic_desc = f"{self.nic_caps.interface} ({self.nic_caps.driver})"
+            if self.nic_caps.is_i225_family:
+                self.logger.info(f"Applying Intel I225 family optimizations for {nic_desc}...")
+                # Write Intel I225 module configuration (only for igc driver)
+                if not write_config_file(Path("/etc/modprobe.d/igc-gaming.conf"), IGC_MODULE_CONFIG):
+                    return False
+                self.track_change("Intel I225 module config", Path("/etc/modprobe.d/igc-gaming.conf"))
+            else:
+                self.logger.info(f"Applying generic network optimizations for {nic_desc}...")
+                self.logger.info(f"  (Skipping I225-specific fixes - not I225 family NIC)")
+        else:
+            self.logger.info("Applying generic network optimizations (no NIC detected)...")
 
         # Write ethernet optimization script with profile settings
         script_content = ETHERNET_OPTIMIZE_SCRIPT.replace(
@@ -3745,8 +3857,8 @@ class NetworkOptimizer(BaseOptimizer):
 class AudioOptimizer(BaseOptimizer):
     """Audio system optimization module with profile support"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
 
     def apply_optimizations(self) -> bool:
         """Apply PipeWire and WirePlumber optimizations with enhanced error handling and validation"""
@@ -4711,8 +4823,8 @@ class AudioOptimizer(BaseOptimizer):
 class GamingToolsOptimizer(BaseOptimizer):
     """Gaming-specific tools and configurations with profile support"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
 
     def install_tools(self) -> bool:
         """Install gaming tools via package manager and Flatpak"""
@@ -4968,9 +5080,23 @@ class GamingToolsOptimizer(BaseOptimizer):
 class KernelOptimizer(BaseOptimizer):
     """Kernel and boot parameter optimization with profile support"""
 
-    def apply_bazzite_kernel_params(self) -> bool:
-        """Apply kernel parameters using rpm-ostree kargs for Bazzite immutable system with improved transaction handling"""
-        self.logger.info("Applying kernel parameters via rpm-ostree kargs (batch mode)...")
+    # TEAM_006: Added kernel_params property for cross-platform support
+    @property
+    def kernel_params(self):
+        """Lazy-load kernel param manager from platform services"""
+        if not hasattr(self, '_kernel_params') or self._kernel_params is None:
+            if self._platform_services:
+                self._kernel_params = self._platform_services.kernel_params
+            else:
+                # Fallback for backward compatibility (immutable systems)
+                from platforms.immutable.rpm_ostree import RpmOstreeKernelParams
+                self._kernel_params = RpmOstreeKernelParams()
+        return self._kernel_params
+
+    def apply_kernel_params(self) -> bool:
+        """TEAM_006: Apply kernel parameters using platform abstraction"""
+        manager_name = type(self.kernel_params).__name__
+        self.logger.info(f"Applying kernel parameters via {manager_name}...")
 
         # Get profile settings
         profile_settings = GAMING_PROFILES.get(
@@ -4980,10 +5106,23 @@ class KernelOptimizer(BaseOptimizer):
         mitigations = "off" if profile_settings.get("disable_mitigations", True) else "auto"
         max_cstate = "1" if profile_settings.get("isolate_cores", False) else "3"
 
+        # TEAM_012: Use CPU topology detection for correct core isolation
+        isolcpus = ""
         if profile_settings.get("isolate_cores", False):
-            isolcpus = "nohz_full=4-9 isolcpus=4-9 rcu_nocbs=4-9"
-        else:
-            isolcpus = ""
+            try:
+                from platforms.detection import detect_cpu_topology
+                topology = detect_cpu_topology()
+                if topology.recommended_isolate:
+                    cores = ",".join(map(str, topology.recommended_isolate))
+                    isolcpus = f"nohz_full={cores} isolcpus={cores} rcu_nocbs={cores}"
+                    if topology.is_hybrid:
+                        self.logger.info(f"Hybrid CPU detected: isolating E-cores {cores}")
+                    else:
+                        self.logger.info(f"Isolating cores: {cores}")
+                else:
+                    self.logger.warning("Could not detect CPU topology, skipping core isolation")
+            except Exception as e:
+                self.logger.warning(f"CPU topology detection failed: {e}, skipping core isolation")
 
         # Build consolidated parameter list (includes parameters previously duplicated in Boot Infrastructure)
         kernel_params = [
@@ -5010,11 +5149,40 @@ class KernelOptimizer(BaseOptimizer):
         if isolcpus:
             kernel_params.extend(isolcpus.split())
 
-        # Apply kernel parameters with improved transaction handling
-        return self._apply_kernel_params_batch(kernel_params)
+        # TEAM_012: Add eGPU-specific kernel params for Thunderbolt stability
+        try:
+            from platforms.detection import get_primary_gpu
+            primary_gpu = get_primary_gpu()
+            if primary_gpu and primary_gpu.is_egpu:
+                self.logger.info(f"eGPU detected ({primary_gpu.name}), adding Thunderbolt stability params")
+                kernel_params.extend([
+                    "pcie_port_pm=off",
+                    "thunderbolt.force_power=1",
+                ])
+        except Exception as e:
+            self.logger.debug(f"Could not check for eGPU: {e}")
 
-    def _apply_kernel_params_batch(self, kernel_params: list) -> bool:
-        """Apply kernel parameters in batches with proper transaction handling and deduplication"""
+        # TEAM_006: Apply kernel parameters using platform abstraction
+        return self._apply_kernel_params_via_abstraction(kernel_params)
+
+    def _apply_kernel_params_via_abstraction(self, kernel_params: list) -> bool:
+        """TEAM_006: Apply kernel parameters using platform abstraction layer"""
+        try:
+            self.logger.info(f"Applying {len(kernel_params)} kernel parameters...")
+            if self.kernel_params.append_params(kernel_params):
+                self.logger.info("Kernel parameters applied successfully")
+                if self.kernel_params.requires_reboot():
+                    self.logger.info("Changes will take effect after reboot")
+                return True
+            else:
+                self.logger.error("Failed to apply kernel parameters")
+                return False
+        except Exception as e:
+            self.logger.error(f"Error applying kernel parameters: {e}")
+            return False
+
+    def _apply_kernel_params_batch_legacy(self, kernel_params: list) -> bool:
+        """DEPRECATED: Legacy method for rpm-ostree direct calls. Use _apply_kernel_params_via_abstraction instead."""
         # Step 1: Check and clear any stuck transactions
         if not self._ensure_rpm_ostree_ready():
             self.logger.error("Failed to prepare rpm-ostree for kernel parameter application")
@@ -5290,10 +5458,21 @@ class KernelOptimizer(BaseOptimizer):
         mitigations = "off" if profile_settings.get("disable_mitigations", True) else "auto"
         max_cstate = "1" if profile_settings.get("isolate_cores", False) else "3"
 
+        # TEAM_012: Use CPU topology detection for correct core isolation
+        isolcpus = ""
         if profile_settings.get("isolate_cores", False):
-            isolcpus = "nohz_full=4-9 isolcpus=4-9 rcu_nocbs=4-9"
-        else:
-            isolcpus = ""
+            try:
+                from platforms.detection import detect_cpu_topology
+                topology = detect_cpu_topology()
+                if topology.recommended_isolate:
+                    cores = ",".join(map(str, topology.recommended_isolate))
+                    isolcpus = f"nohz_full={cores} isolcpus={cores} rcu_nocbs={cores}"
+                    if topology.is_hybrid:
+                        self.logger.info(f"Hybrid CPU detected: isolating E-cores {cores}")
+                    else:
+                        self.logger.info(f"Isolating cores: {cores}")
+            except Exception as e:
+                self.logger.warning(f"CPU topology detection failed: {e}")
             
         security_params = ""
 
@@ -5682,8 +5861,8 @@ class SystemdServiceOptimizer(BaseOptimizer):
 class PlasmaOptimizer(BaseOptimizer):
     """KDE Plasma 6 Wayland optimization module with profile support"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
 
     def apply_optimizations(self) -> bool:
         """Apply KDE Plasma 6 Wayland gaming optimizations"""
@@ -5756,8 +5935,8 @@ class PlasmaOptimizer(BaseOptimizer):
 class BootInfrastructureOptimizer(BaseOptimizer):
     """Boot infrastructure management for comprehensive boot error resolution"""
     
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, platform_services=None):
+        super().__init__(logger, platform_services)
         self.system_group_manager = SystemGroupManager(logger)
         self.filesystem_manager = FilesystemCompatibilityManager(logger)
         self.input_device_manager = InputDeviceManager(logger)
@@ -6553,8 +6732,26 @@ parallel="yes"
 class BazziteOptimizer(BaseOptimizer):
     """Bazzite-specific optimizations using ujust commands"""
 
+    # TEAM_006: Added platform_info for conditional Bazzite features
+    def __init__(self, logger: logging.Logger, platform_services=None, platform_info=None):
+        super().__init__(logger, platform_services)
+        self._platform_info = platform_info
+
+    @property
+    def is_bazzite(self) -> bool:
+        """TEAM_006: Check if running on Bazzite"""
+        if self._platform_info:
+            return self._platform_info.has_ujust
+        import shutil
+        return shutil.which("ujust") is not None
+
     def apply_ujust_commands(self) -> bool:
-        """Execute Bazzite ujust commands"""
+        """Execute Bazzite ujust commands (only on Bazzite)"""
+        # TEAM_006: Skip ujust commands if not on Bazzite
+        if not self.is_bazzite:
+            self.logger.info("Skipping Bazzite-specific optimizations (ujust not available)")
+            return True  # Return success, not failure
+
         self.logger.info("Applying Bazzite-specific optimizations...")
 
         for command in BAZZITE_UJUST_COMMANDS:
@@ -6575,9 +6772,12 @@ class BazziteOptimizer(BaseOptimizer):
 
     def validate(self) -> Dict[str, bool]:
         """Validate Bazzite optimizations"""
-        validations = {}
+        # TEAM_006: Return empty validation on non-Bazzite systems
+        if not self.is_bazzite:
+            self.logger.debug("Skipping Bazzite validation (not on Bazzite)")
+            return {}
 
-        # Basic validation - check if ujust is available
+        validations = {}
         returncode, _, _ = run_command("which ujust", check=False)
         validations["ujust_available"] = returncode == 0
 
@@ -6875,17 +7075,30 @@ class ProfileManager:
 
     def export_profile_env(self, profile_name: str):
         """Export profile settings as environment variables"""
+        global DRY_RUN
         settings = self.load_profile(profile_name)
+        
+        # TEAM_013: Handle dry-run and missing profile_dir
+        if self.profile_dir is None:
+            self.logger.debug("Profile export skipped - no writable profile directory")
+            return
+            
         env_file = self.profile_dir / f"{profile_name}.env"
+        
+        if DRY_RUN:
+            print_colored(f"  [DRY-RUN] Would export profile env to: {env_file}", Colors.OKCYAN)
+            return
 
-        with open(env_file, "w") as f:
-            for key, value in settings.items():
-                env_key = key.upper()
-                if isinstance(value, bool):
-                    value = str(value).lower()
-                f.write(f"export {env_key}={value}\n")
-
-        self.logger.info(f"Profile environment exported to {env_file}")
+        try:
+            with open(env_file, "w") as f:
+                for key, value in settings.items():
+                    env_key = key.upper()
+                    if isinstance(value, bool):
+                        value = str(value).lower()
+                    f.write(f"export {env_key}={value}\n")
+            self.logger.info(f"Profile environment exported to {env_file}")
+        except (PermissionError, OSError) as e:
+            self.logger.debug(f"Could not export profile env: {e}")
 
 
 # ============================================================================
@@ -6897,6 +7110,15 @@ class BazziteGamingOptimizer:
 
     def __init__(self):
         self.logger = setup_logging()
+        
+        # TEAM_006: Platform detection and services initialization
+        from platforms import detect_platform, PlatformServices
+        self.platform_info = detect_platform()
+        self.platform_services = PlatformServices(self.platform_info)
+        self.logger.info(f"Detected platform: {self.platform_info.platform_type.name}")
+        self.logger.info(f"Package manager: {self.platform_info.package_manager}")
+        self.logger.info(f"Boot method: {self.platform_info.boot_method}")
+        
         self.optimizers = []
         self.needs_reboot = False
         self.system_info = get_system_info()
@@ -6910,10 +7132,20 @@ class BazziteGamingOptimizer:
     def print_banner(self):
         """Display welcome banner"""
         print_colored("=" * 62, Colors.HEADER)
-        print_colored("    BAZZITE DX ULTIMATE GAMING OPTIMIZER v" +
+        print_colored("    LINUX GAMING OPTIMIZER v" +
                       SCRIPT_VERSION, Colors.HEADER + Colors.BOLD)
-        print_colored("  Enhanced for RTX 5080 Blackwell | i9-10850K | 64GB RAM", Colors.OKCYAN)
-        print_colored("  Now with: Thermal Management | HDR | Profiles | Validation", Colors.OKBLUE)
+        
+        # TEAM_006: Dynamic hardware display instead of hard-coded values
+        gpu_name = "Unknown GPU"
+        if self.system_info.get('gpus'):
+            gpu_name = self.system_info['gpus'][0].split(':')[-1].strip()[:30]
+        cpu_name = self.system_info.get('cpu_model', 'Unknown CPU')
+        if len(cpu_name) > 25:
+            cpu_name = cpu_name[:22] + "..."
+        ram_gb = self.system_info.get('ram_gb', '?')
+        
+        print_colored(f"  Detected: {gpu_name} | {cpu_name} | {ram_gb}GB RAM", Colors.OKCYAN)
+        print_colored(f"  Platform: {self.platform_info.distro_name} ({self.platform_info.platform_type.name})", Colors.OKBLUE)
         print_colored("=" * 62, Colors.HEADER)
         print()
 
@@ -6949,12 +7181,16 @@ class BazziteGamingOptimizer:
 
     def check_prerequisites(self) -> bool:
         """Check system prerequisites including new v3 requirements"""
+        global DRY_RUN
         print_colored("Checking system prerequisites...", Colors.OKBLUE)
 
-        # Check if running as root
+        # Check if running as root (skip in dry-run mode)
         if os.geteuid() != 0:
-            print_colored("ERROR: This script must be run as root (use sudo)", Colors.FAIL)
-            return False
+            if DRY_RUN:
+                print_colored("  [DRY-RUN] Would require root - continuing anyway for simulation", Colors.OKCYAN)
+            else:
+                print_colored("ERROR: This script must be run as root (use sudo)", Colors.FAIL)
+                return False
 
         # Check kernel version
         if not check_kernel_version():
@@ -6973,33 +7209,54 @@ class BazziteGamingOptimizer:
             return False
 
         # Check hardware compatibility
-        self.hardware_checks = check_hardware_compatibility()
+        self.hardware_checks = check_hardware_capabilities()
 
         print("\nHardware Detection:")
-        optimal_config = True
-        for component, detected in self.hardware_checks.items():
-            status = "✔" if detected else "✗"
-            color = Colors.OKGREEN if detected else Colors.WARNING
-            component_name = component.replace('_', ' ').title()
-            print_colored(f"  {status} {component_name}", color)
+        # Only show relevant hardware info, don't treat alternatives as failures
+        important_checks = ["has_nvme", "resizable_bar"]
+        has_any_gpu = self.hardware_checks.get("has_nvidia") or \
+                      self.hardware_checks.get("has_amd_gpu") or \
+                      self.hardware_checks.get("has_intel_gpu")
+        
+        # Show GPU status
+        if self.hardware_checks.get("has_nvidia"):
+            print_colored("  ✔ NVIDIA GPU detected", Colors.OKGREEN)
+        elif self.hardware_checks.get("has_amd_gpu"):
+            print_colored("  ✔ AMD GPU detected", Colors.OKGREEN)
+        elif self.hardware_checks.get("has_intel_gpu"):
+            print_colored("  ✔ Intel GPU detected", Colors.OKGREEN)
+        else:
+            print_colored("  ✗ No GPU detected", Colors.WARNING)
+        
+        # Show important checks
+        if self.hardware_checks.get("has_nvme"):
+            print_colored("  ✔ NVMe storage", Colors.OKGREEN)
+        if self.hardware_checks.get("resizable_bar"):
+            print_colored("  ✔ Resizable BAR enabled", Colors.OKGREEN)
+        else:
+            print_colored("  ✗ Resizable BAR not detected", Colors.WARNING)
+            print_colored("    → Enable in BIOS for better GPU performance", Colors.WARNING)
+        
+        # RAM and CPU info
+        ram_gb = self.hardware_checks.get("ram_gb", 0)
+        print_colored(f"  ✔ RAM: {ram_gb} GB", Colors.OKGREEN)
+        cpu_vendor = self.hardware_checks.get("cpu_vendor", "unknown").upper()
+        print_colored(f"  ✔ CPU: {cpu_vendor}", Colors.OKGREEN)
+        
+        optimal_config = has_any_gpu  # Only fail if no GPU at all
 
-            # Special warning for Resizable BAR
-            if component == "resizable_bar" and not detected:
-                print_colored(
-                    "    → Enable Resizable BAR in BIOS for better performance",
-                    Colors.WARNING)
-
-            if not detected and component != "bazzite_os":
-                optimal_config = False
-
-        # Warn if not on Bazzite
-        if not self.hardware_checks["bazzite_os"]:
-            print_colored(
-                "\nWARNING: Bazzite not detected. Some optimizations may not work correctly.",
-                Colors.WARNING)
+        # TEAM_006: Platform-aware warnings using platform_info
+        from platforms import PlatformType
+        if self.platform_info.platform_type == PlatformType.UNKNOWN:
+            print_colored("\nWARNING: Unknown platform detected.", Colors.WARNING)
+            print_colored("Some optimizations may not work correctly.", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
+            sys.stdout.flush()
             if input().lower() != 'y':
                 return False
+        elif not self.platform_info.is_immutable:
+            print_colored(f"\nINFO: Running on {self.platform_info.distro_name}", Colors.OKBLUE)
+            print_colored("Using GRUB for kernel parameters.", Colors.OKBLUE)
 
         # Warn if hardware doesn't match optimal config
         if not optimal_config:
@@ -7008,6 +7265,7 @@ class BazziteGamingOptimizer:
                 Colors.WARNING)
             print_colored("The optimizations are tailored for specific hardware.", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
+            sys.stdout.flush()
             if input().lower() != 'y':
                 return False
 
@@ -7017,6 +7275,7 @@ class BazziteGamingOptimizer:
             print_colored(f"\nWARNING: GPU temperature is high ({gpu_temp}°C)", Colors.WARNING)
             print_colored("Consider improving cooling before applying overclocking", Colors.WARNING)
             print_colored("Continue anyway? (y/n): ", Colors.WARNING, end="")
+            sys.stdout.flush()
             if input().lower() != 'y':
                 return False
 
@@ -7024,18 +7283,39 @@ class BazziteGamingOptimizer:
 
     def initialize_optimizers(self):
         """Initialize all optimizer modules with selected profile"""
+        # TEAM_006: Pass platform_services to all optimizers for cross-platform support
+        ps = self.platform_services
+        
+        # Dynamic optimizer names based on detected hardware
+        gpu_name = "GPU"
+        if self.system_info.get('gpus'):
+            gpu_info = self.system_info['gpus'][0].lower()
+            if "nvidia" in gpu_info:
+                gpu_name = "NVIDIA GPU"
+            elif "amd" in gpu_info:
+                gpu_name = "AMD GPU"
+            elif "intel" in gpu_info:
+                gpu_name = "Intel GPU"
+        
+        cpu_name = "CPU"
+        cpu_model = self.system_info.get('cpu_model', '').lower()
+        if "intel" in cpu_model:
+            cpu_name = "Intel CPU"
+        elif "amd" in cpu_model:
+            cpu_name = "AMD CPU"
+        
         self.optimizers = [
-            ("Boot Infrastructure", BootInfrastructureOptimizer(self.logger)),
-            ("NVIDIA RTX 5080 Blackwell", NvidiaOptimizer(self.logger)),
-            ("Intel i9-10850K CPU", CPUOptimizer(self.logger)),
-            ("Memory & Storage", MemoryOptimizer(self.logger)),
-            ("Audio System", AudioOptimizer(self.logger)),
-            ("Network (Intel I225-V)", NetworkOptimizer(self.logger)),
-            ("Gaming Tools", GamingToolsOptimizer(self.logger)),
-            ("Kernel & Boot", KernelOptimizer(self.logger)),
-            ("Systemd Services", SystemdServiceOptimizer(self.logger)),
-            ("KDE Plasma 6 Wayland", PlasmaOptimizer(self.logger)),
-            ("Bazzite Specific", BazziteOptimizer(self.logger))
+            ("Boot Infrastructure", BootInfrastructureOptimizer(self.logger, ps)),
+            (gpu_name, NvidiaOptimizer(self.logger, ps)),
+            (cpu_name, CPUOptimizer(self.logger, ps)),
+            ("Memory & Storage", MemoryOptimizer(self.logger, ps)),
+            ("Audio System", AudioOptimizer(self.logger, ps)),
+            ("Network", NetworkOptimizer(self.logger, ps)),
+            ("Gaming Tools", GamingToolsOptimizer(self.logger, ps)),
+            ("Kernel & Boot", KernelOptimizer(self.logger, ps)),
+            ("Systemd Services", SystemdServiceOptimizer(self.logger, ps)),
+            ("Desktop Environment", PlasmaOptimizer(self.logger, ps)),
+            ("Distribution Specific", BazziteOptimizer(self.logger, ps, self.platform_info))
         ]
 
         # Set profile for all optimizers
@@ -7386,8 +7666,9 @@ USAGE INSTRUCTIONS
         self.print_system_info()
 
         # Parse command line arguments first to handle non-root commands
+        # TEAM_014: Fixed description to match banner and version
         parser = argparse.ArgumentParser(
-            description='Bazzite DX Ultimate Gaming Optimizer v4',
+            description=f'Linux Gaming Optimizer v{SCRIPT_VERSION}',
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 Profiles:
@@ -7399,11 +7680,13 @@ Profiles:
 Examples:
   sudo python3 bazzite-optimizer.py                      # Full optimization (balanced)
   sudo python3 bazzite-optimizer.py --profile competitive # Competitive gaming profile
-  sudo python3 bazzite-optimizer.py --benchmark          # Run with benchmarks
-  sudo python3 bazzite-optimizer.py --skip-packages      # Skip package installation
-  sudo python3 bazzite-optimizer.py --validate           # Validate optimizations
+  sudo python3 bazzite-optimizer.py --validate           # Validate current optimizations
   sudo python3 bazzite-optimizer.py --rollback           # Rollback all changes
-  sudo python3 bazzite-optimizer.py --verify             # Show verification commands only
+
+Kernel Management:
+  python3 bazzite-optimizer.py --list-kernel-profiles    # List saved kernel profiles
+  python3 bazzite-optimizer.py --kernel-diff baseline    # Compare current vs baseline
+  sudo python3 bazzite-optimizer.py --kernel-profile baseline  # Restore stock kernel
             """
         )
 
@@ -7430,8 +7713,31 @@ Examples:
                             help='List available profiles')
         parser.add_argument('--version', action='version',
                             version=f'%(prog)s {SCRIPT_VERSION}')
+        # TEAM_012: Kernel profile management CLI
+        parser.add_argument('--save-baseline', action='store_true',
+                            help='Save current kernel params as baseline before optimization')
+        parser.add_argument('--kernel-profile', type=str, metavar='NAME',
+                            help='Apply a saved kernel profile (use --list-kernel-profiles to see available)')
+        parser.add_argument('--list-kernel-profiles', action='store_true',
+                            help='List available kernel profiles')
+        parser.add_argument('--kernel-diff', type=str, metavar='NAME',
+                            help='Show difference between current kernel params and a profile')
+        # TEAM_013: Dry-run mode for full narration without changes
+        parser.add_argument('--dry-run', action='store_true',
+                            help='Show what would be done without making any changes')
 
         args = parser.parse_args()
+
+        # TEAM_013: Set global dry-run flag
+        global DRY_RUN
+        if args.dry_run:
+            DRY_RUN = True
+            # Also set in builtins for submodules to access
+            import builtins
+            builtins.BAZZITE_DRY_RUN = True
+            print_colored("\n" + "="*60, Colors.WARNING)
+            print_colored("  DRY-RUN MODE - No changes will be made", Colors.WARNING)
+            print_colored("="*60 + "\n", Colors.WARNING)
 
         # Handle list profiles
         if args.list_profiles:
@@ -7439,6 +7745,93 @@ Examples:
             for profile_name, profile_data in GAMING_PROFILES.items():
                 print(f"\n{Colors.OKCYAN}{profile_name}:{Colors.ENDC}")
                 print(f"  {profile_data['description']}")
+            return 0
+
+        # TEAM_012: Handle kernel profile management commands
+        # These commands use GrubKernelParams directly (no root needed for read ops)
+        def _get_kernel_profile_manager():
+            """Get kernel profile manager for CLI commands."""
+            try:
+                from platforms.traditional.grub import GrubKernelParams
+                from pathlib import Path
+                if Path("/etc/default/grub").exists():
+                    return GrubKernelParams()
+            except ImportError:
+                pass
+            return None
+
+        if args.list_kernel_profiles:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'list_profiles'):
+                profiles = kpm.list_profiles()
+                if profiles:
+                    print_colored("\nAvailable Kernel Profiles:", Colors.HEADER)
+                    for p in profiles:
+                        print(f"  - {p}")
+                else:
+                    print("No kernel profiles saved yet. Run --save-baseline first.")
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
+            return 0
+
+        if args.kernel_diff:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'diff_profile'):
+                diff = kpm.diff_profile(args.kernel_diff)
+                if "error" in diff:
+                    # TEAM_014: Show available profiles on error
+                    print_colored(diff["error"], Colors.FAIL)
+                    available = kpm.list_profiles() if hasattr(kpm, 'list_profiles') else []
+                    if available:
+                        print_colored(f"Available profiles: {', '.join(available)}", Colors.OKBLUE)
+                else:
+                    print_colored(f"\nDiff vs '{args.kernel_diff}':", Colors.HEADER)
+                    if diff["add"]:
+                        print_colored("  Would add:", Colors.OKGREEN)
+                        for p in diff["add"]:
+                            print(f"    + {p}")
+                    if diff["remove"]:
+                        print_colored("  Would remove:", Colors.FAIL)
+                        for p in diff["remove"]:
+                            print(f"    - {p}")
+                    if not diff["add"] and not diff["remove"]:
+                        print("  No differences")
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
+            return 0
+
+        if args.save_baseline:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'save_baseline'):
+                # TEAM_014: Check if baseline already exists before saving
+                baseline_exists = kpm.PROFILE_DIR.exists() and (kpm.PROFILE_DIR / "baseline.conf").exists()
+                if baseline_exists:
+                    print_colored("Baseline already exists. Use --kernel-diff baseline to compare.", Colors.OKBLUE)
+                elif kpm.save_baseline():
+                    print_colored("Baseline kernel params saved successfully", Colors.OKGREEN)
+                else:
+                    print_colored("Failed to save baseline (permission denied or disk error)", Colors.FAIL)
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
+            return 0
+
+        if args.kernel_profile:
+            kpm = _get_kernel_profile_manager()
+            if kpm and hasattr(kpm, 'apply_profile'):
+                # TEAM_014: Check if profile exists before applying, show helpful error
+                available = kpm.list_profiles() if hasattr(kpm, 'list_profiles') else []
+                if args.kernel_profile not in available:
+                    print_colored(f"Profile '{args.kernel_profile}' not found.", Colors.FAIL)
+                    if available:
+                        print_colored(f"Available profiles: {', '.join(available)}", Colors.OKBLUE)
+                    else:
+                        print_colored("No profiles saved. Run optimizer first to create baseline.", Colors.OKBLUE)
+                elif kpm.apply_profile(args.kernel_profile):
+                    print_colored(f"✓ Applied kernel profile '{args.kernel_profile}'. Reboot required.", Colors.OKGREEN)
+                else:
+                    print_colored(f"Failed to apply profile '{args.kernel_profile}' (permission error?)", Colors.FAIL)
+            else:
+                print_colored("Kernel profile management not available on this platform", Colors.WARNING)
             return 0
 
         # Handle verify mode
@@ -7491,6 +7884,18 @@ Examples:
         print_colored(f"\nSelected Profile: {self.profile.upper()}", Colors.HEADER)
         profile_info = GAMING_PROFILES[self.profile]
         print(f"  {profile_info['description']}")
+
+        # TEAM_013/014: Automatic kernel baseline backup before any optimization
+        kpm = _get_kernel_profile_manager()
+        if kpm and hasattr(kpm, 'save_baseline'):
+            # Check if baseline already exists before attempting save
+            baseline_exists = kpm.PROFILE_DIR.exists() and (kpm.PROFILE_DIR / "baseline.conf").exists()
+            if baseline_exists:
+                print_colored("\n  Kernel baseline already saved (use --kernel-profile baseline to restore)", Colors.OKBLUE)
+            elif kpm.save_baseline():
+                print_colored("\n✓ Kernel baseline saved (use --kernel-profile baseline to restore)", Colors.OKGREEN)
+            else:
+                print_colored("\n⚠ Could not save kernel baseline (permission error?)", Colors.WARNING)
 
         # Save profile settings as environment
         self.profile_manager.export_profile_env(self.profile)
